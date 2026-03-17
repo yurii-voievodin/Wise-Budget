@@ -5,6 +5,7 @@ struct ImportResult {
     var expensesImported: Int = 0
     var incomesImported: Int = 0
     var skipped: Int = 0
+    var duplicatesSkipped: Int = 0
 }
 
 struct CSVTransaction {
@@ -105,6 +106,13 @@ final class CSVImporter {
         return transactions
     }
 
+    private struct TransactionKey: Hashable {
+        let day: Date
+        let category: String
+        let currency: String
+        let amount: Decimal
+    }
+
     // MARK: - Import into ModelContext
 
     @discardableResult
@@ -115,11 +123,45 @@ final class CSVImporter {
         var expenseCategoryMap = Dictionary(uniqueKeysWithValues: existingExpenseCategories.map { ($0.name, $0) })
         var incomeCategoryMap = Dictionary(uniqueKeysWithValues: existingIncomeCategories.map { ($0.name, $0) })
 
+        let existingExpenses = try context.fetch(FetchDescriptor<Expense>())
+        let existingIncomes = try context.fetch(FetchDescriptor<Income>())
+
+        var existingKeys = Set<TransactionKey>()
+        let calendar = Calendar.current
+        for expense in existingExpenses {
+            existingKeys.insert(TransactionKey(
+                day: calendar.startOfDay(for: expense.date),
+                category: expense.category?.name ?? "",
+                currency: expense.currency,
+                amount: expense.amount
+            ))
+        }
+        for income in existingIncomes {
+            existingKeys.insert(TransactionKey(
+                day: calendar.startOfDay(for: income.date),
+                category: income.category?.name ?? "",
+                currency: income.currency,
+                amount: income.amount
+            ))
+        }
+
         var result = ImportResult()
 
         for transaction in transactions {
             guard transaction.status == "COMPLETED", transaction.direction != "NEUTRAL" else {
                 result.skipped += 1
+                continue
+            }
+
+            let key = TransactionKey(
+                day: calendar.startOfDay(for: transaction.date),
+                category: transaction.categoryName,
+                currency: transaction.currency,
+                amount: transaction.amount
+            )
+
+            if existingKeys.contains(key) {
+                result.duplicatesSkipped += 1
                 continue
             }
 
@@ -141,6 +183,7 @@ final class CSVImporter {
                     category: category
                 )
                 context.insert(expense)
+                existingKeys.insert(key)
                 result.expensesImported += 1
 
             } else if transaction.direction == "IN" {
@@ -161,6 +204,7 @@ final class CSVImporter {
                     category: category
                 )
                 context.insert(income)
+                existingKeys.insert(key)
                 result.incomesImported += 1
 
             } else {

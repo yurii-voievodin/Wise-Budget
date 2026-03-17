@@ -234,6 +234,60 @@ struct Wise_BudgetTests {
         #expect(incomes.first?.amount == Decimal(string: "3754.76"))
     }
 
+    // MARK: - Deduplication
+
+    @Test func importSameCSVTwiceSkipsDuplicates() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let firstResult = try CSVImporter.importTransactions(transactions, into: context)
+
+        #expect(firstResult.expensesImported == 7)
+        #expect(firstResult.incomesImported == 1)
+        #expect(firstResult.duplicatesSkipped == 0)
+
+        let secondResult = try CSVImporter.importTransactions(transactions, into: context)
+
+        #expect(secondResult.expensesImported == 0)
+        #expect(secondResult.incomesImported == 0)
+        #expect(secondResult.duplicatesSkipped == 8)
+    }
+
+    @Test func sameDayDifferentAmountNotDuplicate() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let csv = """
+        Ідентифікатор,Статус,Напрямок,Створено:,Завершено,Комісія з вихідної суми,Валюта комісії з вихідної суми,Комісія із цільової суми,Валюта комісії із цільової суми,Назва джерела,Вихідна сума (після оплати комісії),Вихідна валюта,Назва цілі,Цільова сума (після оплати комісії),Цільова валюта,Обмінний курс,Призначення,Масові платежі,Хто створив:,Категорія,Примітка
+        CARD-001,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Продукти харчування,
+        CARD-002,COMPLETED,OUT,2026-03-15 12:00:00,2026-03-15 12:00:00,0.00,EUR,,,Yurii,25.00,EUR,Kaufland,25.00,EUR,1.0,,,Yurii,Продукти харчування,
+        """
+
+        let transactions = CSVImporter.parseCSV(from: csv)
+        let result = try CSVImporter.importTransactions(transactions, into: context)
+
+        #expect(result.expensesImported == 2)
+        #expect(result.duplicatesSkipped == 0)
+    }
+
+    @Test func sameAmountDifferentDayNotDuplicate() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let csv = """
+        Ідентифікатор,Статус,Напрямок,Створено:,Завершено,Комісія з вихідної суми,Валюта комісії з вихідної суми,Комісія із цільової суми,Валюта комісії із цільової суми,Назва джерела,Вихідна сума (після оплати комісії),Вихідна валюта,Назва цілі,Цільова сума (після оплати комісії),Цільова валюта,Обмінний курс,Призначення,Масові платежі,Хто створив:,Категорія,Примітка
+        CARD-001,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Продукти харчування,
+        CARD-002,COMPLETED,OUT,2026-03-16 10:00:00,2026-03-16 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Продукти харчування,
+        """
+
+        let transactions = CSVImporter.parseCSV(from: csv)
+        let result = try CSVImporter.importTransactions(transactions, into: context)
+
+        #expect(result.expensesImported == 2)
+        #expect(result.duplicatesSkipped == 0)
+    }
+
     // MARK: - CSV Line Parser
 
     @Test func parseCSVLineHandlesQuotedFields() {

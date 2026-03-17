@@ -38,7 +38,11 @@ struct Wise_BudgetApp: App {
                     if let error = importError {
                         Text("Import failed: \(error)")
                     } else if let result = importResult {
-                        Text("\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.skipped) skipped.")
+                        if result.duplicatesSkipped > 0 {
+                            Text("\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.skipped) skipped. \(result.duplicatesSkipped) duplicates skipped.")
+                        } else {
+                            Text("\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.skipped) skipped.")
+                        }
                     }
                 }
         }

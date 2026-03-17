@@ -10,6 +10,8 @@ struct CategoryManagementView: View {
 
     @State private var newExpenseCategoryName = ""
     @State private var newIncomeCategoryName = ""
+    @State private var showDeleteAllExpensesConfirmation = false
+    @State private var showDeleteAllIncomesConfirmation = false
 
     var body: some View {
         List {
@@ -53,6 +55,37 @@ struct CategoryManagementView: View {
                     .disabled(newIncomeCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            Section("Data Management") {
+                Button("Delete All Expenses", role: .destructive) {
+                    showDeleteAllExpensesConfirmation = true
+                }
+                .confirmationDialog(
+                    "Delete All Expenses",
+                    isPresented: $showDeleteAllExpensesConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete All Expenses", role: .destructive) {
+                        deleteAllExpenses()
+                    }
+                } message: {
+                    Text("This will permanently delete all your expenses. This action cannot be undone.")
+                }
+
+                Button("Delete All Incomes", role: .destructive) {
+                    showDeleteAllIncomesConfirmation = true
+                }
+                .confirmationDialog(
+                    "Delete All Incomes",
+                    isPresented: $showDeleteAllIncomesConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete All Incomes", role: .destructive) {
+                        deleteAllIncomes()
+                    }
+                } message: {
+                    Text("This will permanently delete all your incomes. This action cannot be undone.")
+                }
+            }
         }
         .navigationTitle("Settings")
     }
@@ -80,6 +113,28 @@ struct CategoryManagementView: View {
     private func deleteIncomeCategory(offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(incomeCategories[index])
+        }
+    }
+
+    private func deleteAllExpenses() {
+        do {
+            let expenses = try modelContext.fetch(FetchDescriptor<Expense>())
+            for expense in expenses {
+                modelContext.delete(expense)
+            }
+        } catch {
+            print("Failed to delete expenses: \(error)")
+        }
+    }
+
+    private func deleteAllIncomes() {
+        do {
+            let incomes = try modelContext.fetch(FetchDescriptor<Income>())
+            for income in incomes {
+                modelContext.delete(income)
+            }
+        } catch {
+            print("Failed to delete incomes: \(error)")
         }
     }
 }
