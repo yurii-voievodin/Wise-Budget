@@ -8,6 +8,7 @@ struct Wise_BudgetApp: App {
             Expense.self,
             Income.self,
             ExpenseCategory.self,
+            IncomeCategory.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -23,6 +24,7 @@ struct Wise_BudgetApp: App {
             ContentView()
                 .onAppear {
                     prepopulateCategories()
+                    prepopulateIncomeCategories()
                 }
         }
         .modelContainer(sharedModelContainer)
@@ -40,6 +42,20 @@ struct Wise_BudgetApp: App {
         ]
         for name in defaultNames {
             context.insert(ExpenseCategory(name: name))
+        }
+    }
+
+    private func prepopulateIncomeCategories() {
+        let context = sharedModelContainer.mainContext
+        let descriptor = FetchDescriptor<IncomeCategory>()
+        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
+        guard existingCount == 0 else { return }
+
+        let defaultNames = [
+            "Freelance", "Gifts", "Investments", "Other", "Rental", "Salary"
+        ]
+        for name in defaultNames {
+            context.insert(IncomeCategory(name: name))
         }
     }
 }

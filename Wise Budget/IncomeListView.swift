@@ -5,6 +5,8 @@ struct IncomeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Income.date, order: .reverse) private var incomes: [Income]
 
+    @State private var isAddingIncome = false
+
     var body: some View {
         List {
             ForEach(incomes) { income in
@@ -12,7 +14,12 @@ struct IncomeListView: View {
                     VStack(alignment: .leading) {
                         Text(income.amount, format: .number)
                             .font(.headline)
-                        Text(income.date, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        if let categoryName = income.category?.name {
+                            Text(categoryName)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(income.date, format: Date.FormatStyle(date: .numeric))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -26,17 +33,18 @@ struct IncomeListView: View {
         .navigationTitle("Income")
         .toolbar {
             ToolbarItem {
-                Button(action: addIncome) {
+                Button(action: { isAddingIncome = true }) {
                     Label("Add Income", systemImage: "plus")
                 }
             }
         }
-    }
-
-    private func addIncome() {
-        withAnimation {
-            let newIncome = Income(amount: 0, currency: Locale.current.currency?.identifier ?? "USD")
-            modelContext.insert(newIncome)
+        .sheet(isPresented: $isAddingIncome) {
+            AddIncomeSheet { amount, currency, date, category in
+                withAnimation {
+                    let newIncome = Income(amount: amount, currency: currency, date: date, category: category)
+                    modelContext.insert(newIncome)
+                }
+            }
         }
     }
 
