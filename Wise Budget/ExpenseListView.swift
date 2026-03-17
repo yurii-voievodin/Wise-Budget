@@ -5,6 +5,8 @@ struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
 
+    @State private var isAddingExpense = false
+
     var body: some View {
         List {
             ForEach(expenses) { expense in
@@ -12,7 +14,7 @@ struct ExpenseListView: View {
                     VStack(alignment: .leading) {
                         Text(expense.amount, format: .number)
                             .font(.headline)
-                        Text(expense.date, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        Text(expense.date, format: Date.FormatStyle(date: .numeric))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -26,17 +28,18 @@ struct ExpenseListView: View {
         .navigationTitle("Expenses")
         .toolbar {
             ToolbarItem {
-                Button(action: addExpense) {
+                Button(action: { isAddingExpense = true }) {
                     Label("Add Expense", systemImage: "plus")
                 }
             }
         }
-    }
-
-    private func addExpense() {
-        withAnimation {
-            let newExpense = Expense(amount: 0, currency: Locale.current.currency?.identifier ?? "USD")
-            modelContext.insert(newExpense)
+        .sheet(isPresented: $isAddingExpense) {
+            AddExpenseSheet { amount, currency, date in
+                withAnimation {
+                    let newExpense = Expense(amount: amount, currency: currency, date: date)
+                    modelContext.insert(newExpense)
+                }
+            }
         }
     }
 
@@ -48,3 +51,5 @@ struct ExpenseListView: View {
         }
     }
 }
+
+
