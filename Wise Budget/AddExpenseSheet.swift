@@ -12,10 +12,20 @@ struct AddExpenseSheet: View {
     @State private var date = Date()
     @State private var selectedCategory: ExpenseCategory?
 
+    var expenseToEdit: Expense?
     var onSave: (Decimal, String, Date, ExpenseCategory?) -> Void
 
-    init(onSave: @escaping (Decimal, String, Date, ExpenseCategory?) -> Void) {
+    private var isEditing: Bool { expenseToEdit != nil }
+
+    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?) -> Void) {
+        self.expenseToEdit = expense
         self.onSave = onSave
+        if let expense {
+            _amount = State(initialValue: expense.amount)
+            _currency = State(initialValue: expense.currency)
+            _date = State(initialValue: expense.date)
+            _selectedCategory = State(initialValue: expense.category)
+        }
     }
 
     var body: some View {
@@ -38,7 +48,7 @@ struct AddExpenseSheet: View {
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
-            .navigationTitle("Add Expense")
+            .navigationTitle(isEditing ? "Edit Expense" : "Add Expense")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

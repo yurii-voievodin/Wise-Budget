@@ -12,10 +12,20 @@ struct AddIncomeSheet: View {
     @State private var date = Date()
     @State private var selectedCategory: IncomeCategory?
 
+    var incomeToEdit: Income?
     var onSave: (Decimal, String, Date, IncomeCategory?) -> Void
 
-    init(onSave: @escaping (Decimal, String, Date, IncomeCategory?) -> Void) {
+    private var isEditing: Bool { incomeToEdit != nil }
+
+    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?) -> Void) {
+        self.incomeToEdit = income
         self.onSave = onSave
+        if let income {
+            _amount = State(initialValue: income.amount)
+            _currency = State(initialValue: income.currency)
+            _date = State(initialValue: income.date)
+            _selectedCategory = State(initialValue: income.category)
+        }
     }
 
     var body: some View {
@@ -38,7 +48,7 @@ struct AddIncomeSheet: View {
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
-            .navigationTitle("Add Income")
+            .navigationTitle(isEditing ? "Edit Income" : "Add Income")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

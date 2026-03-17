@@ -6,27 +6,34 @@ struct ExpenseListView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
 
     @State private var isAddingExpense = false
+    @State private var expenseToEdit: Expense?
 
     var body: some View {
         List {
             ForEach(expenses) { expense in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(expense.amount, format: .number)
-                            .font(.headline)
-                        if let categoryName = expense.category?.name {
-                            Text(categoryName)
-                                .font(.subheadline)
+                Button {
+                    expenseToEdit = expense
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(expense.amount, format: .number)
+                                .font(.headline)
+                            if let categoryName = expense.category?.name {
+                                Text(categoryName)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(expense.date, format: Date.FormatStyle(date: .numeric))
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        Text(expense.date, format: Date.FormatStyle(date: .numeric))
-                            .font(.caption)
+                        Spacer()
+                        Text(expense.currency)
                             .foregroundStyle(.secondary)
                     }
-                    Spacer()
-                    Text(expense.currency)
-                        .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
             .onDelete(perform: deleteExpenses)
         }
@@ -43,6 +50,16 @@ struct ExpenseListView: View {
                 withAnimation {
                     let newExpense = Expense(amount: amount, currency: currency, date: date, category: category)
                     modelContext.insert(newExpense)
+                }
+            }
+        }
+        .sheet(item: $expenseToEdit) { expense in
+            AddExpenseSheet(expense: expense) { amount, currency, date, category in
+                withAnimation {
+                    expense.amount = amount
+                    expense.currency = currency
+                    expense.date = date
+                    expense.category = category
                 }
             }
         }

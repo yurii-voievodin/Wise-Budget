@@ -6,27 +6,34 @@ struct IncomeListView: View {
     @Query(sort: \Income.date, order: .reverse) private var incomes: [Income]
 
     @State private var isAddingIncome = false
+    @State private var incomeToEdit: Income?
 
     var body: some View {
         List {
             ForEach(incomes) { income in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(income.amount, format: .number)
-                            .font(.headline)
-                        if let categoryName = income.category?.name {
-                            Text(categoryName)
-                                .font(.subheadline)
+                Button {
+                    incomeToEdit = income
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(income.amount, format: .number)
+                                .font(.headline)
+                            if let categoryName = income.category?.name {
+                                Text(categoryName)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(income.date, format: Date.FormatStyle(date: .numeric))
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        Text(income.date, format: Date.FormatStyle(date: .numeric))
-                            .font(.caption)
+                        Spacer()
+                        Text(income.currency)
                             .foregroundStyle(.secondary)
                     }
-                    Spacer()
-                    Text(income.currency)
-                        .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
             .onDelete(perform: deleteIncomes)
         }
@@ -43,6 +50,16 @@ struct IncomeListView: View {
                 withAnimation {
                     let newIncome = Income(amount: amount, currency: currency, date: date, category: category)
                     modelContext.insert(newIncome)
+                }
+            }
+        }
+        .sheet(item: $incomeToEdit) { income in
+            AddIncomeSheet(income: income) { amount, currency, date, category in
+                withAnimation {
+                    income.amount = amount
+                    income.currency = currency
+                    income.date = date
+                    income.category = category
                 }
             }
         }
