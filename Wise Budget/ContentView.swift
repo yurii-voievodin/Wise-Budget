@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedSidebarItem: SidebarItem? = .expenses
+    @State private var selectedSidebarItem: SidebarItem = .expenses
 
     var body: some View {
         NavigationSplitView {
@@ -14,12 +14,8 @@ struct ContentView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            if let selectedSidebarItem {
-                ItemListView(category: selectedSidebarItem.itemCategory)
-                    .id(selectedSidebarItem)
-            } else {
-                Text("Select a category")
-            }
+            ItemListView(category: selectedSidebarItem.itemCategory)
+                .id(selectedSidebarItem)
         }
     }
 }
