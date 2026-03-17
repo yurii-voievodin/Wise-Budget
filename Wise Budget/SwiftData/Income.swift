@@ -1,10 +1,3 @@
-//
-//  Income.swift
-//  Wise Budget
-//
-//  Created by Yurii Voievodin on 17/03/2026.
-//
-
 import Foundation
 import SwiftData
 
