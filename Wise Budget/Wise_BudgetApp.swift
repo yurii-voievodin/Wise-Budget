@@ -1,10 +1,3 @@
-//
-//  Wise_BudgetApp.swift
-//  Wise Budget
-//
-//  Created by Yurii Voievodin on 17/03/2026.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,7 +5,8 @@ import SwiftData
 struct Wise_BudgetApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Expense.self,
+            Income.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

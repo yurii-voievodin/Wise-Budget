@@ -6,13 +6,6 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var itemCategory: ItemCategory {
-        switch self {
-        case .expenses: .expense
-        case .income: .income
-        }
-    }
-
     var systemImage: String {
         switch self {
         case .expenses: "arrow.down.circle"

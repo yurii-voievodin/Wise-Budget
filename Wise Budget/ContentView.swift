@@ -14,13 +14,17 @@ struct ContentView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            ItemListView(category: selectedSidebarItem.itemCategory)
-                .id(selectedSidebarItem)
+            switch selectedSidebarItem {
+            case .expenses:
+                ExpenseListView()
+            case .income:
+                IncomeListView()
+            }
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Expense.self, Income.self], inMemory: true)
 }
