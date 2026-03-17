@@ -5,8 +5,10 @@ struct AddIncomeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \IncomeCategory.name) private var categories: [IncomeCategory]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     @State private var amount: Decimal?
-    @State private var currency: String
+    @State private var currency: String = ""
     @State private var date = Date()
     @State private var selectedCategory: IncomeCategory?
 
@@ -14,8 +16,6 @@ struct AddIncomeSheet: View {
 
     init(onSave: @escaping (Decimal, String, Date, IncomeCategory?) -> Void) {
         self.onSave = onSave
-        let defaultCurrency = Locale.current.currency?.identifier ?? "USD"
-        _currency = State(initialValue: defaultCurrency)
     }
 
     var body: some View {
@@ -56,6 +56,11 @@ struct AddIncomeSheet: View {
             }
         }
         .frame(minWidth: 350, minHeight: 250)
+        .onAppear {
+            if currency.isEmpty {
+                currency = defaultCurrency
+            }
+        }
     }
 }
 

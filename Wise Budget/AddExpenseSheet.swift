@@ -5,8 +5,10 @@ struct AddExpenseSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     @State private var amount: Decimal?
-    @State private var currency: String
+    @State private var currency: String = ""
     @State private var date = Date()
     @State private var selectedCategory: ExpenseCategory?
 
@@ -14,8 +16,6 @@ struct AddExpenseSheet: View {
 
     init(onSave: @escaping (Decimal, String, Date, ExpenseCategory?) -> Void) {
         self.onSave = onSave
-        let defaultCurrency = Locale.current.currency?.identifier ?? "USD"
-        _currency = State(initialValue: defaultCurrency)
     }
 
     var body: some View {
@@ -56,6 +56,11 @@ struct AddExpenseSheet: View {
             }
         }
         .frame(minWidth: 350, minHeight: 250)
+        .onAppear {
+            if currency.isEmpty {
+                currency = defaultCurrency
+            }
+        }
     }
 }
 

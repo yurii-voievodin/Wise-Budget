@@ -19,6 +19,8 @@ struct ContentView: View {
                 ExpenseListView()
             case .income:
                 IncomeListView()
+            case .settings:
+                CategoryManagementView()
             }
         }
     }
@@ -26,5 +28,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Expense.self, Income.self], inMemory: true)
+        .modelContainer(for: [Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self], inMemory: true)
 }
