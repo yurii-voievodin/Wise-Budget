@@ -1,17 +1,254 @@
-//
-//  Wise_BudgetTests.swift
-//  Wise BudgetTests
-//
-//  Created by Yurii Voievodin on 17/03/2026.
-//
-
 import Testing
+import Foundation
+import SwiftData
 @testable import Wise_Budget
 
+@MainActor
 struct Wise_BudgetTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+    private func makeContainer() throws -> ModelContainer {
+        let schema = Schema([Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self])
+        let config = ModelConfiguration(
+            UUID().uuidString,
+            schema: schema,
+            isStoredInMemoryOnly: true
+        )
+        return try ModelContainer(for: schema, configurations: [config])
     }
 
+    private let sampleCSV = """
+    Ідентифікатор,Статус,Напрямок,Створено:,Завершено,Комісія з вихідної суми,Валюта комісії з вихідної суми,Комісія із цільової суми,Валюта комісії із цільової суми,Назва джерела,Вихідна сума (після оплати комісії),Вихідна валюта,Назва цілі,Цільова сума (після оплати комісії),Цільова валюта,Обмінний курс,Призначення,Масові платежі,Хто створив:,Категорія,Примітка
+    CARD-001,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Продукти харчування,
+    CARD-002,COMPLETED,OUT,2026-03-14 12:00:00,2026-03-14 12:00:00,0.00,EUR,,,Yurii,12.84,EUR,Glovo,12.84,EUR,1.0,,,Yurii,Ресторани,
+    TRANSFER-001,COMPLETED,IN,2026-02-27 08:33:53,2026-02-27 08:34:05,,,,,"Deel, Inc.",3754.76,EUR,Yurii,3754.76,EUR,1,Alesium Ltd,,,Зарплата,
+    BALANCE-001,COMPLETED,NEUTRAL,2026-02-27 08:35:58,2026-02-27 08:35:58,0.00,EUR,,,Yurii,2000.00,EUR,Yurii,2000.00,EUR,1.0,,,Yurii,Заощадження,
+    CARD-003,REFUNDED,IN,2026-02-25 00:00:00,2026-02-25 00:00:00,,,,,"Urbo City",0.10,EUR,Yurii,0.10,EUR,1,,,Yurii,Транспорт,
+    CARD-004,REFUNDED,OUT,2026-02-21 09:15:15,2026-02-21 09:15:15,,,,Yurii,0.20,EUR,ePay.bg,0.20,EUR,1,,,Yurii,Магазини,
+    CARD-005,COMPLETED,OUT,2026-03-02 11:34:14,2026-03-02 11:34:14,0.00,EUR,,,Yurii,25.50,EUR,Barbershop,25.50,EUR,1.0,,,Yurii,Засоби гігієни,
+    CARD-006,COMPLETED,OUT,2026-03-04 08:27:42,2026-03-04 08:27:56,0.00,EUR,,,Yurii,235.0,EUR,Landlord,235.0,EUR,1.0,Rent,,,Житло,
+    CARD-007,COMPLETED,OUT,2026-03-16 13:42:50,2026-03-16 13:42:50,0.00,EUR,,,Yurii,13.81,EUR,Vivacom,13.81,EUR,1.0,,,Yurii,Рахунки,
+    CARD-008,COMPLETED,OUT,2026-02-26 11:18:55,2026-02-26 11:20:01,0.92,EUR,,,Yurii,19.08,EUR,Yurii,80.59,PLN,4.22355,transfer,,,Загальне,
+    CARD-009,COMPLETED,OUT,2026-03-15 08:31:16,2026-03-15 08:31:16,0.00,EUR,,,Yurii,7.16,EUR,IKEA,7.16,EUR,1.0,,,Yurii,Магазини,
+    """
+
+    // MARK: - CSV Parsing
+
+    @Test func parseCSVReturnsCorrectCount() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        #expect(transactions.count == 11)
+    }
+
+    @Test func parseCSVEmptyContent() {
+        let transactions = CSVImporter.parseCSV(from: "")
+        #expect(transactions.isEmpty)
+    }
+
+    @Test func parseCSVHeaderOnly() {
+        let headerOnly = "Ідентифікатор,Статус,Напрямок,Створено:,Завершено,Комісія з вихідної суми,Валюта комісії з вихідної суми,Комісія із цільової суми,Валюта комісії із цільової суми,Назва джерела,Вихідна сума (після оплати комісії),Вихідна валюта,Назва цілі,Цільова сума (після оплати комісії),Цільова валюта,Обмінний курс,Призначення,Масові платежі,Хто створив:,Категорія,Примітка"
+        let transactions = CSVImporter.parseCSV(from: headerOnly)
+        #expect(transactions.isEmpty)
+    }
+
+    @Test func parseCSVMalformedRowSkipped() {
+        let csv = """
+        Ідентифікатор,Статус,Напрямок,Створено:,Завершено,Комісія з вихідної суми,Валюта комісії з вихідної суми,Комісія із цільової суми,Валюта комісії із цільової суми,Назва джерела,Вихідна сума (після оплати комісії),Вихідна валюта,Назва цілі,Цільова сума (після оплати комісії),Цільова валюта,Обмінний курс,Призначення,Масові платежі,Хто створив:,Категорія,Примітка
+        too,few,fields
+        CARD-001,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Продукти харчування,
+        """
+        let transactions = CSVImporter.parseCSV(from: csv)
+        #expect(transactions.count == 1)
+    }
+
+    // MARK: - Direction Filtering
+
+    @Test func outCompletedBecomesExpense() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let outCompleted = transactions.filter { $0.direction == "OUT" && $0.status == "COMPLETED" }
+        #expect(outCompleted.count == 7)
+    }
+
+    @Test func inCompletedBecomesIncome() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let inCompleted = transactions.filter { $0.direction == "IN" && $0.status == "COMPLETED" }
+        #expect(inCompleted.count == 1)
+    }
+
+    @Test func neutralTransactionsParsed() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let neutral = transactions.filter { $0.direction == "NEUTRAL" }
+        #expect(neutral.count == 1)
+    }
+
+    @Test func refundedTransactionsParsed() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let refunded = transactions.filter { $0.status == "REFUNDED" }
+        #expect(refunded.count == 2)
+    }
+
+    // MARK: - Category Mapping
+
+    @Test func allCategoryMappingsExist() {
+        let expectedMappings: [String: String] = [
+            "Продукти харчування": "Groceries",
+            "Ресторани": "Cafes",
+            "Рахунки": "Utilities",
+            "Транспорт": "Auto",
+            "Магазини": "Shopping",
+            "Житло": "Home",
+            "Засоби гігієни": "Personal Items",
+            "Зарплата": "Salary",
+            "Заощадження": "Savings",
+            "Загальне": "Other",
+        ]
+        for (ukrainian, english) in expectedMappings {
+            #expect(CSVImporter.categoryMapping[ukrainian] == english)
+        }
+    }
+
+    @Test func categoryMappingAppliedDuringParsing() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let groceries = transactions.first { $0.categoryName == "Groceries" }
+        #expect(groceries != nil)
+        let cafes = transactions.first { $0.categoryName == "Cafes" }
+        #expect(cafes != nil)
+        let salary = transactions.first { $0.categoryName == "Salary" }
+        #expect(salary != nil)
+    }
+
+    // MARK: - Amount and Currency Parsing
+
+    @Test func expenseAmountParsedCorrectly() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let first = transactions.first { $0.categoryName == "Groceries" }
+        #expect(first?.amount == Decimal(string: "15.98"))
+        #expect(first?.currency == "EUR")
+    }
+
+    @Test func incomeUsesTargetAmount() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let income = transactions.first { $0.direction == "IN" && $0.status == "COMPLETED" }
+        #expect(income?.amount == Decimal(string: "3754.76"))
+        #expect(income?.currency == "EUR")
+    }
+
+    @Test func differentCurrencyParsed() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let pln = transactions.first { $0.categoryName == "Other" && $0.direction == "OUT" }
+        #expect(pln?.amount == Decimal(string: "19.08"))
+        #expect(pln?.currency == "EUR")
+    }
+
+    // MARK: - Date Parsing
+
+    @Test func dateParsedCorrectly() {
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let first = transactions.first { $0.categoryName == "Groceries" }
+        let calendar = Calendar(identifier: .gregorian)
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: first!.date)
+        #expect(components.year == 2026)
+        #expect(components.month == 3)
+        #expect(components.day == 15)
+        #expect(components.hour == 10)
+        #expect(components.minute == 0)
+        #expect(components.second == 0)
+    }
+
+    // MARK: - Import into ModelContext
+
+    @Test func importCreatesExpensesAndIncomes() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let result = try CSVImporter.importTransactions(transactions, into: context)
+
+        #expect(result.expensesImported == 7)
+        #expect(result.incomesImported == 1)
+        #expect(result.skipped == 3)
+    }
+
+    @Test func importSkipsNeutralAndRefunded() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        let result = try CSVImporter.importTransactions(transactions, into: context)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        let incomes = try context.fetch(FetchDescriptor<Income>())
+        #expect(expenses.count == 7)
+        #expect(incomes.count == 1)
+        #expect(result.skipped == 3)
+    }
+
+    @Test func importReusesExistingCategories() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let existing = ExpenseCategory(name: "Groceries")
+        context.insert(existing)
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        _ = try CSVImporter.importTransactions(transactions, into: context)
+
+        let categories = try context.fetch(FetchDescriptor<ExpenseCategory>())
+        let groceriesCategories = categories.filter { $0.name == "Groceries" }
+        #expect(groceriesCategories.count == 1)
+    }
+
+    @Test func importCreatesNewCategoriesWhenMissing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        _ = try CSVImporter.importTransactions(transactions, into: context)
+
+        let expenseCategories = try context.fetch(FetchDescriptor<ExpenseCategory>())
+        let names = Set(expenseCategories.map(\.name))
+        #expect(names.contains("Shopping"))
+    }
+
+    @Test func importedExpenseHasCorrectCategory() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        _ = try CSVImporter.importTransactions(transactions, into: context)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        let homeExpense = expenses.first { $0.category?.name == "Home" }
+        #expect(homeExpense != nil)
+        #expect(homeExpense?.amount == Decimal(string: "235.0"))
+    }
+
+    @Test func importedIncomeHasCorrectCategory() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = CSVImporter.parseCSV(from: sampleCSV)
+        _ = try CSVImporter.importTransactions(transactions, into: context)
+
+        let incomes = try context.fetch(FetchDescriptor<Income>())
+        #expect(incomes.count == 1)
+        #expect(incomes.first?.category?.name == "Salary")
+        #expect(incomes.first?.amount == Decimal(string: "3754.76"))
+    }
+
+    // MARK: - CSV Line Parser
+
+    @Test func parseCSVLineHandlesQuotedFields() {
+        let line = #""CARD-001",COMPLETED,OUT,"2026-03-15 10:00:00""#
+        let fields = CSVImporter.parseCSVLine(line)
+        #expect(fields.count == 4)
+        #expect(fields[0] == "CARD-001")
+        #expect(fields[3] == "2026-03-15 10:00:00")
+    }
+
+    @Test func parseCSVLineHandlesEmptyFields() {
+        let line = "a,,b,"
+        let fields = CSVImporter.parseCSVLine(line)
+        #expect(fields.count == 4)
+        #expect(fields[1] == "")
+        #expect(fields[3] == "")
+    }
 }
