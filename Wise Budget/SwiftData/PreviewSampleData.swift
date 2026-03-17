@@ -5,6 +5,7 @@ struct PreviewSampleData {
     static var container: ModelContainer {
         let container = try! ModelContainer(
             for: Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self,
+            BudgetPlan.self, BudgetPlanItem.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = container.mainContext
@@ -53,6 +54,20 @@ struct PreviewSampleData {
             Income(amount: 1200.00, currency: "USD", date: date(year: 2026, month: 2, day: 14), category: freelance),
         ]
         for income in incomes { context.insert(income) }
+
+        // Budget plan for March 2026
+        let marchPlan = BudgetPlan(year: 2026, month: 3)
+        context.insert(marchPlan)
+        let planItems: [(ExpenseCategory, Decimal)] = [
+            (groceries, 200),
+            (transport, 100),
+            (entertainment, 150),
+            (utilities, 120),
+        ]
+        for (cat, amount) in planItems {
+            let item = BudgetPlanItem(plannedAmount: amount, plan: marchPlan, category: cat)
+            context.insert(item)
+        }
 
         return container
     }

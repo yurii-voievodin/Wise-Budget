@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedSidebarItem: SidebarItem = .expenses
+    @State private var selectedSidebarItem: SidebarItem = .budgetPlan
 
     var body: some View {
         NavigationSplitView {
@@ -15,6 +15,8 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
             switch selectedSidebarItem {
+            case .budgetPlan:
+                BudgetPlanView()
             case .expenses:
                 ExpenseListView()
             case .income:

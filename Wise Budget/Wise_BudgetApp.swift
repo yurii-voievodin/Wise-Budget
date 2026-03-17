@@ -11,6 +11,8 @@ struct Wise_BudgetApp: App {
             Income.self,
             ExpenseCategory.self,
             IncomeCategory.self,
+            BudgetPlan.self,
+            BudgetPlanItem.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
