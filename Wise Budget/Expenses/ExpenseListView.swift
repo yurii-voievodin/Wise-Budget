@@ -8,34 +8,52 @@ struct ExpenseListView: View {
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
 
+    private var groupedExpenses: [(date: Date, expenses: [Expense])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: expenses) { expense in
+            calendar.startOfDay(for: expense.date)
+        }
+        return grouped.sorted { $0.key > $1.key }
+            .map { (date: $0.key, expenses: $0.value) }
+    }
+
     var body: some View {
         List {
-            ForEach(expenses) { expense in
-                Button {
-                    expenseToEdit = expense
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(expense.amount, format: .number)
-                                .font(.headline)
-                            if let categoryName = expense.category?.name {
-                                Text(categoryName)
-                                    .font(.subheadline)
+            ForEach(groupedExpenses, id: \.date) { group in
+                Section {
+                    ForEach(group.expenses) { expense in
+                        Button {
+                            expenseToEdit = expense
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(expense.amount, format: .number)
+                                        .font(.headline)
+                                    if let categoryName = expense.category?.name {
+                                        Text(categoryName)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Text(expense.currency)
                                     .foregroundStyle(.secondary)
                             }
-                            Text(expense.date, format: Date.FormatStyle(date: .numeric))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            .contentShape(Rectangle())
                         }
-                        Spacer()
-                        Text(expense.currency)
-                            .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
                     }
-                    .contentShape(Rectangle())
+                    .onDelete { offsets in
+                        deleteExpenses(from: group.expenses, at: offsets)
+                    }
+                } header: {
+                    HStack {
+                        Text(group.date, format: Date.FormatStyle(date: .long))
+                        Spacer()
+                        Text(dayTotal(for: group.expenses), format: .number)
+                    }
                 }
-                .buttonStyle(.plain)
             }
-            .onDelete(perform: deleteExpenses)
         }
         .navigationTitle("Expenses")
         .toolbar {
@@ -65,10 +83,14 @@ struct ExpenseListView: View {
         }
     }
 
-    private func deleteExpenses(offsets: IndexSet) {
+    private func dayTotal(for expenses: [Expense]) -> Decimal {
+        expenses.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+
+    private func deleteExpenses(from groupExpenses: [Expense], at offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(expenses[index])
+                modelContext.delete(groupExpenses[index])
             }
         }
     }
