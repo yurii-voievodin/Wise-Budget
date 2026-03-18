@@ -31,26 +31,31 @@ struct EditBudgetPlanSheet: View {
 
             Divider()
 
-            List {
-                ForEach(categories) { category in
-                    HStack {
-                        Text(category.name)
-                            .frame(width: 140, alignment: .leading)
-                        TextField(
-                            "0",
-                            value: binding(for: category),
-                            format: .number
-                        )
-                        .textFieldStyle(.roundedBorder)
-                        Text(currencyLabel)
-                            .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(categories) { category in
+                        HStack {
+                            Text(category.name)
+                                .frame(width: 140, alignment: .leading)
+                            TextField(
+                                "0",
+                                value: binding(for: category),
+                                format: .number
+                            )
+                            .textFieldStyle(.roundedBorder)
+                            Text(currencyLabel)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
+                        Divider()
                     }
-                }
 
-                Section {
                     Button("Reset Plan", role: .destructive) {
                         showResetConfirmation = true
                     }
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                 }
             }
         }
@@ -107,3 +112,12 @@ struct EditBudgetPlanSheet: View {
         dismiss()
     }
 }
+#Preview {
+    let container = PreviewSampleData.container
+    let context = container.mainContext
+    let plan = try! context.fetch(FetchDescriptor<BudgetPlan>()).first!
+    let categories = try! context.fetch(FetchDescriptor<ExpenseCategory>(sortBy: [SortDescriptor(\.name)])) 
+    return EditBudgetPlanSheet(plan: plan, categories: categories)
+        .modelContainer(container)
+}
+
