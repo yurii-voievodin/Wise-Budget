@@ -7,16 +7,15 @@ struct IncomeQueryListView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
-    let foreignOnly: Bool
+    let filter: MonthFilter
     @Binding var incomeToEdit: Income?
 
-    init(year: Int, month: Int, foreignOnly: Bool, incomeToEdit: Binding<Income?>) {
-        self.foreignOnly = foreignOnly
+    init(filter: MonthFilter, incomeToEdit: Binding<Income?>) {
+        self.filter = filter
         self._incomeToEdit = incomeToEdit
 
-        let calendar = Calendar.current
-        let startDate = calendar.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
-        let endDate = calendar.date(byAdding: .month, value: 1, to: startDate) ?? Date()
+        let startDate = filter.startOfMonth
+        let endDate = filter.startOfNextMonth
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
@@ -28,7 +27,7 @@ struct IncomeQueryListView: View {
     }
 
     private var filteredIncomes: [Income] {
-        guard foreignOnly else { return incomes }
+        guard filter.foreignOnly else { return incomes }
         return incomes.filterForeignCurrency(defaultCurrency: defaultCurrency)
     }
 

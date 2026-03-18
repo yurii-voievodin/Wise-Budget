@@ -7,22 +7,18 @@ struct IncomeListView: View {
 
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
-    @State private var year: Int = Calendar.current.component(.year, from: Date())
-    @State private var month: Int = Calendar.current.component(.month, from: Date())
-    @State private var foreignOnly = false
+    @State private var filter: MonthFilter = .currentMonth()
 
     var body: some View {
         IncomeQueryListView(
-            year: year,
-            month: month,
-            foreignOnly: foreignOnly,
+            filter: filter,
             incomeToEdit: $incomeToEdit
         )
-        .id(year * 100 + month)
+        .id(filter)
         .navigationTitle("")
         .toolbar {
-            MonthNavigationToolbar(year: $year, month: $month)
-            ForeignCurrencyFilterToolbar(foreignOnly: $foreignOnly)
+            MonthNavigationToolbar(year: $filter.year, month: $filter.month)
+            ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
             ToolbarItem {
                 Button(action: { isAddingIncome = true }) {
                     Label("Add Income", systemImage: "plus")

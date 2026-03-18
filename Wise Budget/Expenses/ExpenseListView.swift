@@ -3,7 +3,7 @@ import SwiftData
 
 struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Binding var expenseFilter: ExpenseFilter
+    @Binding var expenseFilter: MonthFilter
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?

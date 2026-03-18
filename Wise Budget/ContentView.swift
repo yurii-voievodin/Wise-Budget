@@ -3,7 +3,7 @@ import SwiftData
 
 struct ContentView: View {
     @State private var selectedSidebarItem: SidebarItem = .budgetPlan
-    @State private var expenseFilter: ExpenseFilter = .currentMonth()
+    @State private var expenseFilter: MonthFilter = .currentMonth()
 
     var body: some View {
         NavigationSplitView {

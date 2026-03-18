@@ -1,20 +1,20 @@
 import Foundation
 
-struct ExpenseFilter: Hashable {
+struct MonthFilter: Hashable {
     var year: Int
     var month: Int
     var foreignOnly: Bool = false
 
-    static func currentMonth() -> ExpenseFilter {
+    static func currentMonth() -> MonthFilter {
         let comps = Calendar.current.dateComponents([.year, .month], from: Date())
-        return ExpenseFilter(year: comps.year ?? 2025, month: comps.month ?? 1)
+        return MonthFilter(year: comps.year ?? 2025, month: comps.month ?? 1)
     }
 
-    func moved(by delta: Int) -> ExpenseFilter {
+    func moved(by delta: Int) -> MonthFilter {
         let comps = DateComponents(year: year, month: month + delta)
         let date = Calendar.current.date(from: comps) ?? Date()
         let newComps = Calendar.current.dateComponents([.year, .month], from: date)
-        return ExpenseFilter(year: newComps.year ?? year, month: newComps.month ?? month)
+        return MonthFilter(year: newComps.year ?? year, month: newComps.month ?? month)
     }
 
     var startOfMonth: Date {

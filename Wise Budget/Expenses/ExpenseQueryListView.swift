@@ -7,10 +7,10 @@ struct ExpenseQueryListView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
-    let filter: ExpenseFilter
+    let filter: MonthFilter
     @Binding var expenseToEdit: Expense?
 
-    init(filter: ExpenseFilter, expenseToEdit: Binding<Expense?>) {
+    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>) {
         self.filter = filter
         self._expenseToEdit = expenseToEdit
 

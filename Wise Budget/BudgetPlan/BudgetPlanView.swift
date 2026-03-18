@@ -10,16 +10,16 @@ struct BudgetPlanView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var selectedSidebarItem: SidebarItem
-    @Binding var expenseFilter: ExpenseFilter
+    @Binding var expenseFilter: MonthFilter
 
     @State private var displayedYear: Int
     @State private var displayedMonth: Int
     @State private var resetAction: (() -> Void)?
 
-    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<ExpenseFilter>) {
+    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<MonthFilter>) {
         _selectedSidebarItem = selectedSidebarItem
         _expenseFilter = expenseFilter
-        let current = ExpenseFilter.currentMonth()
+        let current = MonthFilter.currentMonth()
         _displayedYear = State(initialValue: current.year)
         _displayedMonth = State(initialValue: current.month)
     }
@@ -28,8 +28,8 @@ struct BudgetPlanView: View {
         allPlans.first { $0.year == displayedYear && $0.month == displayedMonth }
     }
 
-    private var displayedFilter: ExpenseFilter {
-        ExpenseFilter(year: displayedYear, month: displayedMonth)
+    private var displayedFilter: MonthFilter {
+        MonthFilter(year: displayedYear, month: displayedMonth)
     }
 
     private var monthStart: Date {
@@ -138,7 +138,7 @@ struct BudgetPlanView: View {
                 }
                 if unconvertibleExpenseCount > 0 {
                     Button {
-                        expenseFilter = ExpenseFilter(year: displayedYear, month: displayedMonth, foreignOnly: true)
+                        expenseFilter = MonthFilter(year: displayedYear, month: displayedMonth, foreignOnly: true)
                         selectedSidebarItem = .expenses
                     } label: {
                         Label(
@@ -228,7 +228,7 @@ struct BudgetPlanView: View {
     }
 
     private func moveMonth(by delta: Int) {
-        let moved = ExpenseFilter(year: displayedYear, month: displayedMonth).moved(by: delta)
+        let moved = MonthFilter(year: displayedYear, month: displayedMonth).moved(by: delta)
         displayedYear = moved.year
         displayedMonth = moved.month
     }
@@ -271,7 +271,7 @@ struct BudgetProgressBar: View {
     NavigationSplitView {
         Text("Sidebar")
     } detail: {
-        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(ExpenseFilter(year: 2025, month: 1)))
+        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(MonthFilter(year: 2025, month: 1)))
     }
     .modelContainer(PreviewSampleData.container)
 }
