@@ -7,20 +7,36 @@ struct ExpenseListView: View {
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
+    @State private var selectedTab: ExpenseTab = .expenses
+
+    enum ExpenseTab: Hashable {
+        case expenses
+        case statistics
+    }
 
     var body: some View {
-        ExpenseQueryListView(
-            filter: filter,
-            expenseToEdit: $expenseToEdit
-        )
-        .id(filter)
+        TabView(selection: $selectedTab) {
+            Tab("Expenses", systemImage: "list.bullet", value: .expenses) {
+                ExpenseQueryListView(
+                    filter: filter,
+                    expenseToEdit: $expenseToEdit
+                )
+                .id(filter)
+            }
+            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
+                ExpenseStatisticsView(filter: filter)
+                    .id(filter)
+            }
+        }
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
-            ToolbarItem {
-                Button(action: { isAddingExpense = true }) {
-                    Label("Add Expense", systemImage: "plus")
+            if selectedTab == .expenses {
+                ToolbarItem {
+                    Button(action: { isAddingExpense = true }) {
+                        Label("Add Expense", systemImage: "plus")
+                    }
                 }
             }
         }
