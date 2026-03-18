@@ -242,6 +242,57 @@ struct MonobankCSVImporterTests {
         #expect(secondResult.duplicatesSkipped == 10)
     }
 
+    // MARK: - Base Currency Amount
+
+    @Test func uahTransactionHasNoBaseCurrency() {
+        let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
+        let uah = transactions.first { $0.targetName == "LIQPAY*TOV TREND SET" }
+        #expect(uah?.baseCurrencyAmount == nil)
+        #expect(uah?.baseCurrency == nil)
+    }
+
+    @Test func foreignCurrencyHasBaseCurrencyUAH() {
+        let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
+        let claude = transactions.first { $0.targetName == "Claude" }
+        #expect(claude?.baseCurrencyAmount == Decimal(string: "4800.28"))
+        #expect(claude?.baseCurrency == "UAH")
+    }
+
+    @Test func eurTransactionHasBaseCurrencyUAH() {
+        let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
+        let glovo = transactions.first { $0.targetName == "Glovo" }
+        #expect(glovo?.baseCurrencyAmount == Decimal(string: "676.58"))
+        #expect(glovo?.baseCurrency == "UAH")
+    }
+
+    @Test func importedForeignExpenseHasBaseCurrency() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
+        _ = try MonobankCSVImporter.importTransactions(transactions, into: context)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        let claude = expenses.first { $0.descriptionText == "Claude" }
+        #expect(claude?.amount == Decimal(string: "109.0"))
+        #expect(claude?.currency == "USD")
+        #expect(claude?.baseCurrencyAmount == Decimal(string: "4800.28"))
+        #expect(claude?.baseCurrency == "UAH")
+    }
+
+    @Test func importedUahExpenseHasNoBaseCurrency() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
+        _ = try MonobankCSVImporter.importTransactions(transactions, into: context)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        let liqpay = expenses.first { $0.descriptionText == "LIQPAY*TOV TREND SET" }
+        #expect(liqpay?.baseCurrencyAmount == nil)
+        #expect(liqpay?.baseCurrency == nil)
+    }
+
     @Test func sameDayDifferentAmountNotDuplicate() throws {
         let container = try makeContainer()
         let context = container.mainContext

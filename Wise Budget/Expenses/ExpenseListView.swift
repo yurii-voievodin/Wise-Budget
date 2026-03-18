@@ -26,28 +26,34 @@ struct ExpenseListView: View {
                             expenseToEdit = expense
                         } label: {
                             HStack {
-                                VStack(alignment: .leading) {
-                                    Text(expense.amount, format: .number)
-                                        .font(.headline)
-                                    if let categoryName = expense.category?.name {
-                                        Text(categoryName)
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                VStack(alignment: .leading, spacing: 2) {
                                     if let desc = expense.descriptionText {
                                         Text(desc)
+                                            .font(.body)
+                                            .fontWeight(.medium)
+                                    }
+                                    if let categoryName = expense.category?.name {
+                                        Text(categoryName)
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(.tertiary)
                                     }
                                     if let dest = expense.destination {
                                         Text(dest)
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(.tertiary)
                                     }
                                 }
                                 Spacer()
-                                Text(expense.currency)
-                                    .foregroundStyle(.secondary)
+                                VStack(alignment: .trailing) {
+                                    Text("\(expense.amount, format: .number) \(expense.currency)")
+                                        .font(.headline)
+                                    if let baseAmount = expense.baseCurrencyAmount,
+                                       let baseCur = expense.baseCurrency {
+                                        Text("\(baseAmount, format: .number) \(baseCur)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                             .contentShape(Rectangle())
                         }

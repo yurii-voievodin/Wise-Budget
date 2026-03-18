@@ -17,6 +17,21 @@ struct CSVTransaction {
     let categoryName: String
     let targetName: String?
     let destination: String?
+    let baseCurrencyAmount: Decimal?
+    let baseCurrency: String?
+
+    init(direction: String, status: String, date: Date, amount: Decimal, currency: String, categoryName: String, targetName: String?, destination: String?, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil) {
+        self.direction = direction
+        self.status = status
+        self.date = date
+        self.amount = amount
+        self.currency = currency
+        self.categoryName = categoryName
+        self.targetName = targetName
+        self.destination = destination
+        self.baseCurrencyAmount = baseCurrencyAmount
+        self.baseCurrency = baseCurrency
+    }
 }
 
 final class CSVImporter {
@@ -201,7 +216,9 @@ final class CSVImporter {
                     date: transaction.date,
                     category: category,
                     descriptionText: transaction.targetName,
-                    destination: transaction.destination
+                    destination: transaction.destination,
+                    baseCurrencyAmount: transaction.baseCurrencyAmount,
+                    baseCurrency: transaction.baseCurrency
                 )
                 context.insert(expense)
                 existingKeys.insert(key)
@@ -223,7 +240,9 @@ final class CSVImporter {
                     currency: transaction.currency,
                     date: transaction.date,
                     category: category,
-                    descriptionText: transaction.targetName
+                    descriptionText: transaction.targetName,
+                    baseCurrencyAmount: transaction.baseCurrencyAmount,
+                    baseCurrency: transaction.baseCurrency
                 )
                 context.insert(income)
                 existingKeys.insert(key)

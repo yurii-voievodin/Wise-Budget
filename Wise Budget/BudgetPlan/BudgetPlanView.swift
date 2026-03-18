@@ -32,10 +32,14 @@ struct BudgetPlanView: View {
         allExpenses.filter { $0.date >= monthStart && $0.date < nextMonthStart }
     }
 
+    private func budgetAmount(for expense: Expense) -> Decimal {
+        expense.baseCurrencyAmount ?? expense.amount
+    }
+
     private func actualSpending(for category: ExpenseCategory) -> Decimal {
         monthExpenses
             .filter { $0.category?.persistentModelID == category.persistentModelID }
-            .reduce(Decimal.zero) { $0 + $1.amount }
+            .reduce(Decimal.zero) { $0 + budgetAmount(for: $1) }
     }
 
     private func planItem(for category: ExpenseCategory) -> BudgetPlanItem? {
@@ -49,7 +53,7 @@ struct BudgetPlanView: View {
     }
 
     private var totalActual: Decimal {
-        monthExpenses.reduce(Decimal.zero) { $0 + $1.amount }
+        monthExpenses.reduce(Decimal.zero) { $0 + budgetAmount(for: $1) }
     }
 
     var body: some View {

@@ -148,10 +148,16 @@ final class MonobankCSVImporter {
             }
 
             let amount: Decimal
+            let baseCurrencyAmount: Decimal?
+            let baseCurrency: String?
             if currency == "UAH" {
                 amount = abs(cardAmount)
+                baseCurrencyAmount = nil
+                baseCurrency = nil
             } else {
                 amount = abs(operationAmount)
+                baseCurrencyAmount = abs(cardAmount)
+                baseCurrency = "UAH"
             }
 
             let categoryName = categoryName(forMCC: mcc)
@@ -164,7 +170,9 @@ final class MonobankCSVImporter {
                 currency: currency,
                 categoryName: categoryName,
                 targetName: description,
-                destination: nil
+                destination: nil,
+                baseCurrencyAmount: baseCurrencyAmount,
+                baseCurrency: baseCurrency
             ))
         }
 

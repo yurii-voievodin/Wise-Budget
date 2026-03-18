@@ -26,23 +26,29 @@ struct IncomeListView: View {
                             incomeToEdit = income
                         } label: {
                             HStack {
-                                VStack(alignment: .leading) {
-                                    Text(income.amount, format: .number)
-                                        .font(.headline)
-                                    if let categoryName = income.category?.name {
-                                        Text(categoryName)
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                VStack(alignment: .leading, spacing: 2) {
                                     if let desc = income.descriptionText {
                                         Text(desc)
+                                            .font(.body)
+                                            .fontWeight(.medium)
+                                    }
+                                    if let categoryName = income.category?.name {
+                                        Text(categoryName)
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(.tertiary)
                                     }
                                 }
                                 Spacer()
-                                Text(income.currency)
-                                    .foregroundStyle(.secondary)
+                                VStack(alignment: .trailing) {
+                                    Text("\(income.amount, format: .number) \(income.currency)")
+                                        .font(.headline)
+                                    if let baseAmount = income.baseCurrencyAmount,
+                                       let baseCur = income.baseCurrency {
+                                        Text("\(baseAmount, format: .number) \(baseCur)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                             .contentShape(Rectangle())
                         }
