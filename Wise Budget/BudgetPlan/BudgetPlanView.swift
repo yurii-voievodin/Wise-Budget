@@ -138,7 +138,7 @@ struct BudgetPlanView: View {
                 }
                 if unconvertibleExpenseCount > 0 {
                     Button {
-                        expenseFilter = ExpenseFilter(year: displayedYear, month: displayedMonth, foreignOnly: true, planCurrency: planCurrency)
+                        expenseFilter = ExpenseFilter(year: displayedYear, month: displayedMonth, foreignOnly: true)
                         selectedSidebarItem = .expenses
                     } label: {
                         Label(

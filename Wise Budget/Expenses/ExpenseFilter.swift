@@ -4,7 +4,6 @@ struct ExpenseFilter: Hashable {
     var year: Int
     var month: Int
     var foreignOnly: Bool = false
-    var planCurrency: String? = nil
 
     static func currentMonth() -> ExpenseFilter {
         let comps = Calendar.current.dateComponents([.year, .month], from: Date())

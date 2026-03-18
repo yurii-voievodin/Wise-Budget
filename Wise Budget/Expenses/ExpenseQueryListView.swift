@@ -26,14 +26,14 @@ struct ExpenseQueryListView: View {
         )
     }
 
-    /// Applies foreignOnly filtering in-memory (only when drilling down from budget plan)
+    /// Applies foreignOnly filtering in-memory, showing only expenses not in the default currency
     private var filteredExpenses: [Expense] {
-        guard filter.foreignOnly, let planCurrency = filter.planCurrency else {
+        guard filter.foreignOnly else {
             return expenses
         }
         return expenses.filter { expense in
-            if expense.currency == planCurrency { return false }
-            if expense.baseCurrency == planCurrency && expense.baseCurrencyAmount != nil { return false }
+            if expense.currency == defaultCurrency { return false }
+            if expense.baseCurrency == defaultCurrency && expense.baseCurrencyAmount != nil { return false }
             return true
         }
     }

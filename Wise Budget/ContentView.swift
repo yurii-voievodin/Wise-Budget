@@ -29,7 +29,6 @@ struct ContentView: View {
         .onChange(of: selectedSidebarItem) { _, newValue in
             if newValue != .expenses {
                 expenseFilter.foreignOnly = false
-                expenseFilter.planCurrency = nil
             }
         }
     }

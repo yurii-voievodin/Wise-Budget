@@ -32,22 +32,30 @@ struct ExpenseListView: View {
                     } label: {
                         Image(systemName: "chevron.right")
                     }
-                    if expenseFilter.foreignOnly {
-                        HStack(spacing: 4) {
-                            Text("Foreign currency")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                            Button {
-                                expenseFilter.foreignOnly = false
-                                expenseFilter.planCurrency = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
+                }
+            }
+            ToolbarItem {
+                Menu {
+                    Button {
+                        expenseFilter.foreignOnly = false
+                    } label: {
+                        if !expenseFilter.foreignOnly {
+                            Label("None", systemImage: "checkmark")
+                        } else {
+                            Text("None")
                         }
                     }
+                    Button {
+                        expenseFilter.foreignOnly = true
+                    } label: {
+                        if expenseFilter.foreignOnly {
+                            Label("Foreign currency", systemImage: "checkmark")
+                        } else {
+                            Text("Foreign currency")
+                        }
+                    }
+                } label: {
+                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle\(expenseFilter.foreignOnly ? ".fill" : "")")
                 }
             }
             ToolbarItem {
