@@ -54,6 +54,9 @@ struct Wise_BudgetApp: App {
                 Button("Import from WISE CSV...") {
                     importCSV()
                 }
+                Button("Import from Monobank CSV...") {
+                    importMonobankCSV()
+                }
             }
         }
     }
@@ -70,6 +73,29 @@ struct Wise_BudgetApp: App {
             let transactions = try CSVImporter.parseCSV(from: url)
             let context = sharedModelContainer.mainContext
             let result = try CSVImporter.importTransactions(transactions, into: context)
+            try context.save()
+            importResult = result
+            importError = nil
+            showingImportAlert = true
+        } catch {
+            importResult = nil
+            importError = error.localizedDescription
+            showingImportAlert = true
+        }
+    }
+
+    private func importMonobankCSV() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let transactions = try MonobankCSVImporter.parseCSV(from: url)
+            let context = sharedModelContainer.mainContext
+            let result = try MonobankCSVImporter.importTransactions(transactions, into: context)
             try context.save()
             importResult = result
             importError = nil
