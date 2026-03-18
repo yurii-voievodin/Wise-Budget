@@ -11,6 +11,7 @@ struct ExpenseListView: View {
 
     enum ExpenseTab: Hashable {
         case expenses
+        case chart
         case statistics
     }
 
@@ -23,8 +24,12 @@ struct ExpenseListView: View {
                 )
                 .id(filter)
             }
-            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
+            Tab("Statistics", systemImage: "tablecells", value: .statistics) {
                 ExpenseStatisticsView(filter: filter)
+                    .id(filter)
+            }
+            Tab("Chart", systemImage: "chart.pie", value: .chart) {
+                ExpenseCategoryChartView(filter: filter)
                     .id(filter)
             }
         }
