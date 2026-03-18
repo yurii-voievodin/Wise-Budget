@@ -3,20 +3,13 @@ import SwiftData
 
 struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Binding var expenseFilter: ExpenseFilter?
+    @Binding var expenseFilter: ExpenseFilter
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
 
-    private var filterTitle: String? {
-        guard let filter = expenseFilter else { return nil }
-        let comps = DateComponents(year: filter.year, month: filter.month, day: 1)
-        guard let date = Calendar.current.date(from: comps) else { return nil }
-        let monthLabel = date.formatted(.dateTime.month(.wide).year())
-        if filter.foreignOnly {
-            return "Foreign currency — \(monthLabel)"
-        }
-        return monthLabel
+    private var monthTitle: String {
+        expenseFilter.startOfMonth.formatted(.dateTime.month(.wide).year())
     }
 
     var body: some View {
@@ -25,22 +18,35 @@ struct ExpenseListView: View {
             expenseToEdit: $expenseToEdit
         )
         .id(expenseFilter)
-        .navigationTitle("Expenses")
+        .navigationTitle(monthTitle)
         .toolbar {
-            if let filterTitle {
-                ToolbarItem(placement: .navigation) {
-                    HStack(spacing: 4) {
-                        Text(filterTitle)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Button {
-                            expenseFilter = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
+            ToolbarItem(placement: .navigation) {
+                HStack(spacing: 4) {
+                    Button {
+                        moveMonth(by: -1)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    Button {
+                        moveMonth(by: 1)
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    if expenseFilter.foreignOnly {
+                        HStack(spacing: 4) {
+                            Text("Foreign currency")
+                                .font(.callout)
                                 .foregroundStyle(.secondary)
+                            Button {
+                                expenseFilter.foreignOnly = false
+                                expenseFilter.planCurrency = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -72,6 +78,10 @@ struct ExpenseListView: View {
                 }
             }
         }
+    }
+
+    private func moveMonth(by delta: Int) {
+        expenseFilter = expenseFilter.moved(by: delta)
     }
 }
 

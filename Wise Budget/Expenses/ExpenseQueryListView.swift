@@ -7,35 +7,28 @@ struct ExpenseQueryListView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
-    let filter: ExpenseFilter?
+    let filter: ExpenseFilter
     @Binding var expenseToEdit: Expense?
 
-    init(filter: ExpenseFilter?, expenseToEdit: Binding<Expense?>) {
+    init(filter: ExpenseFilter, expenseToEdit: Binding<Expense?>) {
         self.filter = filter
         self._expenseToEdit = expenseToEdit
 
-        if let filter {
-            var calendar = Calendar.current
-            calendar.timeZone = TimeZone.current
-            let startComponents = DateComponents(year: filter.year, month: filter.month, day: 1)
-            let startDate = calendar.date(from: startComponents)!
-            let endDate = calendar.date(byAdding: .month, value: 1, to: startDate)!
+        let startDate = filter.startOfMonth
+        let endDate = filter.startOfNextMonth
 
-            self._expenses = Query(
-                filter: #Predicate<Expense> { expense in
-                    expense.date >= startDate && expense.date < endDate
-                },
-                sort: \.date,
-                order: .reverse
-            )
-        } else {
-            self._expenses = Query(sort: \.date, order: .reverse)
-        }
+        self._expenses = Query(
+            filter: #Predicate<Expense> { expense in
+                expense.date >= startDate && expense.date < endDate
+            },
+            sort: \.date,
+            order: .reverse
+        )
     }
 
     /// Applies foreignOnly filtering in-memory (only when drilling down from budget plan)
     private var filteredExpenses: [Expense] {
-        guard let filter, filter.foreignOnly, let planCurrency = filter.planCurrency else {
+        guard filter.foreignOnly, let planCurrency = filter.planCurrency else {
             return expenses
         }
         return expenses.filter { expense in

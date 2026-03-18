@@ -10,30 +10,34 @@ struct BudgetPlanView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var selectedSidebarItem: SidebarItem
-    @Binding var expenseFilter: ExpenseFilter?
+    @Binding var expenseFilter: ExpenseFilter
 
     @State private var displayedYear: Int
     @State private var displayedMonth: Int
     @State private var showResetConfirmation = false
 
-    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<ExpenseFilter?>) {
+    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<ExpenseFilter>) {
         _selectedSidebarItem = selectedSidebarItem
         _expenseFilter = expenseFilter
-        let now = Calendar.current.dateComponents([.year, .month], from: Date())
-        _displayedYear = State(initialValue: now.year!)
-        _displayedMonth = State(initialValue: now.month!)
+        let current = ExpenseFilter.currentMonth()
+        _displayedYear = State(initialValue: current.year)
+        _displayedMonth = State(initialValue: current.month)
     }
 
     private var currentPlan: BudgetPlan? {
         allPlans.first { $0.year == displayedYear && $0.month == displayedMonth }
     }
 
+    private var displayedFilter: ExpenseFilter {
+        ExpenseFilter(year: displayedYear, month: displayedMonth)
+    }
+
     private var monthStart: Date {
-        Calendar.current.date(from: DateComponents(year: displayedYear, month: displayedMonth, day: 1))!
+        displayedFilter.startOfMonth
     }
 
     private var nextMonthStart: Date {
-        Calendar.current.date(byAdding: .month, value: 1, to: monthStart)!
+        displayedFilter.startOfNextMonth
     }
 
     private var monthExpenses: [Expense] {
@@ -231,12 +235,9 @@ struct BudgetPlanView: View {
     }
 
     private func moveMonth(by delta: Int) {
-        var comps = DateComponents(year: displayedYear, month: displayedMonth)
-        comps.month! += delta
-        let date = Calendar.current.date(from: comps)!
-        let newComps = Calendar.current.dateComponents([.year, .month], from: date)
-        displayedYear = newComps.year!
-        displayedMonth = newComps.month!
+        let moved = ExpenseFilter(year: displayedYear, month: displayedMonth).moved(by: delta)
+        displayedYear = moved.year
+        displayedMonth = moved.month
     }
 
 
@@ -273,7 +274,7 @@ struct BudgetProgressBar: View {
     NavigationSplitView {
         Text("Sidebar")
     } detail: {
-        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(nil))
+        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(ExpenseFilter(year: 2025, month: 1)))
     }
     .modelContainer(PreviewSampleData.container)
 }
