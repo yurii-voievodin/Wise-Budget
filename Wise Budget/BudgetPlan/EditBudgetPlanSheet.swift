@@ -5,10 +5,17 @@ struct EditBudgetPlanSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     let plan: BudgetPlan
     let categories: [ExpenseCategory]
 
     @State private var amounts: [PersistentIdentifier: Decimal] = [:]
+    @State private var showResetConfirmation = false
+
+    private var currencyLabel: String {
+        plan.currency ?? defaultCurrency
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,11 +42,30 @@ struct EditBudgetPlanSheet: View {
                             format: .number
                         )
                         .textFieldStyle(.roundedBorder)
+                        Text(currencyLabel)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section {
+                    Button("Reset Plan", role: .destructive) {
+                        showResetConfirmation = true
                     }
                 }
             }
         }
         .frame(minWidth: 400, minHeight: 400)
+        .confirmationDialog(
+            "Reset Plan",
+            isPresented: $showResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Reset Plan", role: .destructive) {
+                resetPlan()
+            }
+        } message: {
+            Text("This will reset all planned amounts to zero and update the currency to \(defaultCurrency).")
+        }
         .onAppear {
             for item in plan.items {
                 if let cat = item.category {
@@ -54,6 +80,16 @@ struct EditBudgetPlanSheet: View {
             get: { amounts[category.persistentModelID] ?? Decimal.zero },
             set: { amounts[category.persistentModelID] = $0 }
         )
+    }
+
+    private func resetPlan() {
+        plan.currency = defaultCurrency
+        for key in amounts.keys {
+            amounts[key] = Decimal.zero
+        }
+        for item in plan.items {
+            item.plannedAmount = Decimal.zero
+        }
     }
 
     private func save() {

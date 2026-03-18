@@ -7,6 +7,8 @@ struct BudgetPlanView: View {
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
     @Query private var allExpenses: [Expense]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     @State private var displayedYear: Int
     @State private var displayedMonth: Int
 
@@ -32,14 +34,26 @@ struct BudgetPlanView: View {
         allExpenses.filter { $0.date >= monthStart && $0.date < nextMonthStart }
     }
 
-    private func budgetAmount(for expense: Expense) -> Decimal {
-        expense.baseCurrencyAmount ?? expense.amount
+    /// Returns the expense amount in the plan's currency, or nil if it can't be converted.
+    private func budgetAmount(for expense: Expense) -> Decimal? {
+        let planCurrency = currentPlan?.currency ?? defaultCurrency
+        // Expense is already in the plan's currency
+        if expense.currency == planCurrency {
+            return expense.amount
+        }
+        // Expense has a base currency amount that matches the plan's currency
+        if let baseAmount = expense.baseCurrencyAmount,
+           expense.baseCurrency == planCurrency {
+            return baseAmount
+        }
+        // Cannot convert — foreign currency without matching base amount
+        return nil
     }
 
     private func actualSpending(for category: ExpenseCategory) -> Decimal {
         monthExpenses
             .filter { $0.category?.persistentModelID == category.persistentModelID }
-            .reduce(Decimal.zero) { $0 + budgetAmount(for: $1) }
+            .reduce(Decimal.zero) { $0 + (budgetAmount(for: $1) ?? Decimal.zero) }
     }
 
     private func planItem(for category: ExpenseCategory) -> BudgetPlanItem? {
@@ -53,7 +67,16 @@ struct BudgetPlanView: View {
     }
 
     private var totalActual: Decimal {
-        monthExpenses.reduce(Decimal.zero) { $0 + budgetAmount(for: $1) }
+        monthExpenses.reduce(Decimal.zero) { $0 + (budgetAmount(for: $1) ?? Decimal.zero) }
+    }
+
+    /// Number of expenses this month that can't be converted to the plan's currency.
+    private var unconvertibleExpenseCount: Int {
+        monthExpenses.filter { budgetAmount(for: $0) == nil }.count
+    }
+
+    private var planCurrency: String {
+        currentPlan?.currency ?? defaultCurrency
     }
 
     var body: some View {
@@ -62,18 +85,26 @@ struct BudgetPlanView: View {
                 HStack {
                     Text("Total Planned")
                     Spacer()
-                    Text(totalPlanned, format: .number)
+                    Text("\(totalPlanned, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
                 }
                 HStack {
                     Text("Total Spent")
                     Spacer()
-                    Text(totalActual, format: .number)
+                    Text("\(totalActual, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
                         .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
                 }
                 if totalPlanned > 0 {
                     BudgetProgressBar(spent: totalActual, planned: totalPlanned)
+                }
+                if unconvertibleExpenseCount > 0 {
+                    Label(
+                        "\(unconvertibleExpenseCount) expense(s) in foreign currency excluded",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
                 }
             }
 
@@ -87,7 +118,7 @@ struct BudgetPlanView: View {
                             Text(category.name)
                                 .fontWeight(.medium)
                             Spacer()
-                            Text("\(actual, format: .number) / \(planned, format: .number)")
+                            Text("\(actual, format: .number) / \(planned, format: .number) \(planCurrency)")
                                 .foregroundStyle(.secondary)
                         }
                         if planned > 0 {
@@ -124,7 +155,6 @@ struct BudgetPlanView: View {
             ToolbarItem {
                 if currentPlan != nil {
                     Button("Edit Plan") {
-                        // handled via sheet
                         isEditingPlan = true
                     }
                 }
@@ -153,7 +183,7 @@ struct BudgetPlanView: View {
     }
 
     private func createPlan() {
-        let plan = BudgetPlan(year: displayedYear, month: displayedMonth)
+        let plan = BudgetPlan(year: displayedYear, month: displayedMonth, currency: defaultCurrency)
         modelContext.insert(plan)
         for category in categories {
             let item = BudgetPlanItem(plannedAmount: 0, plan: plan, category: category)

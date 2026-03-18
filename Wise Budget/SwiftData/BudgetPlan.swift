@@ -5,13 +5,15 @@ import SwiftData
 final class BudgetPlan {
     var year: Int
     var month: Int
+    var currency: String?
 
     @Relationship(deleteRule: .cascade, inverse: \BudgetPlanItem.plan)
     var items: [BudgetPlanItem] = []
 
-    init(year: Int, month: Int) {
+    init(year: Int, month: Int, currency: String? = nil) {
         self.year = year
         self.month = month
+        self.currency = currency
     }
 
     /// The first day of this plan's month
