@@ -10,34 +10,20 @@ struct BudgetPlanView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var selectedSidebarItem: SidebarItem
-    @Binding var expenseFilter: MonthFilter
+    @Binding var monthFilter: MonthFilter
 
-    @State private var displayedYear: Int
-    @State private var displayedMonth: Int
     @State private var resetAction: (() -> Void)?
 
-    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<MonthFilter>) {
-        _selectedSidebarItem = selectedSidebarItem
-        _expenseFilter = expenseFilter
-        let current = MonthFilter.currentMonth()
-        _displayedYear = State(initialValue: current.year)
-        _displayedMonth = State(initialValue: current.month)
-    }
-
     private var currentPlan: BudgetPlan? {
-        allPlans.first { $0.year == displayedYear && $0.month == displayedMonth }
-    }
-
-    private var displayedFilter: MonthFilter {
-        MonthFilter(year: displayedYear, month: displayedMonth)
+        allPlans.first { $0.year == monthFilter.year && $0.month == monthFilter.month }
     }
 
     private var monthStart: Date {
-        displayedFilter.startOfMonth
+        monthFilter.startOfMonth
     }
 
     private var nextMonthStart: Date {
-        displayedFilter.startOfNextMonth
+        monthFilter.startOfNextMonth
     }
 
     private var monthExpenses: [Expense] {
@@ -74,7 +60,7 @@ struct BudgetPlanView: View {
 
     private func ensurePlanExists() -> BudgetPlan {
         if let plan = currentPlan { return plan }
-        let plan = BudgetPlan(year: displayedYear, month: displayedMonth, currency: defaultCurrency)
+        let plan = BudgetPlan(year: monthFilter.year, month: monthFilter.month, currency: defaultCurrency)
         modelContext.insert(plan)
         for category in categories {
             let item = BudgetPlanItem(plannedAmount: 0, plan: plan, category: category)
@@ -138,7 +124,7 @@ struct BudgetPlanView: View {
                 }
                 if unconvertibleExpenseCount > 0 {
                     Button {
-                        expenseFilter = MonthFilter(year: displayedYear, month: displayedMonth, foreignOnly: true)
+                        monthFilter.foreignOnly = true
                         selectedSidebarItem = .expenses
                     } label: {
                         Label(
@@ -204,8 +190,8 @@ struct BudgetPlanView: View {
         }
         .focusedSceneValue(\.resetBudgetPlan, resetAction)
         .onAppear { updateResetAction() }
-        .onChange(of: displayedYear) { updateResetAction() }
-        .onChange(of: displayedMonth) { updateResetAction() }
+        .onChange(of: monthFilter.year) { updateResetAction() }
+        .onChange(of: monthFilter.month) { updateResetAction() }
         .onChange(of: totalPlanned) { updateResetAction() }
     }
 
@@ -228,9 +214,9 @@ struct BudgetPlanView: View {
     }
 
     private func moveMonth(by delta: Int) {
-        let moved = MonthFilter(year: displayedYear, month: displayedMonth).moved(by: delta)
-        displayedYear = moved.year
-        displayedMonth = moved.month
+        let moved = monthFilter.moved(by: delta)
+        monthFilter.year = moved.year
+        monthFilter.month = moved.month
     }
 
 
@@ -271,7 +257,7 @@ struct BudgetProgressBar: View {
     NavigationSplitView {
         Text("Sidebar")
     } detail: {
-        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(MonthFilter(year: 2025, month: 1)))
+        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), monthFilter: .constant(MonthFilter(year: 2025, month: 1)))
     }
     .modelContainer(PreviewSampleData.container)
 }

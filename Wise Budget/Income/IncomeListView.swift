@@ -7,7 +7,7 @@ struct IncomeListView: View {
 
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
-    @State private var filter: MonthFilter = .currentMonth()
+    @Binding var filter: MonthFilter
 
     var body: some View {
         IncomeQueryListView(

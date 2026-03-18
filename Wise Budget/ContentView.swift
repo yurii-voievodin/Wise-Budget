@@ -3,7 +3,7 @@ import SwiftData
 
 struct ContentView: View {
     @State private var selectedSidebarItem: SidebarItem = .budgetPlan
-    @State private var expenseFilter: MonthFilter = .currentMonth()
+    @State private var monthFilter: MonthFilter = .currentMonth()
 
     var body: some View {
         NavigationSplitView {
@@ -17,18 +17,18 @@ struct ContentView: View {
         } detail: {
             switch selectedSidebarItem {
             case .budgetPlan:
-                BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, expenseFilter: $expenseFilter)
+                BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, monthFilter: $monthFilter)
             case .expenses:
-                ExpenseListView(expenseFilter: $expenseFilter)
+                ExpenseListView(filter: $monthFilter)
             case .income:
-                IncomeListView()
+                IncomeListView(filter: $monthFilter)
             case .settings:
                 CategoryManagementView()
             }
         }
-        .onChange(of: selectedSidebarItem) { _, newValue in
-            if newValue != .expenses {
-                expenseFilter.foreignOnly = false
+        .onChange(of: selectedSidebarItem) { oldValue, _ in
+            if oldValue == .expenses || oldValue == .income {
+                monthFilter.foreignOnly = false
             }
         }
     }

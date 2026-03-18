@@ -3,21 +3,21 @@ import SwiftData
 
 struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Binding var expenseFilter: MonthFilter
+    @Binding var filter: MonthFilter
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
 
     var body: some View {
         ExpenseQueryListView(
-            filter: expenseFilter,
+            filter: filter,
             expenseToEdit: $expenseToEdit
         )
-        .id(expenseFilter)
+        .id(filter)
         .navigationTitle("")
         .toolbar {
-            MonthNavigationToolbar(year: $expenseFilter.year, month: $expenseFilter.month)
-            ForeignCurrencyFilterToolbar(foreignOnly: $expenseFilter.foreignOnly)
+            MonthNavigationToolbar(year: $filter.year, month: $filter.month)
+            ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
             ToolbarItem {
                 Button(action: { isAddingExpense = true }) {
                     Label("Add Expense", systemImage: "plus")
