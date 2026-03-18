@@ -23,9 +23,12 @@ struct Wise_BudgetApp: App {
         }
     }()
 
+    @FocusedValue(\.resetBudgetPlan) private var resetBudgetPlan
+
     @State private var importResult: ImportResult?
     @State private var importError: String?
     @State private var showingImportAlert = false
+    @State private var showResetPlanConfirmation = false
 
     var body: some Scene {
         WindowGroup {
@@ -33,6 +36,14 @@ struct Wise_BudgetApp: App {
                 .onAppear {
                     prepopulateCategories()
                     prepopulateIncomeCategories()
+                }
+                .alert("Reset Budget Plan", isPresented: $showResetPlanConfirmation) {
+                    Button("Reset", role: .destructive) {
+                        resetBudgetPlan?()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This will reset all planned amounts to zero and update the currency to the default. This action cannot be undone.")
                 }
                 .alert("Import Complete", isPresented: $showingImportAlert) {
                     Button("OK") {}
@@ -57,6 +68,13 @@ struct Wise_BudgetApp: App {
                 Button("Import from Monobank CSV...") {
                     importMonobankCSV()
                 }
+            }
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                Button("Reset Budget Plan...") {
+                    showResetPlanConfirmation = true
+                }
+                .disabled(resetBudgetPlan == nil)
             }
         }
     }

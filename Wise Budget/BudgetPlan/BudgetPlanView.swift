@@ -14,7 +14,7 @@ struct BudgetPlanView: View {
 
     @State private var displayedYear: Int
     @State private var displayedMonth: Int
-    @State private var showResetConfirmation = false
+    @State private var resetAction: (() -> Void)?
 
     init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<ExpenseFilter>) {
         _selectedSidebarItem = selectedSidebarItem
@@ -201,36 +201,29 @@ struct BudgetPlanView: View {
                     }
                 }
             }
-            ToolbarItem {
-                if currentPlan != nil {
-                    Button("Reset Plan", role: .destructive) {
-                        showResetConfirmation = true
-                    }
-                }
-            }
         }
-        .confirmationDialog(
-            "Reset Plan",
-            isPresented: $showResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Reset Plan", role: .destructive) {
-                resetPlan()
-            }
-        } message: {
-            Text("This will reset all planned amounts to zero and update the currency to \(defaultCurrency).")
-        }
+        .focusedSceneValue(\.resetBudgetPlan, resetAction)
+        .onAppear { updateResetAction() }
+        .onChange(of: displayedYear) { updateResetAction() }
+        .onChange(of: displayedMonth) { updateResetAction() }
+        .onChange(of: totalPlanned) { updateResetAction() }
     }
 
     private var monthTitle: String {
         monthStart.formatted(.dateTime.month(.wide).year())
     }
 
-    private func resetPlan() {
-        guard let plan = currentPlan else { return }
-        plan.currency = defaultCurrency
-        for item in plan.items {
-            item.plannedAmount = Decimal.zero
+    private func updateResetAction() {
+        guard let plan = currentPlan else { resetAction = nil; return }
+        let hasNonZeroAmount = plan.items.contains { $0.plannedAmount != Decimal.zero }
+        let currencyDiffers = plan.currency != defaultCurrency
+        guard hasNonZeroAmount || currencyDiffers else { resetAction = nil; return }
+        let currency = defaultCurrency
+        resetAction = {
+            plan.currency = currency
+            for item in plan.items {
+                item.plannedAmount = Decimal.zero
+            }
         }
     }
 
@@ -241,6 +234,10 @@ struct BudgetPlanView: View {
     }
 
 
+}
+
+extension FocusedValues {
+    @Entry var resetBudgetPlan: (() -> Void)? = nil
 }
 
 struct BudgetProgressBar: View {
