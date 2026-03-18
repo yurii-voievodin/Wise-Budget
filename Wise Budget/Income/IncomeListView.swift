@@ -4,24 +4,44 @@ import SwiftData
 struct IncomeListView: View {
     @Environment(\.modelContext) private var modelContext
 
-
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
+    @State private var selectedTab: IncomeTab = .income
     @Binding var filter: MonthFilter
 
+    enum IncomeTab: Hashable {
+        case income
+        case chart
+        case statistics
+    }
+
     var body: some View {
-        IncomeQueryListView(
-            filter: filter,
-            incomeToEdit: $incomeToEdit
-        )
-        .id(filter)
+        TabView(selection: $selectedTab) {
+            Tab("Income", systemImage: "list.bullet", value: .income) {
+                IncomeQueryListView(
+                    filter: filter,
+                    incomeToEdit: $incomeToEdit
+                )
+                .id(filter)
+            }
+            Tab("Chart", systemImage: "chart.pie", value: .chart) {
+                IncomeCategoryChartView(filter: filter)
+                    .id(filter)
+            }
+            Tab("Statistics", systemImage: "tablecells", value: .statistics) {
+                IncomeStatisticsView(filter: filter)
+                    .id(filter)
+            }
+        }
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
-            ToolbarItem {
-                Button(action: { isAddingIncome = true }) {
-                    Label("Add Income", systemImage: "plus")
+            if selectedTab == .income {
+                ToolbarItem {
+                    Button(action: { isAddingIncome = true }) {
+                        Label("Add Income", systemImage: "plus")
+                    }
                 }
             }
         }
