@@ -9,11 +9,16 @@ struct BudgetPlanView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
+    @Binding var selectedSidebarItem: SidebarItem
+    @Binding var expenseFilter: ExpenseFilter?
+
     @State private var displayedYear: Int
     @State private var displayedMonth: Int
     @State private var showResetConfirmation = false
 
-    init() {
+    init(selectedSidebarItem: Binding<SidebarItem>, expenseFilter: Binding<ExpenseFilter?>) {
+        _selectedSidebarItem = selectedSidebarItem
+        _expenseFilter = expenseFilter
         let now = Calendar.current.dateComponents([.year, .month], from: Date())
         _displayedYear = State(initialValue: now.year!)
         _displayedMonth = State(initialValue: now.month!)
@@ -128,12 +133,18 @@ struct BudgetPlanView: View {
                     BudgetProgressBar(spent: totalActual, planned: totalPlanned)
                 }
                 if unconvertibleExpenseCount > 0 {
-                    Label(
-                        "\(unconvertibleExpenseCount) expense(s) in foreign currency excluded",
-                        systemImage: "exclamationmark.triangle"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                    Button {
+                        expenseFilter = ExpenseFilter(year: displayedYear, month: displayedMonth, foreignOnly: true, planCurrency: planCurrency)
+                        selectedSidebarItem = .expenses
+                    } label: {
+                        Label(
+                            "\(unconvertibleExpenseCount) expense(s) in foreign currency excluded",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -262,7 +273,7 @@ struct BudgetProgressBar: View {
     NavigationSplitView {
         Text("Sidebar")
     } detail: {
-        BudgetPlanView()
+        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), expenseFilter: .constant(nil))
     }
     .modelContainer(PreviewSampleData.container)
 }

@@ -3,6 +3,7 @@ import SwiftData
 
 struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Binding var expenseFilter: ExpenseFilter?
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
@@ -10,13 +11,40 @@ struct ExpenseListView: View {
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
 
+    private var filteredExpenses: [Expense] {
+        guard let filter = expenseFilter else { return expenses }
+        let calendar = Calendar.current
+        return expenses.filter { expense in
+            let comps = calendar.dateComponents([.year, .month], from: expense.date)
+            guard comps.year == filter.year && comps.month == filter.month else { return false }
+            if filter.foreignOnly, let planCurrency = filter.planCurrency {
+                // Show only expenses that can't be converted to the plan currency
+                if expense.currency == planCurrency { return false }
+                if expense.baseCurrency == planCurrency && expense.baseCurrencyAmount != nil { return false }
+                return true
+            }
+            return true
+        }
+    }
+
     private var groupedExpenses: [(date: Date, expenses: [Expense])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: expenses) { expense in
+        let grouped = Dictionary(grouping: filteredExpenses) { expense in
             calendar.startOfDay(for: expense.date)
         }
         return grouped.sorted { $0.key > $1.key }
             .map { (date: $0.key, expenses: $0.value) }
+    }
+
+    private var filterTitle: String? {
+        guard let filter = expenseFilter else { return nil }
+        let comps = DateComponents(year: filter.year, month: filter.month, day: 1)
+        guard let date = Calendar.current.date(from: comps) else { return nil }
+        let monthLabel = date.formatted(.dateTime.month(.wide).year())
+        if filter.foreignOnly {
+            return "Foreign currency — \(monthLabel)"
+        }
+        return monthLabel
     }
 
     var body: some View {
@@ -82,6 +110,23 @@ struct ExpenseListView: View {
         }
         .navigationTitle("Expenses")
         .toolbar {
+            if let filterTitle {
+                ToolbarItem(placement: .navigation) {
+                    HStack(spacing: 4) {
+                        Text(filterTitle)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Button {
+                            clearFilter()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
             ToolbarItem {
                 Button(action: { isAddingExpense = true }) {
                     Label("Add Expense", systemImage: "plus")
@@ -114,6 +159,10 @@ struct ExpenseListView: View {
 
     private func dayTotal(for expenses: [Expense]) -> Decimal {
         expenses.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+
+    private func clearFilter() {
+        expenseFilter = nil
     }
 
     private func deleteExpenses(from groupExpenses: [Expense], at offsets: IndexSet) {
