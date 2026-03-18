@@ -34,6 +34,11 @@ struct ExpenseListView: View {
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     }
+                                    if let desc = expense.descriptionText {
+                                        Text(desc)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 Spacer()
                                 Text(expense.currency)
@@ -64,20 +69,21 @@ struct ExpenseListView: View {
             }
         }
         .sheet(isPresented: $isAddingExpense) {
-            AddExpenseSheet { amount, currency, date, category in
+            AddExpenseSheet { amount, currency, date, category, descriptionText in
                 withAnimation {
-                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category)
+                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText)
                     modelContext.insert(newExpense)
                 }
             }
         }
         .sheet(item: $expenseToEdit) { expense in
-            AddExpenseSheet(expense: expense) { amount, currency, date, category in
+            AddExpenseSheet(expense: expense) { amount, currency, date, category, descriptionText in
                 withAnimation {
                     expense.amount = amount
                     expense.currency = currency
                     expense.date = date
                     expense.category = category
+                    expense.descriptionText = descriptionText
                 }
             }
         }

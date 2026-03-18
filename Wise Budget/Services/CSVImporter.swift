@@ -15,6 +15,7 @@ struct CSVTransaction {
     let amount: Decimal
     let currency: String
     let categoryName: String
+    let targetName: String?
 }
 
 final class CSVImporter {
@@ -61,6 +62,8 @@ final class CSVImporter {
               let categoryIdx = header.firstIndex(of: "Категорія")
         else { return [] }
 
+        let targetNameIdx = header.firstIndex(of: "Назва цілі")
+
         var transactions: [CSVTransaction] = []
 
         for i in 1..<lines.count {
@@ -93,13 +96,22 @@ final class CSVImporter {
 
             guard let amount = Decimal(string: amountString) else { continue }
 
+            let targetName: String?
+            if let idx = targetNameIdx, fields.count > idx {
+                let value = fields[idx].trimmingCharacters(in: .whitespaces)
+                targetName = value.isEmpty ? nil : value
+            } else {
+                targetName = nil
+            }
+
             transactions.append(CSVTransaction(
                 direction: direction,
                 status: status,
                 date: date,
                 amount: amount,
                 currency: currency,
-                categoryName: englishCategory
+                categoryName: englishCategory,
+                targetName: targetName
             ))
         }
 
@@ -180,7 +192,8 @@ final class CSVImporter {
                     amount: transaction.amount,
                     currency: transaction.currency,
                     date: transaction.date,
-                    category: category
+                    category: category,
+                    descriptionText: transaction.targetName
                 )
                 context.insert(expense)
                 existingKeys.insert(key)
@@ -201,7 +214,8 @@ final class CSVImporter {
                     amount: transaction.amount,
                     currency: transaction.currency,
                     date: transaction.date,
-                    category: category
+                    category: category,
+                    descriptionText: transaction.targetName
                 )
                 context.insert(income)
                 existingKeys.insert(key)

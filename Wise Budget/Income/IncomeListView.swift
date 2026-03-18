@@ -34,6 +34,11 @@ struct IncomeListView: View {
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     }
+                                    if let desc = income.descriptionText {
+                                        Text(desc)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 Spacer()
                                 Text(income.currency)
@@ -64,20 +69,21 @@ struct IncomeListView: View {
             }
         }
         .sheet(isPresented: $isAddingIncome) {
-            AddIncomeSheet { amount, currency, date, category in
+            AddIncomeSheet { amount, currency, date, category, descriptionText in
                 withAnimation {
-                    let newIncome = Income(amount: amount, currency: currency, date: date, category: category)
+                    let newIncome = Income(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText)
                     modelContext.insert(newIncome)
                 }
             }
         }
         .sheet(item: $incomeToEdit) { income in
-            AddIncomeSheet(income: income) { amount, currency, date, category in
+            AddIncomeSheet(income: income) { amount, currency, date, category, descriptionText in
                 withAnimation {
                     income.amount = amount
                     income.currency = currency
                     income.date = date
                     income.category = category
+                    income.descriptionText = descriptionText
                 }
             }
         }

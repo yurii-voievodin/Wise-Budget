@@ -11,13 +11,14 @@ struct AddExpenseSheet: View {
     @State private var currency: String = ""
     @State private var date = Date()
     @State private var selectedCategory: ExpenseCategory?
+    @State private var descriptionText: String = ""
 
     var expenseToEdit: Expense?
-    var onSave: (Decimal, String, Date, ExpenseCategory?) -> Void
+    var onSave: (Decimal, String, Date, ExpenseCategory?, String?) -> Void
 
     private var isEditing: Bool { expenseToEdit != nil }
 
-    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?) -> Void) {
+    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?) -> Void) {
         self.expenseToEdit = expense
         self.onSave = onSave
         if let expense {
@@ -25,6 +26,7 @@ struct AddExpenseSheet: View {
             _currency = State(initialValue: expense.currency)
             _date = State(initialValue: expense.date)
             _selectedCategory = State(initialValue: expense.category)
+            _descriptionText = State(initialValue: expense.descriptionText ?? "")
         }
     }
 
@@ -45,6 +47,7 @@ struct AddExpenseSheet: View {
                             .tag(code)
                     }
                 }
+                TextField("Description", text: $descriptionText)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
@@ -58,7 +61,8 @@ struct AddExpenseSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         guard let amount else { return }
-                        onSave(amount, currency, date, selectedCategory)
+                        let desc = descriptionText.trimmingCharacters(in: .whitespaces)
+                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc)
                         dismiss()
                     }
                     .disabled(amount == nil)
@@ -75,6 +79,6 @@ struct AddExpenseSheet: View {
 }
 
 #Preview("Add Expense Sheet") {
-    AddExpenseSheet { _, _, _, _ in }
+    AddExpenseSheet { _, _, _, _, _ in }
         .modelContainer(for: [ExpenseCategory.self, Expense.self], inMemory: true)
 }

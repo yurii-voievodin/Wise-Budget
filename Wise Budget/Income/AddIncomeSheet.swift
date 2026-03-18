@@ -11,13 +11,14 @@ struct AddIncomeSheet: View {
     @State private var currency: String = ""
     @State private var date = Date()
     @State private var selectedCategory: IncomeCategory?
+    @State private var descriptionText: String = ""
 
     var incomeToEdit: Income?
-    var onSave: (Decimal, String, Date, IncomeCategory?) -> Void
+    var onSave: (Decimal, String, Date, IncomeCategory?, String?) -> Void
 
     private var isEditing: Bool { incomeToEdit != nil }
 
-    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?) -> Void) {
+    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?, String?) -> Void) {
         self.incomeToEdit = income
         self.onSave = onSave
         if let income {
@@ -25,6 +26,7 @@ struct AddIncomeSheet: View {
             _currency = State(initialValue: income.currency)
             _date = State(initialValue: income.date)
             _selectedCategory = State(initialValue: income.category)
+            _descriptionText = State(initialValue: income.descriptionText ?? "")
         }
     }
 
@@ -45,6 +47,7 @@ struct AddIncomeSheet: View {
                             .tag(code)
                     }
                 }
+                TextField("Description", text: $descriptionText)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
@@ -58,7 +61,8 @@ struct AddIncomeSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         guard let amount else { return }
-                        onSave(amount, currency, date, selectedCategory)
+                        let desc = descriptionText.trimmingCharacters(in: .whitespaces)
+                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc)
                         dismiss()
                     }
                     .disabled(amount == nil)
@@ -75,6 +79,6 @@ struct AddIncomeSheet: View {
 }
 
 #Preview("Add Income Sheet") {
-    AddIncomeSheet { _, _, _, _ in }
+    AddIncomeSheet { _, _, _, _, _ in }
         .modelContainer(for: [IncomeCategory.self, Income.self], inMemory: true)
 }
