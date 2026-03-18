@@ -5,6 +5,8 @@ struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
 
@@ -45,8 +47,15 @@ struct ExpenseListView: View {
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing) {
-                                    Text("\(expense.amount, format: .number) \(expense.currency)")
-                                        .font(.headline)
+                                    HStack(spacing: 4) {
+                                        if expense.currency != defaultCurrency {
+                                            Image(systemName: "globe")
+                                                .font(.caption)
+                                                .foregroundStyle(.orange)
+                                        }
+                                        Text("\(expense.amount, format: .number) \(expense.currency)")
+                                            .font(.headline)
+                                    }
                                     if let baseAmount = expense.baseCurrencyAmount,
                                        let baseCur = expense.baseCurrency {
                                         Text("\(baseAmount, format: .number) \(baseCur)")
