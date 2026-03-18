@@ -1,6 +1,6 @@
 import Foundation
 
-struct ExpenseFilter: Equatable {
+struct ExpenseFilter: Hashable {
     var year: Int
     var month: Int
     var foreignOnly: Bool = false
