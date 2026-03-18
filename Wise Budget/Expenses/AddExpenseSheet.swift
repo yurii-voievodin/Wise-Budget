@@ -13,13 +13,15 @@ struct AddExpenseSheet: View {
     @State private var selectedCategory: ExpenseCategory?
     @State private var descriptionText: String = ""
     @State private var destination: String = ""
+    @State private var baseCurrencyAmount: Decimal?
 
     var expenseToEdit: Expense?
-    var onSave: (Decimal, String, Date, ExpenseCategory?, String?, String?) -> Void
+    var onSave: (Decimal, String, Date, ExpenseCategory?, String?, String?, Decimal?, String?) -> Void
 
     private var isEditing: Bool { expenseToEdit != nil }
+    private var isForeignCurrency: Bool { currency != defaultCurrency }
 
-    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?, String?) -> Void) {
+    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?, String?, Decimal?, String?) -> Void) {
         self.expenseToEdit = expense
         self.onSave = onSave
         if let expense {
@@ -29,6 +31,7 @@ struct AddExpenseSheet: View {
             _selectedCategory = State(initialValue: expense.category)
             _descriptionText = State(initialValue: expense.descriptionText ?? "")
             _destination = State(initialValue: expense.destination ?? "")
+            _baseCurrencyAmount = State(initialValue: expense.baseCurrencyAmount)
         }
     }
 
@@ -49,6 +52,10 @@ struct AddExpenseSheet: View {
                             .tag(code)
                     }
                 }
+                if isForeignCurrency {
+                    TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
+                        .frame(width: 200)
+                }
                 TextField("Description", text: $descriptionText)
                 TextField("Destination", text: $destination)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
@@ -66,7 +73,9 @@ struct AddExpenseSheet: View {
                         guard let amount else { return }
                         let desc = descriptionText.trimmingCharacters(in: .whitespaces)
                         let dest = destination.trimmingCharacters(in: .whitespaces)
-                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, dest.isEmpty ? nil : dest)
+                        let baseAmount = isForeignCurrency ? baseCurrencyAmount : nil
+                        let baseCur = isForeignCurrency ? defaultCurrency : nil
+                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, dest.isEmpty ? nil : dest, baseAmount, baseCur)
                         dismiss()
                     }
                     .disabled(amount == nil)
@@ -83,6 +92,6 @@ struct AddExpenseSheet: View {
 }
 
 #Preview("Add Expense Sheet") {
-    AddExpenseSheet { _, _, _, _, _, _ in }
+    AddExpenseSheet { _, _, _, _, _, _, _, _ in }
         .modelContainer(for: [ExpenseCategory.self, Expense.self], inMemory: true)
 }

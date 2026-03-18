@@ -89,15 +89,15 @@ struct ExpenseListView: View {
             }
         }
         .sheet(isPresented: $isAddingExpense) {
-            AddExpenseSheet { amount, currency, date, category, descriptionText, destination in
+            AddExpenseSheet { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
                 withAnimation {
-                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText, destination: destination)
+                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText, destination: destination, baseCurrencyAmount: baseCurrencyAmount, baseCurrency: baseCurrency)
                     modelContext.insert(newExpense)
                 }
             }
         }
         .sheet(item: $expenseToEdit) { expense in
-            AddExpenseSheet(expense: expense) { amount, currency, date, category, descriptionText, destination in
+            AddExpenseSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
                 withAnimation {
                     expense.amount = amount
                     expense.currency = currency
@@ -105,6 +105,8 @@ struct ExpenseListView: View {
                     expense.category = category
                     expense.descriptionText = descriptionText
                     expense.destination = destination
+                    expense.baseCurrencyAmount = baseCurrencyAmount
+                    expense.baseCurrency = baseCurrency
                 }
             }
         }
