@@ -26,16 +26,9 @@ struct ExpenseQueryListView: View {
         )
     }
 
-    /// Applies foreignOnly filtering in-memory, showing only expenses not in the default currency
     private var filteredExpenses: [Expense] {
-        guard filter.foreignOnly else {
-            return expenses
-        }
-        return expenses.filter { expense in
-            if expense.currency == defaultCurrency { return false }
-            if expense.baseCurrency == defaultCurrency && expense.baseCurrencyAmount != nil { return false }
-            return true
-        }
+        guard filter.foreignOnly else { return expenses }
+        return expenses.filterForeignCurrency(defaultCurrency: defaultCurrency)
     }
 
     private var groupedExpenses: [(date: Date, expenses: [Expense])] {
@@ -74,23 +67,7 @@ struct ExpenseQueryListView: View {
                                     }
                                 }
                                 Spacer()
-                                VStack(alignment: .trailing) {
-                                    HStack(spacing: 4) {
-                                        if expense.currency != defaultCurrency {
-                                            Image(systemName: "globe")
-                                                .font(.caption)
-                                                .foregroundStyle(.orange)
-                                        }
-                                        Text("\(expense.amount, format: .number) \(expense.currency)")
-                                            .font(.headline)
-                                    }
-                                    if let baseAmount = expense.baseCurrencyAmount,
-                                       let baseCur = expense.baseCurrency {
-                                        Text("\(baseAmount, format: .number) \(baseCur)")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                                CurrencyAmountView(item: expense)
                             }
                             .contentShape(Rectangle())
                         }

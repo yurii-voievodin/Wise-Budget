@@ -29,11 +29,7 @@ struct IncomeQueryListView: View {
 
     private var filteredIncomes: [Income] {
         guard foreignOnly else { return incomes }
-        return incomes.filter { income in
-            if income.currency == defaultCurrency { return false }
-            if income.baseCurrency == defaultCurrency && income.baseCurrencyAmount != nil { return false }
-            return true
-        }
+        return incomes.filterForeignCurrency(defaultCurrency: defaultCurrency)
     }
 
     private var groupedIncomes: [(date: Date, incomes: [Income])] {
@@ -67,16 +63,7 @@ struct IncomeQueryListView: View {
                                     }
                                 }
                                 Spacer()
-                                VStack(alignment: .trailing) {
-                                    Text("\(income.amount, format: .number) \(income.currency)")
-                                        .font(.headline)
-                                    if let baseAmount = income.baseCurrencyAmount,
-                                       let baseCur = income.baseCurrency {
-                                        Text("\(baseAmount, format: .number) \(baseCur)")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                                CurrencyAmountView(item: income)
                             }
                             .contentShape(Rectangle())
                         }
