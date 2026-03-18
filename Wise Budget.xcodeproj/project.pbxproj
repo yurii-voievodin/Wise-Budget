@@ -27,6 +27,7 @@
 		360EFAA32F69BD5A00C39E99 /* Wise Budget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wise Budget.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		360EFAB22F69BD5B00C39E99 /* Wise BudgetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Wise BudgetTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		360EFABC2F69BD5B00C39E99 /* Wise BudgetUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Wise BudgetUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		36194AC52F6B086B00B0C082 /* Wise Budget.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Wise Budget.xctestplan"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +76,7 @@
 		360EFA9A2F69BD5A00C39E99 = {
 			isa = PBXGroup;
 			children = (
+				36194AC52F6B086B00B0C082 /* Wise Budget.xctestplan */,
 				360EFAA52F69BD5A00C39E99 /* Wise Budget */,
 				360EFAB52F69BD5B00C39E99 /* Wise BudgetTests */,
 				360EFABF2F69BD5B00C39E99 /* Wise BudgetUITests */,

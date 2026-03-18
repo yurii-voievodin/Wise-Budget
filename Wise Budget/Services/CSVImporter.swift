@@ -48,23 +48,21 @@ final class CSVImporter {
         return parseCSV(from: content)
     }
 
+    // Column indices matching the standard Wise CSV export layout
+    private static let statusIdx = 1
+    private static let directionIdx = 2
+    private static let dateIdx = 3
+    private static let outAmountIdx = 10
+    private static let outCurrencyIdx = 11
+    private static let targetNameIdx = 12
+    private static let inAmountIdx = 13
+    private static let inCurrencyIdx = 14
+    private static let destinationIdx = 16
+    private static let categoryIdx = 19
+
     static func parseCSV(from content: String) -> [CSVTransaction] {
         let lines = content.components(separatedBy: .newlines)
         guard lines.count > 1 else { return [] }
-
-        let header = parseCSVLine(lines[0])
-        guard let statusIdx = header.firstIndex(of: "Статус"),
-              let directionIdx = header.firstIndex(of: "Напрямок"),
-              let dateIdx = header.firstIndex(where: { $0.hasPrefix("Створено") }),
-              let outAmountIdx = header.firstIndex(of: "Вихідна сума (після оплати комісії)"),
-              let outCurrencyIdx = header.firstIndex(of: "Вихідна валюта"),
-              let inAmountIdx = header.firstIndex(of: "Цільова сума (після оплати комісії)"),
-              let inCurrencyIdx = header.firstIndex(of: "Цільова валюта"),
-              let categoryIdx = header.firstIndex(of: "Категорія")
-        else { return [] }
-
-        let targetNameIdx = header.firstIndex(of: "Назва цілі")
-        let destinationIdx = header.firstIndex(of: "Призначення")
 
         var transactions: [CSVTransaction] = []
 
@@ -73,18 +71,16 @@ final class CSVImporter {
             guard !line.isEmpty else { continue }
 
             let fields = parseCSVLine(line)
-            let maxRequired = max(statusIdx, directionIdx, dateIdx, outAmountIdx,
-                                  outCurrencyIdx, inAmountIdx, inCurrencyIdx, categoryIdx)
-            guard fields.count > maxRequired else { continue }
+            guard fields.count > categoryIdx else { continue }
 
             let status = fields[statusIdx]
             let direction = fields[directionIdx]
             let dateString = fields[dateIdx]
-            let ukrainianCategory = fields[categoryIdx]
+            let rawCategory = fields[categoryIdx]
 
             guard let date = dateFormatter.date(from: dateString) else { continue }
 
-            let englishCategory = categoryMapping[ukrainianCategory] ?? ukrainianCategory
+            let categoryName = categoryMapping[rawCategory] ?? rawCategory
 
             let amountString: String
             let currency: String
@@ -99,16 +95,16 @@ final class CSVImporter {
             guard let amount = Decimal(string: amountString) else { continue }
 
             let targetName: String?
-            if let idx = targetNameIdx, fields.count > idx {
-                let value = fields[idx].trimmingCharacters(in: .whitespaces)
+            if fields.count > targetNameIdx {
+                let value = fields[targetNameIdx].trimmingCharacters(in: .whitespaces)
                 targetName = value.isEmpty ? nil : value
             } else {
                 targetName = nil
             }
 
             let destination: String?
-            if let idx = destinationIdx, fields.count > idx {
-                let value = fields[idx].trimmingCharacters(in: .whitespaces)
+            if fields.count > destinationIdx {
+                let value = fields[destinationIdx].trimmingCharacters(in: .whitespaces)
                 destination = value.isEmpty ? nil : value
             } else {
                 destination = nil
@@ -120,7 +116,7 @@ final class CSVImporter {
                 date: date,
                 amount: amount,
                 currency: currency,
-                categoryName: englishCategory,
+                categoryName: categoryName,
                 targetName: targetName,
                 destination: destination
             ))

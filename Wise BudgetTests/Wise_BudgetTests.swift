@@ -288,6 +288,51 @@ struct Wise_BudgetTests {
         #expect(result.duplicatesSkipped == 0)
     }
 
+    // MARK: - English Header Support
+
+    private let englishCSV = """
+    TransferWise ID,Status,Direction,Created,Finished,Source fee amount,Source fee currency,Target fee amount,Target fee currency,Source name,Source amount (after fees),Source currency,Target name,Target amount (after fees),Target currency,Exchange rate,Reference,Batch,Created by,Category,Note
+    CARD-001,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,15.98,EUR,Kaufland,15.98,EUR,1.0,,,Yurii,Groceries,
+    TRANSFER-001,COMPLETED,IN,2026-02-27 08:33:53,2026-02-27 08:34:05,,,,,\"Deel, Inc.\",3754.76,EUR,Yurii,3754.76,EUR,1,Alesium Ltd,,,Salary,
+    """
+
+    @Test func parseCSVWithEnglishHeaders() {
+        let transactions = CSVImporter.parseCSV(from: englishCSV)
+        #expect(transactions.count == 2)
+    }
+
+    @Test func englishHeaderExpenseParsedCorrectly() {
+        let transactions = CSVImporter.parseCSV(from: englishCSV)
+        let expense = transactions.first { $0.direction == "OUT" }
+        #expect(expense?.status == "COMPLETED")
+        #expect(expense?.amount == Decimal(string: "15.98"))
+        #expect(expense?.currency == "EUR")
+        #expect(expense?.categoryName == "Groceries")
+        #expect(expense?.targetName == "Kaufland")
+    }
+
+    @Test func englishHeaderIncomeParsedCorrectly() {
+        let transactions = CSVImporter.parseCSV(from: englishCSV)
+        let income = transactions.first { $0.direction == "IN" }
+        #expect(income?.status == "COMPLETED")
+        #expect(income?.amount == Decimal(string: "3754.76"))
+        #expect(income?.currency == "EUR")
+        #expect(income?.categoryName == "Salary")
+        #expect(income?.destination == "Alesium Ltd")
+    }
+
+    @Test func parseCSVWithUnknownLanguageFallsBackToColumnIndex() {
+        let csv = """
+        ID,Стан,Бік,Дата,Кінець,Ком1,Вал1,Ком2,Вал2,Джерело,10.00,EUR,Магазин,10.00,EUR,1.0,Платіж,,Автор,Food,
+        CARD-X,COMPLETED,OUT,2026-03-15 10:00:00,2026-03-15 10:00:00,0.00,EUR,,,Yurii,20.50,EUR,Shop,20.50,EUR,1.0,,,Yurii,Food,
+        """
+        let transactions = CSVImporter.parseCSV(from: csv)
+        #expect(transactions.count == 1)
+        #expect(transactions.first?.amount == Decimal(string: "20.50"))
+        #expect(transactions.first?.currency == "EUR")
+        #expect(transactions.first?.categoryName == "Food")
+    }
+
     // MARK: - CSV Line Parser
 
     @Test func parseCSVLineHandlesQuotedFields() {

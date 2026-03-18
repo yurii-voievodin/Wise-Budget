@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "C92F3681-1039-4816-A49F-8A1EB24A4C18",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Wise Budget.xcodeproj",
+      "identifier" : "360EFAA22F69BD5A00C39E99",
+      "name" : "Wise Budget"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Wise Budget.xcodeproj",
+        "identifier" : "360EFAB12F69BD5B00C39E99",
+        "name" : "Wise BudgetTests"
+      }
+    },
+    {
+      "enabled" : false,
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Wise Budget.xcodeproj",
+        "identifier" : "360EFABB2F69BD5B00C39E99",
+        "name" : "Wise BudgetUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

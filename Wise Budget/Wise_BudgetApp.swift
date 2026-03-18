@@ -51,7 +51,7 @@ struct Wise_BudgetApp: App {
         .modelContainer(sharedModelContainer)
         .commands {
             CommandGroup(replacing: .importExport) {
-                Button("Import Transactions...") {
+                Button("Import from WISE CSV...") {
                     importCSV()
                 }
             }
