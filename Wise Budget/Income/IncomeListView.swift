@@ -7,10 +7,20 @@ struct IncomeListView: View {
 
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
+    @State private var year: Int = Calendar.current.component(.year, from: Date())
+    @State private var month: Int = Calendar.current.component(.month, from: Date())
+
+    private var filteredIncomes: [Income] {
+        let calendar = Calendar.current
+        return incomes.filter { income in
+            let comps = calendar.dateComponents([.year, .month], from: income.date)
+            return comps.year == year && comps.month == month
+        }
+    }
 
     private var groupedIncomes: [(date: Date, incomes: [Income])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: incomes) { income in
+        let grouped = Dictionary(grouping: filteredIncomes) { income in
             calendar.startOfDay(for: income.date)
         }
         return grouped.sorted { $0.key > $1.key }
@@ -66,8 +76,9 @@ struct IncomeListView: View {
                 }
             }
         }
-        .navigationTitle("Income")
+        .navigationTitle("")
         .toolbar {
+            MonthNavigationToolbar(year: $year, month: $month)
             ToolbarItem {
                 Button(action: { isAddingIncome = true }) {
                     Label("Add Income", systemImage: "plus")
