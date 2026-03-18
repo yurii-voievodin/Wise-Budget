@@ -16,6 +16,7 @@ struct CSVTransaction {
     let currency: String
     let categoryName: String
     let targetName: String?
+    let destination: String?
 }
 
 final class CSVImporter {
@@ -63,6 +64,7 @@ final class CSVImporter {
         else { return [] }
 
         let targetNameIdx = header.firstIndex(of: "Назва цілі")
+        let destinationIdx = header.firstIndex(of: "Призначення")
 
         var transactions: [CSVTransaction] = []
 
@@ -104,6 +106,14 @@ final class CSVImporter {
                 targetName = nil
             }
 
+            let destination: String?
+            if let idx = destinationIdx, fields.count > idx {
+                let value = fields[idx].trimmingCharacters(in: .whitespaces)
+                destination = value.isEmpty ? nil : value
+            } else {
+                destination = nil
+            }
+
             transactions.append(CSVTransaction(
                 direction: direction,
                 status: status,
@@ -111,7 +121,8 @@ final class CSVImporter {
                 amount: amount,
                 currency: currency,
                 categoryName: englishCategory,
-                targetName: targetName
+                targetName: targetName,
+                destination: destination
             ))
         }
 
@@ -193,7 +204,8 @@ final class CSVImporter {
                     currency: transaction.currency,
                     date: transaction.date,
                     category: category,
-                    descriptionText: transaction.targetName
+                    descriptionText: transaction.targetName,
+                    destination: transaction.destination
                 )
                 context.insert(expense)
                 existingKeys.insert(key)

@@ -12,13 +12,14 @@ struct AddExpenseSheet: View {
     @State private var date = Date()
     @State private var selectedCategory: ExpenseCategory?
     @State private var descriptionText: String = ""
+    @State private var destination: String = ""
 
     var expenseToEdit: Expense?
-    var onSave: (Decimal, String, Date, ExpenseCategory?, String?) -> Void
+    var onSave: (Decimal, String, Date, ExpenseCategory?, String?, String?) -> Void
 
     private var isEditing: Bool { expenseToEdit != nil }
 
-    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?) -> Void) {
+    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?, String?) -> Void) {
         self.expenseToEdit = expense
         self.onSave = onSave
         if let expense {
@@ -27,6 +28,7 @@ struct AddExpenseSheet: View {
             _date = State(initialValue: expense.date)
             _selectedCategory = State(initialValue: expense.category)
             _descriptionText = State(initialValue: expense.descriptionText ?? "")
+            _destination = State(initialValue: expense.destination ?? "")
         }
     }
 
@@ -48,6 +50,7 @@ struct AddExpenseSheet: View {
                     }
                 }
                 TextField("Description", text: $descriptionText)
+                TextField("Destination", text: $destination)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
@@ -62,7 +65,8 @@ struct AddExpenseSheet: View {
                     Button("Save") {
                         guard let amount else { return }
                         let desc = descriptionText.trimmingCharacters(in: .whitespaces)
-                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc)
+                        let dest = destination.trimmingCharacters(in: .whitespaces)
+                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, dest.isEmpty ? nil : dest)
                         dismiss()
                     }
                     .disabled(amount == nil)
@@ -79,6 +83,6 @@ struct AddExpenseSheet: View {
 }
 
 #Preview("Add Expense Sheet") {
-    AddExpenseSheet { _, _, _, _, _ in }
+    AddExpenseSheet { _, _, _, _, _, _ in }
         .modelContainer(for: [ExpenseCategory.self, Expense.self], inMemory: true)
 }

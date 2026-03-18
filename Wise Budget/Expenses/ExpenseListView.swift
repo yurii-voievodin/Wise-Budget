@@ -39,6 +39,11 @@ struct ExpenseListView: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
+                                    if let dest = expense.destination {
+                                        Text(dest)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 Spacer()
                                 Text(expense.currency)
@@ -69,21 +74,22 @@ struct ExpenseListView: View {
             }
         }
         .sheet(isPresented: $isAddingExpense) {
-            AddExpenseSheet { amount, currency, date, category, descriptionText in
+            AddExpenseSheet { amount, currency, date, category, descriptionText, destination in
                 withAnimation {
-                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText)
+                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText, destination: destination)
                     modelContext.insert(newExpense)
                 }
             }
         }
         .sheet(item: $expenseToEdit) { expense in
-            AddExpenseSheet(expense: expense) { amount, currency, date, category, descriptionText in
+            AddExpenseSheet(expense: expense) { amount, currency, date, category, descriptionText, destination in
                 withAnimation {
                     expense.amount = amount
                     expense.currency = currency
                     expense.date = date
                     expense.category = category
                     expense.descriptionText = descriptionText
+                    expense.destination = destination
                 }
             }
         }
