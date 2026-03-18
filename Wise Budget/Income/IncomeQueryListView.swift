@@ -5,9 +5,13 @@ struct IncomeQueryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var incomes: [Income]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
+    let foreignOnly: Bool
     @Binding var incomeToEdit: Income?
 
-    init(year: Int, month: Int, incomeToEdit: Binding<Income?>) {
+    init(year: Int, month: Int, foreignOnly: Bool, incomeToEdit: Binding<Income?>) {
+        self.foreignOnly = foreignOnly
         self._incomeToEdit = incomeToEdit
 
         let calendar = Calendar.current
@@ -23,9 +27,18 @@ struct IncomeQueryListView: View {
         )
     }
 
+    private var filteredIncomes: [Income] {
+        guard foreignOnly else { return incomes }
+        return incomes.filter { income in
+            if income.currency == defaultCurrency { return false }
+            if income.baseCurrency == defaultCurrency && income.baseCurrencyAmount != nil { return false }
+            return true
+        }
+    }
+
     private var groupedIncomes: [(date: Date, incomes: [Income])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: incomes) { income in
+        let grouped = Dictionary(grouping: filteredIncomes) { income in
             calendar.startOfDay(for: income.date)
         }
         return grouped.sorted { $0.key > $1.key }

@@ -17,30 +17,7 @@ struct ExpenseListView: View {
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $expenseFilter.year, month: $expenseFilter.month)
-            ToolbarItem {
-                Menu {
-                    Button {
-                        expenseFilter.foreignOnly = false
-                    } label: {
-                        if !expenseFilter.foreignOnly {
-                            Label("None", systemImage: "checkmark")
-                        } else {
-                            Text("None")
-                        }
-                    }
-                    Button {
-                        expenseFilter.foreignOnly = true
-                    } label: {
-                        if expenseFilter.foreignOnly {
-                            Label("Foreign currency", systemImage: "checkmark")
-                        } else {
-                            Text("Foreign currency")
-                        }
-                    }
-                } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle\(expenseFilter.foreignOnly ? ".fill" : "")")
-                }
-            }
+            ForeignCurrencyFilterToolbar(foreignOnly: $expenseFilter.foreignOnly)
             ToolbarItem {
                 Button(action: { isAddingExpense = true }) {
                     Label("Add Expense", systemImage: "plus")
