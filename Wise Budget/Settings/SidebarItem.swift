@@ -5,6 +5,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case expenses = "Expenses"
     case income = "Income"
     case settings = "Settings"
+    case connections = "Connections"
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .income: "arrow.up.circle"
         case .budgetPlan: "chart.bar"
         case .settings: "gearshape"
+        case .connections: "link"
         }
     }
 }

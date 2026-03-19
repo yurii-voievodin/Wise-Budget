@@ -24,6 +24,8 @@ struct ContentView: View {
                 IncomeListView(filter: $monthFilter)
             case .settings:
                 CategoryManagementView()
+            case .connections:
+                BankConnectionsView()
             }
         }
         .onChange(of: selectedSidebarItem) { oldValue, _ in
