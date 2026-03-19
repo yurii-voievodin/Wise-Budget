@@ -3,14 +3,12 @@ import SwiftData
 
 struct CategoryManagementView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \ExpenseCategory.name) private var expenseCategories: [ExpenseCategory]
     @Query(sort: \IncomeCategory.name) private var incomeCategories: [IncomeCategory]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
     @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
 
-    @State private var newExpenseCategoryName = ""
     @State private var newIncomeCategoryName = ""
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
@@ -23,22 +21,6 @@ struct CategoryManagementView: View {
                         Text("\(code) – \(Locale.current.localizedString(forCurrencyCode: code) ?? code)")
                             .tag(code)
                     }
-                }
-            }
-
-            Section("Expense Categories") {
-                ForEach(expenseCategories) { category in
-                    @Bindable var category = category
-                    TextField("Category name", text: $category.name)
-                }
-                .onDelete(perform: deleteExpenseCategory)
-
-                HStack {
-                    TextField("New category", text: $newExpenseCategoryName)
-                    Button("Add") {
-                        addExpenseCategory()
-                    }
-                    .disabled(newExpenseCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
 
@@ -92,19 +74,6 @@ struct CategoryManagementView: View {
         .navigationTitle("Settings")
     }
 
-    private func addExpenseCategory() {
-        let name = newExpenseCategoryName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        modelContext.insert(ExpenseCategory(name: name))
-        newExpenseCategoryName = ""
-    }
-
-    private func deleteExpenseCategory(offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(expenseCategories[index])
-        }
-    }
-
     private func addIncomeCategory() {
         let name = newIncomeCategoryName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
@@ -149,5 +118,5 @@ struct CategoryManagementView: View {
 
 #Preview {
     CategoryManagementView()
-        .modelContainer(for: [ExpenseCategory.self, IncomeCategory.self, Expense.self, Income.self], inMemory: true)
+        .modelContainer(for: [IncomeCategory.self, Expense.self, Income.self], inMemory: true)
 }
