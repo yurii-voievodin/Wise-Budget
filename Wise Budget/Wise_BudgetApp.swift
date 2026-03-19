@@ -29,6 +29,8 @@ struct Wise_BudgetApp: App {
     @State private var importError: String?
     @State private var showingImportAlert = false
     @State private var showResetPlanConfirmation = false
+    @State private var showingExportAlert = false
+    @State private var exportError: String?
 
     var body: some Scene {
         WindowGroup {
@@ -44,6 +46,15 @@ struct Wise_BudgetApp: App {
                     Button("Cancel", role: .cancel) {}
                 } message: {
                     Text("This will reset all planned amounts to zero and update the currency to the default. This action cannot be undone.")
+                }
+                .alert("Export", isPresented: $showingExportAlert) {
+                    Button("OK") {}
+                } message: {
+                    if let error = exportError {
+                        Text("Export failed: \(error)")
+                    } else {
+                        Text("Data exported successfully.")
+                    }
                 }
                 .alert("Import Complete", isPresented: $showingImportAlert) {
                     Button("OK") {}
@@ -62,6 +73,14 @@ struct Wise_BudgetApp: App {
         .modelContainer(sharedModelContainer)
         .commands {
             CommandGroup(replacing: .importExport) {
+                Button("Export Data to CSV...") {
+                    exportDataCSV()
+                }
+                Divider()
+                Button("Import Data from CSV...") {
+                    importAppDataCSV()
+                }
+                Divider()
                 Button("Import from WISE CSV...") {
                     importCSV()
                 }
@@ -76,6 +95,47 @@ struct Wise_BudgetApp: App {
                 }
                 .disabled(resetBudgetPlan == nil)
             }
+        }
+    }
+
+    private func exportDataCSV() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.nameFieldStringValue = "WiseBudget-Export.csv"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let csvString = try CSVExporter.exportCSV(from: sharedModelContainer.mainContext)
+            try csvString.write(to: url, atomically: true, encoding: .utf8)
+            exportError = nil
+            showingExportAlert = true
+        } catch {
+            exportError = error.localizedDescription
+            showingExportAlert = true
+        }
+    }
+
+    private func importAppDataCSV() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let rows = try AppDataCSVImporter.parseCSV(from: url)
+            let context = sharedModelContainer.mainContext
+            let result = try AppDataCSVImporter.importRows(rows, into: context)
+            try context.save()
+            importResult = result
+            importError = nil
+            showingImportAlert = true
+        } catch {
+            importResult = nil
+            importError = error.localizedDescription
+            showingImportAlert = true
         }
     }
 
