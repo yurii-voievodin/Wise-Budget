@@ -129,7 +129,7 @@ struct MonobankAccountsSheet: View {
 
         Task {
             do {
-                guard let token = KeychainHelper.loadToken() else {
+                guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
                     await MainActor.run {
                         errorMessage = "No token found. Please reconnect."
                         isLoading = false

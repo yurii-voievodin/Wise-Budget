@@ -2,10 +2,12 @@ import Foundation
 import Security
 
 enum KeychainHelper {
-    private static let service = "com.wisebudget.monobank-token"
+    static let monobankService = "com.wisebudget.monobank-token"
+    static let wiseService = "com.wisebudget.wise-token"
+
     private static let account = "api-token"
 
-    static func save(token: String) throws {
+    static func save(token: String, service: String) throws {
         guard let data = token.data(using: .utf8) else { return }
 
         // Delete existing item first
@@ -29,7 +31,7 @@ enum KeychainHelper {
         }
     }
 
-    static func loadToken() -> String? {
+    static func loadToken(service: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -48,7 +50,7 @@ enum KeychainHelper {
         return String(data: data, encoding: .utf8)
     }
 
-    static func deleteToken() throws {
+    static func deleteToken(service: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

@@ -9,6 +9,8 @@ struct CategoryManagementView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
     @AppStorage("monobankConnectedName") private var monobankConnectedName: String = ""
+    @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
+    @AppStorage("wiseConnectedName") private var wiseConnectedName: String = ""
 
     @State private var newExpenseCategoryName = ""
     @State private var newIncomeCategoryName = ""
@@ -21,8 +23,18 @@ struct CategoryManagementView: View {
     @State private var syncResultMessage: String?
     @State private var showSyncAlert = false
 
+    @State private var showWiseConnectSheet = false
+    @State private var showWiseDisconnectConfirmation = false
+    @State private var isWiseSyncing = false
+    @State private var wiseSyncResultMessage: String?
+    @State private var showWiseSyncAlert = false
+
     private var isMonobankConnected: Bool {
-        KeychainHelper.loadToken() != nil
+        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+    }
+
+    private var isWiseConnected: Bool {
+        KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
     var body: some View {
@@ -71,6 +83,49 @@ struct CategoryManagementView: View {
 
                 if isMonobankConnected && monobankLastSync > 0 {
                     Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative) ago")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Wise")
+                            .fontWeight(.medium)
+                        if isWiseConnected {
+                            Text("Connected as \(wiseConnectedName)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Not connected")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    if isWiseConnected {
+                        if isWiseSyncing {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Button("Sync Now") {
+                                syncWise()
+                            }
+                        }
+
+                        Button("Disconnect", role: .destructive) {
+                            showWiseDisconnectConfirmation = true
+                        }
+                    } else {
+                        Button("Connect") {
+                            showWiseConnectSheet = true
+                        }
+                    }
+                }
+
+                if isWiseConnected && wiseLastSync > 0 {
+                    Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative) ago")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -173,6 +228,27 @@ struct CategoryManagementView: View {
         } message: {
             Text(syncResultMessage ?? "")
         }
+        .sheet(isPresented: $showWiseConnectSheet) {
+            WiseConnectSheet { name in
+                wiseConnectedName = name
+            }
+        }
+        .confirmationDialog(
+            "Disconnect Wise",
+            isPresented: $showWiseDisconnectConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Disconnect", role: .destructive) {
+                disconnectWise()
+            }
+        } message: {
+            Text("This will remove your Wise token. Previously imported transactions will not be deleted.")
+        }
+        .alert("Wise Sync", isPresented: $showWiseSyncAlert) {
+            Button("OK") {}
+        } message: {
+            Text(wiseSyncResultMessage ?? "")
+        }
     }
 
     private func addExpenseCategory() {
@@ -208,6 +284,7 @@ struct CategoryManagementView: View {
                 modelContext.delete(expense)
             }
             monobankLastSync = 0
+            wiseLastSync = 0
         } catch {
             print("Failed to delete expenses: \(error)")
         }
@@ -220,6 +297,7 @@ struct CategoryManagementView: View {
                 modelContext.delete(income)
             }
             monobankLastSync = 0
+            wiseLastSync = 0
         } catch {
             print("Failed to delete incomes: \(error)")
         }
@@ -254,9 +332,43 @@ struct CategoryManagementView: View {
     }
 
     private func disconnectMonobank() {
-        try? KeychainHelper.deleteToken()
+        try? KeychainHelper.deleteToken(service: KeychainHelper.monobankService)
         monobankConnectedName = ""
         monobankLastSync = 0
+    }
+
+    private func syncWise() {
+        isWiseSyncing = true
+        Task {
+            do {
+                let result = try await WiseSyncService.sync(
+                    context: modelContext,
+                    lastSyncTimestamp: wiseLastSync > 0 ? wiseLastSync : nil
+                )
+                await MainActor.run {
+                    wiseLastSync = Date().timeIntervalSince1970
+                    isWiseSyncing = false
+                    if result.expensesImported == 0 && result.incomesImported == 0 {
+                        wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
+                    } else {
+                        wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
+                    }
+                    showWiseSyncAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isWiseSyncing = false
+                    wiseSyncResultMessage = error.localizedDescription
+                    showWiseSyncAlert = true
+                }
+            }
+        }
+    }
+
+    private func disconnectWise() {
+        try? KeychainHelper.deleteToken(service: KeychainHelper.wiseService)
+        wiseConnectedName = ""
+        wiseLastSync = 0
     }
 }
 

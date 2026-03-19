@@ -23,7 +23,7 @@ final class MonobankSyncService {
     static func sync(context: ModelContext, lastSyncTimestamp: Double?) async throws -> ImportResult {
         logger.info("sync started")
 
-        guard let token = KeychainHelper.loadToken() else {
+        guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
             logger.warning("sync aborted: no token in Keychain")
             throw MonobankAPIError.noToken
         }
