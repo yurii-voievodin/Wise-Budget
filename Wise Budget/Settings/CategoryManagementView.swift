@@ -3,13 +3,10 @@ import SwiftData
 
 struct CategoryManagementView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \IncomeCategory.name) private var incomeCategories: [IncomeCategory]
-
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
     @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
 
-    @State private var newIncomeCategoryName = ""
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
 
@@ -24,21 +21,6 @@ struct CategoryManagementView: View {
                 }
             }
 
-            Section("Income Categories") {
-                ForEach(incomeCategories) { category in
-                    @Bindable var category = category
-                    TextField("Category name", text: $category.name)
-                }
-                .onDelete(perform: deleteIncomeCategory)
-
-                HStack {
-                    TextField("New category", text: $newIncomeCategoryName)
-                    Button("Add") {
-                        addIncomeCategory()
-                    }
-                    .disabled(newIncomeCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
             Section("Data Management") {
                 Button("Delete All Expenses", role: .destructive) {
                     showDeleteAllExpensesConfirmation = true
@@ -74,19 +56,6 @@ struct CategoryManagementView: View {
         .navigationTitle("Settings")
     }
 
-    private func addIncomeCategory() {
-        let name = newIncomeCategoryName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        modelContext.insert(IncomeCategory(name: name))
-        newIncomeCategoryName = ""
-    }
-
-    private func deleteIncomeCategory(offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(incomeCategories[index])
-        }
-    }
-
     private func deleteAllExpenses() {
         do {
             let expenses = try modelContext.fetch(FetchDescriptor<Expense>())
@@ -118,5 +87,5 @@ struct CategoryManagementView: View {
 
 #Preview {
     CategoryManagementView()
-        .modelContainer(for: [IncomeCategory.self, Expense.self, Income.self], inMemory: true)
+        .modelContainer(for: [Expense.self, Income.self], inMemory: true)
 }
