@@ -71,6 +71,10 @@ struct Wise_BudgetApp: App {
                 }
         }
         .modelContainer(sharedModelContainer)
+        Settings {
+            SettingsView()
+                .modelContainer(sharedModelContainer)
+        }
         .commands {
             CommandGroup(replacing: .importExport) {
                 Button("Export Data to CSV...") {

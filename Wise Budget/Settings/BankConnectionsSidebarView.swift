@@ -126,7 +126,7 @@ struct BankConnectionsView: View {
                 }
             }
         }
-        .navigationTitle("Connections")
+
         .sheet(isPresented: $showConnectSheet) {
             MonobankConnectSheet { name in
                 monobankConnectedName = name

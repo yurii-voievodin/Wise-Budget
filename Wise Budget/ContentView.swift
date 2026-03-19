@@ -22,10 +22,7 @@ struct ContentView: View {
                 ExpenseListView(filter: $monthFilter)
             case .income:
                 IncomeListView(filter: $monthFilter)
-            case .settings:
-                CategoryManagementView()
-            case .connections:
-                BankConnectionsView()
+
             }
         }
         .onChange(of: selectedSidebarItem) { oldValue, _ in

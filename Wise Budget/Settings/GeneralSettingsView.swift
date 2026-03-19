@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct CategoryManagementView: View {
+struct GeneralSettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
@@ -53,7 +53,7 @@ struct CategoryManagementView: View {
                 }
             }
         }
-        .navigationTitle("Settings")
+
     }
 
     private func deleteAllExpenses() {
@@ -86,6 +86,6 @@ struct CategoryManagementView: View {
 }
 
 #Preview {
-    CategoryManagementView()
+    GeneralSettingsView()
         .modelContainer(for: [Expense.self, Income.self], inMemory: true)
 }
