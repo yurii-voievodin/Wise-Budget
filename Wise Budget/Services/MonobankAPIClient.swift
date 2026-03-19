@@ -1,0 +1,188 @@
+import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankAPI")
+
+// MARK: - Response Models
+
+struct MonobankClientInfo: Codable {
+    let clientId: String?
+    let name: String?
+    let accounts: [MonobankAccount]
+}
+
+struct MonobankAccount: Codable, Identifiable {
+    let id: String
+    let currencyCode: Int
+    let cashbackType: String?
+    let balance: Int
+    let type: String?
+    let maskedPan: [String]?
+}
+
+struct MonobankStatement: Codable, Identifiable {
+    let id: String
+    let time: Int
+    let description: String
+    let mcc: Int
+    let originalMcc: Int?
+    let amount: Int
+    let operationAmount: Int
+    let currencyCode: Int
+    let balance: Int
+    let hold: Bool
+    let cashbackAmount: Int?
+    let comment: String?
+}
+
+// MARK: - Error Types
+
+enum MonobankAPIError: LocalizedError {
+    case noToken
+    case invalidToken
+    case rateLimited
+    case serverError(Int)
+    case networkError(Error)
+    case decodingError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .noToken:
+            return "No Monobank token found. Please connect your account."
+        case .invalidToken:
+            return "Invalid or expired token. Please reconnect your Monobank account."
+        case .rateLimited:
+            return "Too many requests. Please wait a minute and try again."
+        case .serverError(let code):
+            return "Monobank server error (HTTP \(code))."
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .decodingError(let error):
+            return "Failed to parse Monobank response: \(error.localizedDescription)"
+        }
+    }
+}
+
+// MARK: - API Client
+
+final class MonobankAPIClient {
+    private let baseURL = "https://api.monobank.ua"
+    private let session: URLSession
+    let token: String
+
+    init(token: String, session: URLSession = .shared) {
+        self.token = token
+        self.session = session
+    }
+
+    func fetchClientInfo() async throws -> MonobankClientInfo {
+        let url = URL(string: "\(baseURL)/personal/client-info")!
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "X-Token")
+
+        logger.debug("GET /personal/client-info")
+
+        let (data, response) = try await performRequest(request)
+        try validateResponse(response, for: "/personal/client-info")
+
+        do {
+            let clientInfo = try JSONDecoder().decode(MonobankClientInfo.self, from: data)
+            logger.debug("client-info: name=\(clientInfo.name ?? "nil", privacy: .private), accounts=\(clientInfo.accounts.count)")
+            return clientInfo
+        } catch {
+            logger.error("client-info decoding failed: \(error.localizedDescription)")
+            throw MonobankAPIError.decodingError(error)
+        }
+    }
+
+    func fetchStatements(accountId: String, from: Date, to: Date) async throws -> [MonobankStatement] {
+        let fromTimestamp = Int(from.timeIntervalSince1970)
+        let toTimestamp = Int(to.timeIntervalSince1970)
+        let url = URL(string: "\(baseURL)/personal/statement/\(accountId)/\(fromTimestamp)/\(toTimestamp)")!
+
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "X-Token")
+
+        logger.debug("GET /personal/statement/\(accountId)/\(fromTimestamp)/\(toTimestamp)")
+
+        let (data, response) = try await performRequest(request)
+        try validateResponse(response, for: "/personal/statement/\(accountId)")
+
+        do {
+            let statements = try JSONDecoder().decode([MonobankStatement].self, from: data)
+            logger.debug("statement response: \(statements.count) transactions for account \(accountId)")
+            return statements
+        } catch {
+            logger.error("statement decoding failed: \(error.localizedDescription)")
+            throw MonobankAPIError.decodingError(error)
+        }
+    }
+
+    private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(for: request)
+        } catch {
+            logger.error("network request failed: \(error.localizedDescription)")
+            throw MonobankAPIError.networkError(error)
+        }
+    }
+
+    private func validateResponse(_ response: URLResponse, for endpoint: String) throws {
+        guard let httpResponse = response as? HTTPURLResponse else { return }
+
+        logger.debug("\(endpoint) -> HTTP \(httpResponse.statusCode)")
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            return
+        case 401, 403:
+            logger.error("\(endpoint): invalid token (HTTP \(httpResponse.statusCode))")
+            throw MonobankAPIError.invalidToken
+        case 429:
+            logger.warning("\(endpoint): rate limited (HTTP 429)")
+            throw MonobankAPIError.rateLimited
+        default:
+            logger.error("\(endpoint): server error (HTTP \(httpResponse.statusCode))")
+            throw MonobankAPIError.serverError(httpResponse.statusCode)
+        }
+    }
+
+    // MARK: - Currency Code Mapping (ISO 4217 numeric → string)
+
+    static let currencyCodeMap: [Int: String] = [
+        980: "UAH",
+        840: "USD",
+        978: "EUR",
+        826: "GBP",
+        985: "PLN",
+        203: "CZK",
+        756: "CHF",
+        392: "JPY",
+        156: "CNY",
+        949: "TRY",
+        348: "HUF",
+        946: "RON",
+        975: "BGN",
+        208: "DKK",
+        752: "SEK",
+        578: "NOK",
+        036: "AUD",
+        124: "CAD",
+        554: "NZD",
+        702: "SGD",
+        344: "HKD",
+        410: "KRW",
+        376: "ILS",
+        682: "SAR",
+        784: "AED",
+        764: "THB",
+        484: "MXN",
+        986: "BRL",
+        710: "ZAR",
+        356: "INR",
+    ]
+
+    static func currencyString(for code: Int) -> String {
+        currencyCodeMap[code] ?? "UAH"
+    }
+}
