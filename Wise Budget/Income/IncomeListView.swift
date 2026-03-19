@@ -4,13 +4,10 @@ import SwiftData
 struct IncomeListView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \IncomeCategory.name) private var incomeCategories: [IncomeCategory]
-
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
     @State private var selectedTab: IncomeTab = .income
     @State private var isManagingCategories = false
-    @State private var newCategoryName = ""
     @Binding var filter: MonthFilter
 
     enum IncomeTab: Hashable {
@@ -55,7 +52,7 @@ struct IncomeListView: View {
             }
         }
         .sheet(isPresented: $isAddingIncome) {
-            AddIncomeSheet { amount, currency, date, category, descriptionText in
+            IncomeFormSheet { amount, currency, date, category, descriptionText in
                 withAnimation {
                     let newIncome = Income(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText)
                     modelContext.insert(newIncome)
@@ -63,7 +60,7 @@ struct IncomeListView: View {
             }
         }
         .sheet(item: $incomeToEdit) { income in
-            AddIncomeSheet(income: income) { amount, currency, date, category, descriptionText in
+            IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText in
                 withAnimation {
                     income.amount = amount
                     income.currency = currency
@@ -74,45 +71,7 @@ struct IncomeListView: View {
             }
         }
         .sheet(isPresented: $isManagingCategories) {
-            NavigationStack {
-                List {
-                    ForEach(incomeCategories) { category in
-                        @Bindable var category = category
-                        TextField("Category name", text: $category.name)
-                    }
-                    .onDelete(perform: deleteIncomeCategory)
-
-                    HStack {
-                        TextField("New category", text: $newCategoryName)
-                        Button("Add") {
-                            addIncomeCategory()
-                        }
-                        .disabled(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                }
-                .navigationTitle("Income Categories")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") {
-                            isManagingCategories = false
-                        }
-                    }
-                }
-            }
-            .frame(minWidth: 350, minHeight: 300)
-        }
-    }
-
-    private func addIncomeCategory() {
-        let name = newCategoryName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        modelContext.insert(IncomeCategory(name: name))
-        newCategoryName = ""
-    }
-
-    private func deleteIncomeCategory(offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(incomeCategories[index])
+            IncomeCategoryManagementSheet()
         }
     }
 }

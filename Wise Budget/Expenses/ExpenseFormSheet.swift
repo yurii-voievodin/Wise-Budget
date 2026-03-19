@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct AddExpenseSheet: View {
+struct ExpenseFormSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
 
@@ -92,6 +92,6 @@ struct AddExpenseSheet: View {
 }
 
 #Preview("Add Expense Sheet") {
-    AddExpenseSheet { _, _, _, _, _, _, _, _ in }
+    ExpenseFormSheet { _, _, _, _, _, _, _, _ in }
         .modelContainer(for: [ExpenseCategory.self, Expense.self], inMemory: true)
 }
