@@ -25,7 +25,6 @@ final class WiseSyncService {
         let client = WiseAPIClient(token: token)
 
         // Fetch profiles and use the stored profile ID
-        logger.debug("fetching profiles...")
         let profiles = try await client.fetchProfiles()
 
         let profileId = loadSelectedProfileId()
@@ -89,19 +88,27 @@ final class WiseSyncService {
             return nil
         }
 
-        // Determine direction: negative amount = expense (OUT), positive = income (IN)
+        // Determine direction based on activity type and amount sign.
+        // The Wise API returns positive amounts for outgoing payments (e.g. "18.55 EUR" for a card payment),
+        // so we cannot rely on the sign alone. Use the activity type to identify expenses.
+        let expenseTypes: Set<String> = [
+            "CARD_PAYMENT", "CARD_TRANSACTION",
+            "DIRECT_DEBIT_TRANSACTION", "DIRECT_DEBIT_INSTRUCTION",
+            "TRANSFER", "SEND_ORDER", "SEND_ORDER_EXECUTION", "BATCH_TRANSFER",
+        ]
+
         let direction: String
-        if amount < 0 {
-            direction = "OUT"
-        } else if amount > 0 {
-            direction = "IN"
-        } else {
+        if amount == 0 {
             return nil // Skip zero-amount
+        } else if amount < 0 || expenseTypes.contains(activity.type) {
+            direction = "OUT"
+        } else {
+            direction = "IN"
         }
 
         let absAmount = abs(amount)
         let categoryName = categoryForActivityType(activity.type)
-        let description = activity.title ?? activity.description ?? "Wise Activity"
+        let description = stripHTML(activity.title ?? activity.description ?? "Wise Activity")
 
         // Parse secondary amount for currency conversion info
         let baseCurrencyAmount: Decimal?
@@ -169,6 +176,11 @@ final class WiseSyncService {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.date(from: dateString)
+    }
+
+    /// Strips HTML tags from a string (e.g. "<strong>Glovo</strong>" → "Glovo").
+    private static func stripHTML(_ string: String) -> String {
+        string.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     }
 
     /// Maps Wise activity type to app category.

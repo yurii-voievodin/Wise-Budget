@@ -82,10 +82,8 @@ final class WiseAPIClient {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        logger.debug("GET /v2/profiles")
-
         let (data, response) = try await performRequest(request)
-        try validateResponse(response, for: "/v2/profiles")
+        try validateResponse(response)
 
         do {
             let profiles = try JSONDecoder().decode([WiseProfile].self, from: data)
@@ -121,11 +119,10 @@ final class WiseAPIClient {
         logger.debug("GET /v1/profiles/\(profileId)/activities (cursor=\(nextCursor ?? "nil"))")
 
         let (data, response) = try await performRequest(request)
-        try validateResponse(response, for: "/v1/profiles/\(profileId)/activities")
+        try validateResponse(response)
 
         do {
             let activitiesResponse = try JSONDecoder().decode(WiseActivitiesResponse.self, from: data)
-            logger.debug("activities: \(activitiesResponse.activities.count) fetched")
             return activitiesResponse
         } catch {
             logger.error("activities decoding failed: \(error.localizedDescription)")
@@ -158,33 +155,56 @@ final class WiseAPIClient {
     }
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        // Log request details
+        let method = request.httpMethod ?? "GET"
+        let url = request.url?.absoluteString ?? "unknown"
+        logger.debug("REQUEST: \(method) \(url)")
+
+        if let headers = request.allHTTPHeaderFields {
+            let safeHeaders = headers.map { key, value in
+                if key == "Authorization" {
+                    return "\(key): Bearer ***"
+                }
+                return "\(key): \(value)"
+            }.joined(separator: ", ")
+            logger.debug("HEADERS: \(safeHeaders)")
+        }
+
+        if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+            logger.debug("BODY: \(bodyString)")
+        }
+
         do {
-            return try await session.data(for: request)
+            let (data, response) = try await session.data(for: request)
+
+            // Log response details
+            if let httpResponse = response as? HTTPURLResponse {
+                logger.debug("RESPONSE: HTTP \(httpResponse.statusCode)")
+            }
+            if let rawBody = String(data: data, encoding: .utf8) {
+                logger.debug("RESPONSE BODY: \(rawBody)")
+            }
+
+            return (data, response)
         } catch {
             logger.error("network request failed: \(error.localizedDescription)")
             throw WiseAPIError.networkError(error)
         }
     }
 
-    private func validateResponse(_ response: URLResponse, for endpoint: String) throws {
+    private func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else { return }
-
-        logger.debug("\(endpoint) -> HTTP \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200...299:
             return
         case 401:
-            logger.error("\(endpoint): invalid token (HTTP 401)")
             throw WiseAPIError.invalidToken
         case 403:
-            logger.error("\(endpoint): forbidden (HTTP 403)")
             throw WiseAPIError.invalidToken
         case 429:
-            logger.warning("\(endpoint): rate limited (HTTP 429)")
             throw WiseAPIError.rateLimited
         default:
-            logger.error("\(endpoint): server error (HTTP \(httpResponse.statusCode))")
             throw WiseAPIError.serverError(httpResponse.statusCode)
         }
     }
