@@ -7,6 +7,9 @@ struct ExpenseCategoryChartView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
+    @State private var selectedCategory: String?
+    @State private var selectedAngle: Double?
+
     let filter: MonthFilter
 
     init(filter: MonthFilter) {
@@ -57,6 +60,17 @@ struct ExpenseCategoryChartView: View {
         slices.reduce(0) { $0 + $1.total }
     }
 
+    private func categoryForAngle(_ angle: Double) -> String? {
+        var cumulative = 0.0
+        for slice in slices {
+            cumulative += slice.total
+            if angle <= cumulative {
+                return slice.name
+            }
+        }
+        return nil
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -69,6 +83,12 @@ struct ExpenseCategoryChartView: View {
                     legendView
                 }
                 .padding()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation {
+                    selectedCategory = nil
+                }
             }
         }
     }
@@ -83,8 +103,15 @@ struct ExpenseCategoryChartView: View {
                 angularInset: 1
             )
             .foregroundStyle(by: .value("Category", slice.name))
+            .opacity(selectedCategory == nil || selectedCategory == slice.name ? 1.0 : 0.3)
         }
         .chartLegend(.hidden)
+        .chartAngleSelection(value: $selectedAngle)
+        .onChange(of: selectedAngle) { _, newValue in
+            if let newValue {
+                selectedCategory = categoryForAngle(newValue)
+            }
+        }
         .frame(height: 300)
     }
 
@@ -95,6 +122,7 @@ struct ExpenseCategoryChartView: View {
             ForEach(slices) { slice in
                 HStack {
                     Text(slice.name)
+                        .fontWeight(selectedCategory == slice.name ? .bold : .regular)
                     Spacer()
                     Text(String(format: "%.1f%%", slice.total / grandTotal * 100))
                         .foregroundStyle(.secondary)
@@ -102,6 +130,17 @@ struct ExpenseCategoryChartView: View {
                     Text("\(Decimal(slice.total), format: .number) \(defaultCurrency)")
                         .monospacedDigit()
                         .frame(minWidth: 80, alignment: .trailing)
+                }
+                .opacity(selectedCategory == nil || selectedCategory == slice.name ? 1.0 : 0.5)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation {
+                        if selectedCategory == slice.name {
+                            selectedCategory = nil
+                        } else {
+                            selectedCategory = slice.name
+                        }
+                    }
                 }
             }
         }
