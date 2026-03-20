@@ -154,7 +154,7 @@ struct BudgetPlanQueryListView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text(category.name)
+                            Label(category.name, systemImage: category.displayIconName)
                                 .fontWeight(.medium)
                             Spacer()
                             Text("\(actual, format: .number)")

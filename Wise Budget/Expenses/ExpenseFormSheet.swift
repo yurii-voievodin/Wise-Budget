@@ -47,7 +47,7 @@ struct ExpenseFormSheet: View {
                 Picker("Category", selection: $selectedCategory) {
                     Text("None").tag(ExpenseCategory?.none)
                     ForEach(categories) { category in
-                        Text(category.name).tag(ExpenseCategory?.some(category))
+                        Label(category.name, systemImage: category.displayIconName).tag(ExpenseCategory?.some(category))
                     }
                 }
                 Picker("Currency", selection: $currency) {

@@ -4,11 +4,17 @@ import SwiftData
 @Model
 final class IncomeCategory {
     var name: String
+    var iconName: String?
 
     @Relationship(deleteRule: .nullify, inverse: \Income.category)
     var incomes: [Income] = []
 
-    init(name: String) {
+    var displayIconName: String {
+        iconName ?? "folder"
+    }
+
+    init(name: String, iconName: String = "folder") {
         self.name = name
+        self.iconName = iconName
     }
 }

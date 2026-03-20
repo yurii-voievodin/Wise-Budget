@@ -40,7 +40,7 @@ struct IncomeFormSheet: View {
                 Picker("Category", selection: $selectedCategory) {
                     Text("None").tag(IncomeCategory?.none)
                     ForEach(categories) { category in
-                        Text(category.name).tag(IncomeCategory?.some(category))
+                        Label(category.name, systemImage: category.displayIconName).tag(IncomeCategory?.some(category))
                     }
                 }
                 Picker("Currency", selection: $currency) {

@@ -37,12 +37,12 @@ struct IncomeStatisticsView: View {
         }
     }
 
-    private var categoryBreakdown: [(name: String, total: Decimal, percentage: Double)] {
+    private var categoryBreakdown: [(name: String, iconName: String, total: Decimal, percentage: Double)] {
         let grouped = Dictionary(grouping: incomes) { income in
             income.category?.name ?? "Uncategorized"
         }
 
-        let totals: [(name: String, total: Decimal)] = grouped.map { name, items in
+        let totals: [(name: String, iconName: String, total: Decimal)] = grouped.map { name, items in
             let sum = items.reduce(Decimal.zero) { total, income in
                 if income.currency == defaultCurrency {
                     return total + income.amount
@@ -52,7 +52,8 @@ struct IncomeStatisticsView: View {
                 }
                 return total
             }
-            return (name: name, total: sum)
+            let icon = items.first?.category?.displayIconName ?? "folder"
+            return (name: name, iconName: icon, total: sum)
         }
 
         let grandTotal = totalInDefaultCurrency
@@ -61,7 +62,7 @@ struct IncomeStatisticsView: View {
                 let pct = grandTotal > 0
                     ? NSDecimalNumber(decimal: item.total / grandTotal * 100).doubleValue
                     : 0
-                return (name: item.name, total: item.total, percentage: pct)
+                return (name: item.name, iconName: item.iconName, total: item.total, percentage: pct)
             }
             .sorted { $0.total > $1.total }
     }
@@ -122,7 +123,7 @@ struct IncomeStatisticsView: View {
                                 .monospacedDigit()
                         }
                     } label: {
-                        Text(item.name)
+                        Label(item.name, systemImage: item.iconName)
                     }
                 }
             }

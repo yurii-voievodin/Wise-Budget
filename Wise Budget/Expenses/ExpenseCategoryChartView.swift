@@ -32,6 +32,7 @@ struct ExpenseCategoryChartView: View {
     private struct CategorySlice: Identifiable {
         let id = UUID()
         let name: String
+        let iconName: String
         let total: Double
     }
 
@@ -50,7 +51,8 @@ struct ExpenseCategoryChartView: View {
                 }
                 return total
             }
-            return CategorySlice(name: name, total: NSDecimalNumber(decimal: sum).doubleValue)
+            let icon = items.first?.category?.displayIconName ?? "folder"
+            return CategorySlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
         .filter { $0.total > 0 }
         .sorted { $0.total > $1.total }
@@ -121,7 +123,7 @@ struct ExpenseCategoryChartView: View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(slices) { slice in
                 HStack {
-                    Text(slice.name)
+                    Label(slice.name, systemImage: slice.iconName)
                         .fontWeight(selectedCategory == slice.name ? .bold : .regular)
                     Spacer()
                     Text(String(format: "%.1f%%", slice.total / grandTotal * 100))

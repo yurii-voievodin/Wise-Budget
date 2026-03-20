@@ -63,8 +63,8 @@ struct ExpenseQueryListView: View {
                                                 .font(.body)
                                                 .fontWeight(.medium)
                                         }
-                                        if let categoryName = expense.category?.name {
-                                            Text(categoryName)
+                                        if let category = expense.category {
+                                            Label(category.name, systemImage: category.displayIconName)
                                                 .font(.caption)
                                                 .foregroundStyle(.tertiary)
                                         }

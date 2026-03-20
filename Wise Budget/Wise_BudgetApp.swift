@@ -37,8 +37,10 @@ struct Wise_BudgetApp: App {
             ContentView()
                 .frame(minWidth: 750, maxWidth: 1400, minHeight: 400)
                 .onAppear {
-                    prepopulateCategories()
-                    prepopulateIncomeCategories()
+                    let context = sharedModelContainer.mainContext
+                    DataSeeder.prepopulateCategories(in: context)
+                    DataSeeder.prepopulateIncomeCategories(in: context)
+                    DataSeeder.migrateCategoryIcons(in: context)
                     disableFullScreen()
                 }
                 .alert("Reset Budget Plan", isPresented: $showResetPlanConfirmation) {
@@ -200,32 +202,4 @@ struct Wise_BudgetApp: App {
         }
     }
 
-    private func prepopulateCategories() {
-        let context = sharedModelContainer.mainContext
-        let descriptor = FetchDescriptor<ExpenseCategory>()
-        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
-
-        let defaultNames = [
-            "Auto", "Cafes", "Entertainment", "Groceries", "Home",
-            "Medical", "Other", "Personal Items", "Taxes", "Travel", "Utilities"
-        ]
-        for name in defaultNames {
-            context.insert(ExpenseCategory(name: name))
-        }
-    }
-
-    private func prepopulateIncomeCategories() {
-        let context = sharedModelContainer.mainContext
-        let descriptor = FetchDescriptor<IncomeCategory>()
-        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
-
-        let defaultNames = [
-            "Freelance", "Gifts", "Investments", "Other", "Rental", "Salary"
-        ]
-        for name in defaultNames {
-            context.insert(IncomeCategory(name: name))
-        }
-    }
 }

@@ -13,7 +13,12 @@ struct ExpenseCategoryManagementSheet: View {
             List {
                 ForEach(categories) { category in
                     @Bindable var category = category
-                    TextField("Category name", text: $category.name)
+                    HStack {
+                        Image(systemName: category.displayIconName)
+                            .frame(width: 20)
+                            .foregroundStyle(.secondary)
+                        TextField("Category name", text: $category.name)
+                    }
                 }
                 .onDelete(perform: deleteCategory)
 

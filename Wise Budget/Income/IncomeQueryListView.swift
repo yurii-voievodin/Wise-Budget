@@ -63,8 +63,8 @@ struct IncomeQueryListView: View {
                                                 .font(.body)
                                                 .fontWeight(.medium)
                                         }
-                                        if let categoryName = income.category?.name {
-                                            Text(categoryName)
+                                        if let category = income.category {
+                                            Label(category.name, systemImage: category.displayIconName)
                                                 .font(.caption)
                                                 .foregroundStyle(.tertiary)
                                         }
