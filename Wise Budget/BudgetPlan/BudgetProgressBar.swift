@@ -4,13 +4,26 @@ struct BudgetProgressBar: View {
     let spent: Decimal
     let planned: Decimal
 
-    private var progress: Double {
+    private var ratio: Double {
         guard planned > 0 else { return 0 }
-        return min(Double(truncating: spent as NSDecimalNumber) / Double(truncating: planned as NSDecimalNumber), 1.0)
+        return Double(truncating: spent as NSDecimalNumber) / Double(truncating: planned as NSDecimalNumber)
     }
 
-    private var isOverBudget: Bool {
-        spent > planned
+    private var progress: Double {
+        min(ratio, 1.0)
+    }
+
+    private var barColor: Color {
+        switch ratio {
+        case ..<0.5:
+            return .green
+        case 0.5..<0.75:
+            return .yellow
+        case 0.75..<1:
+            return .orange
+        default:
+            return .red
+        }
     }
 
     var body: some View {
@@ -20,7 +33,7 @@ struct BudgetProgressBar: View {
                     .fill(Color.secondary.opacity(0.2))
                     .frame(height: 8)
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(isOverBudget ? Color.red : Color.accentColor)
+                    .fill(barColor)
                     .frame(width: geo.size.width * progress, height: 8)
             }
         }
