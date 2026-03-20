@@ -9,6 +9,7 @@ struct ExpenseListView: View {
     @State private var expenseToEdit: Expense?
     @State private var selectedTab: ExpenseTab = .expenses
     @State private var isManagingCategories = false
+    @State private var syncService = BankSyncService()
 
     enum ExpenseTab: Hashable {
         case expenses
@@ -39,6 +40,7 @@ struct ExpenseListView: View {
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            BankSyncToolbar(syncService: syncService, filter: filter)
             ToolbarItem {
                 Button(action: { isManagingCategories = true }) {
                     Label("Manage Categories", systemImage: "tag")
@@ -51,6 +53,11 @@ struct ExpenseListView: View {
                     }
                 }
             }
+        }
+        .alert("Bank Sync", isPresented: $syncService.showSyncAlert) {
+            Button("OK") {}
+        } message: {
+            Text(syncService.syncResultMessage ?? "")
         }
         .sheet(isPresented: $isAddingExpense) {
             ExpenseFormSheet { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
@@ -78,8 +85,6 @@ struct ExpenseListView: View {
             ExpenseCategoryManagementSheet()
         }
     }
-
-
 }
 
 

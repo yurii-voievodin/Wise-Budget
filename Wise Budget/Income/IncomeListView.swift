@@ -8,6 +8,7 @@ struct IncomeListView: View {
     @State private var incomeToEdit: Income?
     @State private var selectedTab: IncomeTab = .income
     @State private var isManagingCategories = false
+    @State private var syncService = BankSyncService()
     @Binding var filter: MonthFilter
 
     enum IncomeTab: Hashable {
@@ -26,12 +27,12 @@ struct IncomeListView: View {
                 )
                 .id(filter)
             }
-            Tab("Chart", systemImage: "chart.pie", value: .chart) {
-                IncomeCategoryChartView(filter: filter)
-                    .id(filter)
-            }
             Tab("Statistics", systemImage: "tablecells", value: .statistics) {
                 IncomeStatisticsView(filter: filter)
+                    .id(filter)
+            }
+            Tab("Chart", systemImage: "chart.pie", value: .chart) {
+                IncomeCategoryChartView(filter: filter)
                     .id(filter)
             }
         }
@@ -39,6 +40,7 @@ struct IncomeListView: View {
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            BankSyncToolbar(syncService: syncService, filter: filter)
             ToolbarItem {
                 Button(action: { isManagingCategories = true }) {
                     Label("Manage Categories", systemImage: "tag")
@@ -51,6 +53,11 @@ struct IncomeListView: View {
                     }
                 }
             }
+        }
+        .alert("Bank Sync", isPresented: $syncService.showSyncAlert) {
+            Button("OK") {}
+        } message: {
+            Text(syncService.syncResultMessage ?? "")
         }
         .sheet(isPresented: $isAddingIncome) {
             IncomeFormSheet { amount, currency, date, category, descriptionText in
