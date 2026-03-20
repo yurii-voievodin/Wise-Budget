@@ -3,21 +3,21 @@ import SwiftData
 
 struct IncomeQueryListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.openSettings) private var openSettings
     @Query private var incomes: [Income]
     @Query private var allIncomes: [Income]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
-    @AppStorage("selectedSettingsTab") private var selectedSettingsTab: Int = SettingsTab.general.rawValue
 
     let filter: MonthFilter
     @Binding var incomeToEdit: Income?
     @Binding var isAddingIncome: Bool
+    @Binding var selectedSidebarItem: SidebarItem
 
-    init(filter: MonthFilter, incomeToEdit: Binding<Income?>, isAddingIncome: Binding<Bool>) {
+    init(filter: MonthFilter, incomeToEdit: Binding<Income?>, isAddingIncome: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>) {
         self.filter = filter
         self._incomeToEdit = incomeToEdit
         self._isAddingIncome = isAddingIncome
+        self._selectedSidebarItem = selectedSidebarItem
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
@@ -94,7 +94,7 @@ struct IncomeQueryListView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Spacer()
-            Image(systemName: "tray")
+            Image(systemName: "creditcard")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
             Text("No Income Yet")
@@ -112,8 +112,7 @@ struct IncomeQueryListView: View {
                 }
 
                 Button {
-                    selectedSettingsTab = SettingsTab.connections.rawValue
-                    openSettings()
+                    selectedSidebarItem = .bankConnections
                 } label: {
                     Label("Connect Bank", systemImage: "link")
                 }

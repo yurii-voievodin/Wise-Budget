@@ -6,18 +6,18 @@ struct ExpenseQueryListView: View {
     @Query private var expenses: [Expense]
     @Query private var allExpenses: [Expense]
 
-    @Environment(\.openSettings) private var openSettings
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
-    @AppStorage("selectedSettingsTab") private var selectedSettingsTab: Int = SettingsTab.general.rawValue
 
     let filter: MonthFilter
     @Binding var expenseToEdit: Expense?
     @Binding var isAddingExpense: Bool
+    @Binding var selectedSidebarItem: SidebarItem
 
-    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>) {
+    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>) {
         self.filter = filter
         self._expenseToEdit = expenseToEdit
         self._isAddingExpense = isAddingExpense
+        self._selectedSidebarItem = selectedSidebarItem
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
@@ -99,7 +99,7 @@ struct ExpenseQueryListView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Spacer()
-            Image(systemName: "tray")
+            Image(systemName: "creditcard")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
             Text("No Expenses Yet")
@@ -117,8 +117,7 @@ struct ExpenseQueryListView: View {
                 }
 
                 Button {
-                    selectedSettingsTab = SettingsTab.connections.rawValue
-                    openSettings()
+                    selectedSidebarItem = .bankConnections
                 } label: {
                     Label("Connect Bank", systemImage: "link")
                 }

@@ -4,6 +4,7 @@ import SwiftData
 struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var filter: MonthFilter
+    @Binding var selectedSidebarItem: SidebarItem
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
@@ -23,7 +24,8 @@ struct ExpenseListView: View {
                 ExpenseQueryListView(
                     filter: filter,
                     expenseToEdit: $expenseToEdit,
-                    isAddingExpense: $isAddingExpense
+                    isAddingExpense: $isAddingExpense,
+                    selectedSidebarItem: $selectedSidebarItem
                 )
                 .id(filter)
             }

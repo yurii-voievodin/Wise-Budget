@@ -10,6 +10,7 @@ struct IncomeListView: View {
     @State private var isManagingCategories = false
     @State private var syncService = BankSyncService()
     @Binding var filter: MonthFilter
+    @Binding var selectedSidebarItem: SidebarItem
 
     enum IncomeTab: Hashable {
         case income
@@ -23,7 +24,8 @@ struct IncomeListView: View {
                 IncomeQueryListView(
                     filter: filter,
                     incomeToEdit: $incomeToEdit,
-                    isAddingIncome: $isAddingIncome
+                    isAddingIncome: $isAddingIncome,
+                    selectedSidebarItem: $selectedSidebarItem
                 )
                 .id(filter)
             }

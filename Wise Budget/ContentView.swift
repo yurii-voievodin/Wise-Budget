@@ -8,9 +8,15 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
-                ForEach(SidebarItem.allCases) { item in
-                    Label(item.rawValue, systemImage: item.systemImage)
-                        .tag(item)
+                Section {
+                    ForEach([SidebarItem.budgetPlan, .expenses, .income], id: \.self) { item in
+                        Label(item.rawValue, systemImage: item.systemImage)
+                            .tag(item)
+                    }
+                }
+                Section {
+                    Label(SidebarItem.bankConnections.rawValue, systemImage: SidebarItem.bankConnections.systemImage)
+                        .tag(SidebarItem.bankConnections)
                 }
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
@@ -19,10 +25,11 @@ struct ContentView: View {
             case .budgetPlan:
                 BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, monthFilter: $monthFilter)
             case .expenses:
-                ExpenseListView(filter: $monthFilter)
+                ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem)
             case .income:
-                IncomeListView(filter: $monthFilter)
-
+                IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem)
+            case .bankConnections:
+                BankConnectionsView()
             }
         }
         .onChange(of: selectedSidebarItem) { oldValue, _ in
