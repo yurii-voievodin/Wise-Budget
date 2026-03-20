@@ -56,11 +56,6 @@ struct ExpenseListView: View {
                 }
             }
         }
-        .alert("Bank Sync", isPresented: $syncService.showSyncAlert) {
-            Button("OK") {}
-        } message: {
-            Text(syncService.syncResultMessage ?? "")
-        }
         .sheet(isPresented: $isAddingExpense) {
             ExpenseFormSheet { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
                 withAnimation {

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct BankConnectionsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -14,13 +15,11 @@ struct BankConnectionsView: View {
     @State private var showDisconnectConfirmation = false
     @State private var isSyncing = false
     @State private var syncResultMessage: String?
-    @State private var showSyncAlert = false
 
     @State private var showWiseConnectSheet = false
     @State private var showWiseDisconnectConfirmation = false
     @State private var isWiseSyncing = false
     @State private var wiseSyncResultMessage: String?
-    @State private var showWiseSyncAlert = false
 
     private var isMonobankConnected: Bool {
         KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
@@ -146,11 +145,6 @@ struct BankConnectionsView: View {
         } message: {
             Text("This will remove your Monobank token. Previously imported transactions will not be deleted.")
         }
-        .alert("Monobank Sync", isPresented: $showSyncAlert) {
-            Button("OK") {}
-        } message: {
-            Text(syncResultMessage ?? "")
-        }
         .sheet(isPresented: $showWiseConnectSheet) {
             WiseConnectSheet { name in
                 wiseConnectedName = name
@@ -166,11 +160,6 @@ struct BankConnectionsView: View {
             }
         } message: {
             Text("This will remove your Wise token. Previously imported transactions will not be deleted.")
-        }
-        .alert("Wise Sync", isPresented: $showWiseSyncAlert) {
-            Button("OK") {}
-        } message: {
-            Text(wiseSyncResultMessage ?? "")
         }
     }
 
@@ -192,13 +181,13 @@ struct BankConnectionsView: View {
                     } else {
                         syncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
                     }
-                    showSyncAlert = true
+                    postNotification(title: "Monobank Sync", message: syncResultMessage)
                 }
             } catch {
                 await MainActor.run {
                     isSyncing = false
                     syncResultMessage = error.localizedDescription
-                    showSyncAlert = true
+                    postNotification(title: "Monobank Sync", message: syncResultMessage)
                 }
             }
         }
@@ -226,13 +215,13 @@ struct BankConnectionsView: View {
                     } else {
                         wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
                     }
-                    showWiseSyncAlert = true
+                    postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
                 }
             } catch {
                 await MainActor.run {
                     isWiseSyncing = false
                     wiseSyncResultMessage = error.localizedDescription
-                    showWiseSyncAlert = true
+                    postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
                 }
             }
         }
@@ -242,6 +231,20 @@ struct BankConnectionsView: View {
         try? KeychainHelper.deleteToken(service: KeychainHelper.wiseService)
         wiseConnectedName = ""
         wiseLastSync = 0
+    }
+
+    private func postNotification(title: String, message: String?) {
+        guard let message else { return }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = message
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
     }
 }
 

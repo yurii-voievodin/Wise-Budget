@@ -41,6 +41,7 @@ struct Wise_BudgetApp: App {
                     DataSeeder.prepopulateCategories(in: context)
                     DataSeeder.prepopulateIncomeCategories(in: context)
                     DataSeeder.migrateCategoryIcons(in: context)
+                    BankSyncService.requestNotificationPermission()
                     disableFullScreen()
                 }
                 .alert("Reset Budget Plan", isPresented: $showResetPlanConfirmation) {

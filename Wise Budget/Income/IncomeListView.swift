@@ -56,11 +56,6 @@ struct IncomeListView: View {
                 }
             }
         }
-        .alert("Bank Sync", isPresented: $syncService.showSyncAlert) {
-            Button("OK") {}
-        } message: {
-            Text(syncService.syncResultMessage ?? "")
-        }
         .sheet(isPresented: $isAddingIncome) {
             IncomeFormSheet { amount, currency, date, category, descriptionText in
                 withAnimation {
