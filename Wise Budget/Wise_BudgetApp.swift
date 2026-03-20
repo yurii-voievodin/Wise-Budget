@@ -35,9 +35,11 @@ struct Wise_BudgetApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(minWidth: 750, maxWidth: 1400, minHeight: 400)
                 .onAppear {
                     prepopulateCategories()
                     prepopulateIncomeCategories()
+                    disableFullScreen()
                 }
                 .alert("Reset Budget Plan", isPresented: $showResetPlanConfirmation) {
                     Button("Reset", role: .destructive) {
@@ -70,6 +72,8 @@ struct Wise_BudgetApp: App {
                     }
                 }
         }
+        .defaultSize(width: 900, height: 600)
+        .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
         Settings {
             SettingsView()
@@ -186,6 +190,13 @@ struct Wise_BudgetApp: App {
             importResult = nil
             importError = error.localizedDescription
             showingImportAlert = true
+        }
+    }
+
+    private func disableFullScreen() {
+        for window in NSApplication.shared.windows {
+            window.collectionBehavior.remove(.fullScreenPrimary)
+            window.collectionBehavior.insert(.fullScreenNone)
         }
     }
 

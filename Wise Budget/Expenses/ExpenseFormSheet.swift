@@ -8,7 +8,7 @@ struct ExpenseFormSheet: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @State private var amount: Decimal?
-    @State private var currency: String = ""
+    @State private var currency: String
     @State private var date = Date()
     @State private var selectedCategory: ExpenseCategory?
     @State private var descriptionText: String = ""
@@ -24,6 +24,8 @@ struct ExpenseFormSheet: View {
     init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?, String?, Decimal?, String?) -> Void) {
         self.expenseToEdit = expense
         self.onSave = onSave
+        let storedCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
+            ?? Locale.current.currency?.identifier ?? "USD"
         if let expense {
             _amount = State(initialValue: expense.amount)
             _currency = State(initialValue: expense.currency)
@@ -32,6 +34,8 @@ struct ExpenseFormSheet: View {
             _descriptionText = State(initialValue: expense.descriptionText ?? "")
             _destination = State(initialValue: expense.destination ?? "")
             _baseCurrencyAmount = State(initialValue: expense.baseCurrencyAmount)
+        } else {
+            _currency = State(initialValue: storedCurrency)
         }
     }
 
@@ -83,11 +87,6 @@ struct ExpenseFormSheet: View {
             }
         }
         .frame(minWidth: 350, minHeight: 250)
-        .onAppear {
-            if currency.isEmpty {
-                currency = defaultCurrency
-            }
-        }
     }
 }
 

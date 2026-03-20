@@ -21,7 +21,8 @@ struct IncomeListView: View {
             Tab("Income", systemImage: "list.bullet", value: .income) {
                 IncomeQueryListView(
                     filter: filter,
-                    incomeToEdit: $incomeToEdit
+                    incomeToEdit: $incomeToEdit,
+                    isAddingIncome: $isAddingIncome
                 )
                 .id(filter)
             }

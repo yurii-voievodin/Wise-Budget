@@ -9,8 +9,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .expenses: "arrow.down.circle"
-        case .income: "arrow.up.circle"
+        case .expenses: "arrow.up.circle"
+        case .income: "arrow.down.circle"
         case .budgetPlan: "chart.bar"
         }
     }

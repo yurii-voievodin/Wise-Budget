@@ -21,7 +21,8 @@ struct ExpenseListView: View {
             Tab("Expenses", systemImage: "list.bullet", value: .expenses) {
                 ExpenseQueryListView(
                     filter: filter,
-                    expenseToEdit: $expenseToEdit
+                    expenseToEdit: $expenseToEdit,
+                    isAddingExpense: $isAddingExpense
                 )
                 .id(filter)
             }

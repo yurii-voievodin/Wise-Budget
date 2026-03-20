@@ -4,15 +4,20 @@ import SwiftData
 struct ExpenseQueryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
+    @Query private var allExpenses: [Expense]
 
+    @Environment(\.openSettings) private var openSettings
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage("selectedSettingsTab") private var selectedSettingsTab: Int = SettingsTab.general.rawValue
 
     let filter: MonthFilter
     @Binding var expenseToEdit: Expense?
+    @Binding var isAddingExpense: Bool
 
-    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>) {
+    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>) {
         self.filter = filter
         self._expenseToEdit = expenseToEdit
+        self._isAddingExpense = isAddingExpense
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
@@ -41,50 +46,87 @@ struct ExpenseQueryListView: View {
     }
 
     var body: some View {
-        List {
-            ForEach(groupedExpenses, id: \.date) { group in
-                Section {
-                    ForEach(group.expenses) { expense in
-                        Button {
-                            expenseToEdit = expense
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    if let desc = expense.descriptionText {
-                                        Text(desc)
-                                            .font(.body)
-                                            .fontWeight(.medium)
+        if allExpenses.isEmpty {
+            emptyStateView
+        } else {
+            List {
+                ForEach(groupedExpenses, id: \.date) { group in
+                    Section {
+                        ForEach(group.expenses) { expense in
+                            Button {
+                                expenseToEdit = expense
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        if let desc = expense.descriptionText {
+                                            Text(desc)
+                                                .font(.body)
+                                                .fontWeight(.medium)
+                                        }
+                                        if let categoryName = expense.category?.name {
+                                            Text(categoryName)
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                        if let dest = expense.destination {
+                                            Text(dest)
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                        }
                                     }
-                                    if let categoryName = expense.category?.name {
-                                        Text(categoryName)
-                                            .font(.caption)
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    if let dest = expense.destination {
-                                        Text(dest)
-                                            .font(.caption)
-                                            .foregroundStyle(.tertiary)
-                                    }
+                                    Spacer()
+                                    CurrencyAmountView(item: expense)
                                 }
-                                Spacer()
-                                CurrencyAmountView(item: expense)
+                                .contentShape(Rectangle())
                             }
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
-                    }
-                    .onDelete { offsets in
-                        deleteExpenses(from: group.expenses, at: offsets)
-                    }
-                } header: {
-                    HStack {
-                        Text(group.date, format: Date.FormatStyle(date: .long))
-                        Spacer()
-                        Text(dayTotal(for: group.expenses), format: .number)
+                        .onDelete { offsets in
+                            deleteExpenses(from: group.expenses, at: offsets)
+                        }
+                    } header: {
+                        HStack {
+                            Text(group.date, format: Date.FormatStyle(date: .long))
+                            Spacer()
+                            Text(dayTotal(for: group.expenses), format: .number)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "tray")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("No Expenses Yet")
+                .font(.title2)
+                .fontWeight(.semibold)
+            Text("Add your first expense, import from a CSV file,\nor connect a bank account to get started.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            HStack(spacing: 12) {
+                Button {
+                    isAddingExpense = true
+                } label: {
+                    Label("Add Expense", systemImage: "plus")
+                }
+
+                Button {
+                    selectedSettingsTab = SettingsTab.connections.rawValue
+                    openSettings()
+                } label: {
+                    Label("Connect Bank", systemImage: "link")
+                }
+            }
+            .padding(.top, 4)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func dayTotal(for expenses: [Expense]) -> Decimal {

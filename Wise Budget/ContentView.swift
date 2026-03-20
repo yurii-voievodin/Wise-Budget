@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedSidebarItem: SidebarItem = .budgetPlan
+    @State private var selectedSidebarItem: SidebarItem = .expenses
     @State private var monthFilter: MonthFilter = .currentMonth()
 
     var body: some View {

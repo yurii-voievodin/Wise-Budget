@@ -5,10 +5,8 @@ struct IncomeFormSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \IncomeCategory.name) private var categories: [IncomeCategory]
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
-
     @State private var amount: Decimal?
-    @State private var currency: String = ""
+    @State private var currency: String
     @State private var date = Date()
     @State private var selectedCategory: IncomeCategory?
     @State private var descriptionText: String = ""
@@ -21,12 +19,16 @@ struct IncomeFormSheet: View {
     init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?, String?) -> Void) {
         self.incomeToEdit = income
         self.onSave = onSave
+        let storedCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
+            ?? Locale.current.currency?.identifier ?? "USD"
         if let income {
             _amount = State(initialValue: income.amount)
             _currency = State(initialValue: income.currency)
             _date = State(initialValue: income.date)
             _selectedCategory = State(initialValue: income.category)
             _descriptionText = State(initialValue: income.descriptionText ?? "")
+        } else {
+            _currency = State(initialValue: storedCurrency)
         }
     }
 
@@ -70,11 +72,6 @@ struct IncomeFormSheet: View {
             }
         }
         .frame(minWidth: 350, minHeight: 250)
-        .onAppear {
-            if currency.isEmpty {
-                currency = defaultCurrency
-            }
-        }
     }
 }
 
