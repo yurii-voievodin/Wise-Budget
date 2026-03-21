@@ -129,6 +129,7 @@ struct BudgetPlanQueryListView: View {
                     Text("\(totalPlanned, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
                 }
+                .padding(.vertical, 4)
                 HStack {
                     Text("Total Spent")
                     Spacer()
@@ -136,8 +137,11 @@ struct BudgetPlanQueryListView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
                 }
+                .padding(.vertical, 4)
                 if totalActual > 0, totalPlanned > 0 {
                     BudgetProgressBar(spent: totalActual, planned: totalPlanned)
+                        .padding(.vertical, 4)
+                        .listRowSeparator(.hidden)
                 }
                 if unconvertibleExpenseCount > 0 {
                     Button {
@@ -152,6 +156,7 @@ struct BudgetPlanQueryListView: View {
                         .foregroundStyle(.orange)
                     }
                     .buttonStyle(.plain)
+                    .padding(.vertical, 4)
                 }
             }
 
@@ -159,31 +164,14 @@ struct BudgetPlanQueryListView: View {
                 ForEach(categories) { category in
                     let actual = actualSpending(for: category)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Label(category.name, systemImage: category.displayIconName)
-                                .fontWeight(.medium)
-                            Spacer()
-                            Text("\(actual, format: .number)")
-                                .foregroundStyle(.secondary)
-                            Text("/")
-                                .foregroundStyle(.secondary)
-                            TextField(
-                                "0",
-                                text: plannedBinding(for: category)
-                            )
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .multilineTextAlignment(.trailing)
-                            Text(planCurrency)
-                                .foregroundStyle(.secondary)
-                        }
-                        if actual > 0 {
-                            let planned = planItem(for: category)?.plannedAmount ?? Decimal.zero
-                            BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
-                        }
-                    }
-                    .padding(.vertical, 2)
+                    BudgetCategoryRow(
+                        categoryName: category.name,
+                        categoryIcon: category.displayIconName,
+                        actual: actual,
+                        planned: planItem(for: category)?.plannedAmount ?? Decimal.zero,
+                        currency: planCurrency,
+                        plannedText: plannedBinding(for: category)
+                    )
                 }
             }
         }
