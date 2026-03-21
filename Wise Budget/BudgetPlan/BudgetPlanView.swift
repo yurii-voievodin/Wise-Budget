@@ -8,7 +8,8 @@ struct BudgetPlanView: View {
     var body: some View {
         BudgetPlanQueryListView(
             filter: monthFilter,
-            selectedSidebarItem: $selectedSidebarItem
+            selectedSidebarItem: $selectedSidebarItem,
+            monthFilter: $monthFilter
         )
         .id(monthFilter)
         .navigationTitle("")

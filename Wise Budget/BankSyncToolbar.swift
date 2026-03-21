@@ -1,18 +1,20 @@
 import SwiftUI
 
 /// Toolbar button that syncs all connected banks for the selected month.
-/// Only visible when a bank token exists and a non-current month is selected.
+/// Only visible when a bank token exists and the selected month is not in the future.
 struct BankSyncToolbar: ToolbarContent {
     @Bindable var syncService: BankSyncService
     let filter: MonthFilter
 
-    private var isCurrentMonth: Bool {
+    private var isFutureMonth: Bool {
         let now = Calendar.current.dateComponents([.year, .month], from: Date())
-        return filter.year == now.year && filter.month == now.month
+        let currentYear = now.year ?? 0
+        let currentMonth = now.month ?? 0
+        return filter.year > currentYear || (filter.year == currentYear && filter.month > currentMonth)
     }
 
     var body: some ToolbarContent {
-        if syncService.hasBankToken && !isCurrentMonth {
+        if syncService.hasBankToken && !isFutureMonth {
             ToolbarItem {
                 Button(action: { syncService.sync(context: context, from: filter.startOfMonth) }) {
                     if syncService.isSyncing {

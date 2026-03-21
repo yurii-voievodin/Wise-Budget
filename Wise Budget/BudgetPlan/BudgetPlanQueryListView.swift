@@ -10,13 +10,15 @@ struct BudgetPlanQueryListView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var selectedSidebarItem: SidebarItem
+    @Binding var monthFilter: MonthFilter
     let filter: MonthFilter
 
     @State private var resetAction: (() -> Void)?
 
-    init(filter: MonthFilter, selectedSidebarItem: Binding<SidebarItem>) {
+    init(filter: MonthFilter, selectedSidebarItem: Binding<SidebarItem>, monthFilter: Binding<MonthFilter>) {
         self.filter = filter
         self._selectedSidebarItem = selectedSidebarItem
+        self._monthFilter = monthFilter
 
         let filterYear = filter.year
         let filterMonth = filter.month
@@ -139,6 +141,7 @@ struct BudgetPlanQueryListView: View {
                 }
                 if unconvertibleExpenseCount > 0 {
                     Button {
+                        monthFilter.foreignOnly = true
                         selectedSidebarItem = .expenses
                     } label: {
                         Label(
