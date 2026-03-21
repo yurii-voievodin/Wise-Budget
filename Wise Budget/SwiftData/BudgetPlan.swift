@@ -6,14 +6,16 @@ final class BudgetPlan {
     var year: Int
     var month: Int
     var currency: String?
+    var monthlyBudget: Decimal?
 
     @Relationship(deleteRule: .cascade, inverse: \BudgetPlanItem.plan)
     var items: [BudgetPlanItem] = []
 
-    init(year: Int, month: Int, currency: String? = nil) {
+    init(year: Int, month: Int, currency: String? = nil, monthlyBudget: Decimal = 0) {
         self.year = year
         self.month = month
         self.currency = currency
+        self.monthlyBudget = monthlyBudget
     }
 
     /// The first day of this plan's month

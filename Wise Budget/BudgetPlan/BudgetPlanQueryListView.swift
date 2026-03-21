@@ -120,9 +120,49 @@ struct BudgetPlanQueryListView: View {
         currentPlan?.currency ?? defaultCurrency
     }
 
+    private var monthlyBudget: Decimal {
+        currentPlan?.monthlyBudget ?? Decimal.zero
+    }
+
+    private var unplannedAmount: Decimal {
+        monthlyBudget - totalPlanned
+    }
+
+    private var monthlyBudgetBinding: Binding<String> {
+        Binding(
+            get: {
+                let amount = currentPlan?.monthlyBudget ?? Decimal.zero
+                return amount == Decimal.zero ? "" : "\(amount)"
+            },
+            set: { newValue in
+                let value = Decimal(string: newValue) ?? Decimal.zero
+                let plan = ensurePlanExists()
+                plan.monthlyBudget = value
+            }
+        )
+    }
+
     var body: some View {
         List {
             Section {
+                HStack {
+                    Text("Monthly Budget")
+                    Spacer()
+                    TextField(
+                        "0",
+                        text: monthlyBudgetBinding
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 120)
+                    .multilineTextAlignment(.trailing)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+                    )
+                    Text(planCurrency)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
                 HStack {
                     Text("Total Planned")
                     Spacer()
@@ -130,6 +170,16 @@ struct BudgetPlanQueryListView: View {
                         .fontWeight(.semibold)
                 }
                 .padding(.vertical, 4)
+                if monthlyBudget > 0 {
+                    HStack {
+                        Text("Unplanned")
+                        Spacer()
+                        Text("\(unplannedAmount, format: .number) \(planCurrency)")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(unplannedAmount < 0 ? .red : .secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
                 HStack {
                     Text("Total Spent")
                     Spacer()
@@ -178,16 +228,19 @@ struct BudgetPlanQueryListView: View {
         .focusedSceneValue(\.resetBudgetPlan, resetAction)
         .onAppear { updateResetAction() }
         .onChange(of: totalPlanned) { updateResetAction() }
+        .onChange(of: monthlyBudget) { updateResetAction() }
     }
 
     private func updateResetAction() {
         guard let plan = currentPlan else { resetAction = nil; return }
         let hasNonZeroAmount = plan.items.contains { $0.plannedAmount != Decimal.zero }
         let currencyDiffers = plan.currency != defaultCurrency
-        guard hasNonZeroAmount || currencyDiffers else { resetAction = nil; return }
+        let hasBudget = (plan.monthlyBudget ?? Decimal.zero) != Decimal.zero
+        guard hasNonZeroAmount || currencyDiffers || hasBudget else { resetAction = nil; return }
         let currency = defaultCurrency
         resetAction = {
             plan.currency = currency
+            plan.monthlyBudget = Decimal.zero
             for item in plan.items {
                 item.plannedAmount = Decimal.zero
             }
