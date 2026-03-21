@@ -14,7 +14,6 @@ struct IncomeListView: View {
 
     enum IncomeTab: Hashable {
         case income
-        case chart
         case statistics
     }
 
@@ -25,16 +24,13 @@ struct IncomeListView: View {
                     filter: filter,
                     incomeToEdit: $incomeToEdit,
                     isAddingIncome: $isAddingIncome,
-                    selectedSidebarItem: $selectedSidebarItem
+                    selectedSidebarItem: $selectedSidebarItem,
+                    syncService: syncService
                 )
                 .id(filter)
             }
-            Tab("Statistics", systemImage: "tablecells", value: .statistics) {
-                IncomeStatisticsView(filter: filter)
-                    .id(filter)
-            }
-            Tab("Chart", systemImage: "chart.pie", value: .chart) {
-                IncomeCategoryChartView(filter: filter)
+            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
+                IncomeStatisticsView(filter: filter, syncService: syncService)
                     .id(filter)
             }
         }

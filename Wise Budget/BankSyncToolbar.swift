@@ -6,15 +6,8 @@ struct BankSyncToolbar: ToolbarContent {
     @Bindable var syncService: BankSyncService
     let filter: MonthFilter
 
-    private var isFutureMonth: Bool {
-        let now = Calendar.current.dateComponents([.year, .month], from: Date())
-        let currentYear = now.year ?? 0
-        let currentMonth = now.month ?? 0
-        return filter.year > currentYear || (filter.year == currentYear && filter.month > currentMonth)
-    }
-
     var body: some ToolbarContent {
-        if syncService.hasBankToken && !isFutureMonth {
+        if syncService.hasBankToken && !filter.isFutureMonth {
             ToolbarItem {
                 Button(action: { syncService.sync(context: context, from: filter.startOfMonth) }) {
                     if syncService.isSyncing {

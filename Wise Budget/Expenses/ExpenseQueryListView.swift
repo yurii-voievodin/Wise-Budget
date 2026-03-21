@@ -12,12 +12,14 @@ struct ExpenseQueryListView: View {
     @Binding var expenseToEdit: Expense?
     @Binding var isAddingExpense: Bool
     @Binding var selectedSidebarItem: SidebarItem
+    @Bindable var syncService: BankSyncService
 
-    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>) {
+    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
         self.filter = filter
         self._expenseToEdit = expenseToEdit
         self._isAddingExpense = isAddingExpense
         self._selectedSidebarItem = selectedSidebarItem
+        self.syncService = syncService
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
@@ -48,6 +50,8 @@ struct ExpenseQueryListView: View {
     var body: some View {
         if allExpenses.isEmpty {
             emptyStateView
+        } else if filteredExpenses.isEmpty {
+            monthEmptyStateView
         } else {
             List {
                 ForEach(groupedExpenses, id: \.date) { group in
@@ -94,6 +98,15 @@ struct ExpenseQueryListView: View {
                 }
             }
         }
+    }
+
+    private var monthEmptyStateView: some View {
+        MonthEmptyStateView(
+            title: "No Expenses This Month",
+            systemImage: "creditcard",
+            filter: filter,
+            syncService: syncService
+        )
     }
 
     private var emptyStateView: some View {

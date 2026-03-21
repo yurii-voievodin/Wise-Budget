@@ -7,9 +7,11 @@ struct IncomeStatisticsView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let filter: MonthFilter
+    @Bindable var syncService: BankSyncService
 
-    init(filter: MonthFilter) {
+    init(filter: MonthFilter, syncService: BankSyncService) {
         self.filter = filter
+        self.syncService = syncService
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
@@ -21,6 +23,30 @@ struct IncomeStatisticsView: View {
             sort: \.date,
             order: .reverse
         )
+    }
+
+    // MARK: - Chart Data
+
+    private var slices: [CategoryChartSlice] {
+        let grouped = Dictionary(grouping: incomes) { income in
+            income.category?.name ?? "Uncategorized"
+        }
+
+        return grouped.map { name, items in
+            let sum = items.reduce(Decimal.zero) { total, income in
+                if income.currency == defaultCurrency {
+                    return total + income.amount
+                } else if let baseAmount = income.baseCurrencyAmount,
+                          income.baseCurrency == defaultCurrency {
+                    return total + baseAmount
+                }
+                return total
+            }
+            let icon = items.first?.category?.displayIconName ?? "folder"
+            return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
+        }
+        .filter { $0.total > 0 }
+        .sorted { $0.total > $1.total }
     }
 
     // MARK: - Computed Statistics
@@ -35,36 +61,6 @@ struct IncomeStatisticsView: View {
             }
             return total
         }
-    }
-
-    private var categoryBreakdown: [(name: String, iconName: String, total: Decimal, percentage: Double)] {
-        let grouped = Dictionary(grouping: incomes) { income in
-            income.category?.name ?? "Uncategorized"
-        }
-
-        let totals: [(name: String, iconName: String, total: Decimal)] = grouped.map { name, items in
-            let sum = items.reduce(Decimal.zero) { total, income in
-                if income.currency == defaultCurrency {
-                    return total + income.amount
-                } else if let baseAmount = income.baseCurrencyAmount,
-                          income.baseCurrency == defaultCurrency {
-                    return total + baseAmount
-                }
-                return total
-            }
-            let icon = items.first?.category?.displayIconName ?? "folder"
-            return (name: name, iconName: icon, total: sum)
-        }
-
-        let grandTotal = totalInDefaultCurrency
-        return totals
-            .map { item in
-                let pct = grandTotal > 0
-                    ? NSDecimalNumber(decimal: item.total / grandTotal * 100).doubleValue
-                    : 0
-                return (name: item.name, iconName: item.iconName, total: item.total, percentage: pct)
-            }
-            .sorted { $0.total > $1.total }
     }
 
     private var currencyBreakdown: [(currency: String, total: Decimal)] {
@@ -83,17 +79,34 @@ struct IncomeStatisticsView: View {
     // MARK: - Body
 
     var body: some View {
-        Form {
-            overviewSection
-            categorySection
-            if currencyBreakdown.count > 1 {
-                currencySection
+        if incomes.isEmpty {
+            emptyStateView
+        } else {
+            Form {
+                categoryChartSection
+                overviewSection
+                if currencyBreakdown.count > 1 {
+                    currencySection
+                }
             }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
     }
 
     // MARK: - Sections
+
+    private var emptyStateView: some View {
+        MonthEmptyStateView(
+            title: "No Income This Month",
+            systemImage: "chart.pie",
+            filter: filter,
+            syncService: syncService
+        )
+    }
+
+    private var categoryChartSection: some View {
+        CategoryChartSection(slices: slices, currency: defaultCurrency, emptyText: "No income")
+    }
 
     private var overviewSection: some View {
         Section("Overview") {
@@ -103,29 +116,6 @@ struct IncomeStatisticsView: View {
             LabeledContent("Total (\(defaultCurrency))") {
                 Text("\(totalInDefaultCurrency, format: .number) \(defaultCurrency)")
                     .fontWeight(.semibold)
-            }
-        }
-    }
-
-    private var categorySection: some View {
-        Section("By Category") {
-            if categoryBreakdown.isEmpty {
-                Text("No income")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(categoryBreakdown, id: \.name) { item in
-                    LabeledContent {
-                        HStack(spacing: 8) {
-                            Text(String(format: "%.1f%%", item.percentage))
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                            Text("\(item.total, format: .number) \(defaultCurrency)")
-                                .monospacedDigit()
-                        }
-                    } label: {
-                        Label(item.name, systemImage: item.iconName)
-                    }
-                }
             }
         }
     }

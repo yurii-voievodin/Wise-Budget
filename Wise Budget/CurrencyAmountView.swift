@@ -10,9 +10,7 @@ protocol CurrencyConvertible {
 extension Array where Element: CurrencyConvertible {
     func filterForeignCurrency(defaultCurrency: String) -> [Element] {
         filter { item in
-            if item.currency == defaultCurrency { return false }
-            if item.baseCurrency == defaultCurrency && item.baseCurrencyAmount != nil { return false }
-            return true
+            item.currency != defaultCurrency
         }
     }
 }

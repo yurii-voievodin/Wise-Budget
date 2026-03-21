@@ -17,6 +17,13 @@ struct MonthFilter: Hashable {
         return MonthFilter(year: newComps.year ?? year, month: newComps.month ?? month)
     }
 
+    var isFutureMonth: Bool {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date())
+        let currentYear = now.year ?? 0
+        let currentMonth = now.month ?? 0
+        return year > currentYear || (year == currentYear && month > currentMonth)
+    }
+
     var startOfMonth: Date {
         Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
     }

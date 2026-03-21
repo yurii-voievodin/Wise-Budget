@@ -14,7 +14,6 @@ struct ExpenseListView: View {
 
     enum ExpenseTab: Hashable {
         case expenses
-        case chart
         case statistics
     }
 
@@ -25,16 +24,13 @@ struct ExpenseListView: View {
                     filter: filter,
                     expenseToEdit: $expenseToEdit,
                     isAddingExpense: $isAddingExpense,
-                    selectedSidebarItem: $selectedSidebarItem
+                    selectedSidebarItem: $selectedSidebarItem,
+                    syncService: syncService
                 )
                 .id(filter)
             }
-            Tab("Statistics", systemImage: "tablecells", value: .statistics) {
-                ExpenseStatisticsView(filter: filter)
-                    .id(filter)
-            }
-            Tab("Chart", systemImage: "chart.pie", value: .chart) {
-                ExpenseCategoryChartView(filter: filter)
+            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
+                ExpenseStatisticsView(filter: filter, syncService: syncService)
                     .id(filter)
             }
         }
