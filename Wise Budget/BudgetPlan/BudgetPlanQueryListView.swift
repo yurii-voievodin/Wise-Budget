@@ -43,32 +43,22 @@ struct BudgetPlanQueryListView: View {
         plans.first
     }
 
-    /// Returns the expense amount in the plan's currency, or nil if it can't be converted.
-    private func budgetAmount(for expense: Expense) -> Decimal? {
-        let planCurrency = currentPlan?.currency ?? defaultCurrency
-        // Expense is already in the plan's currency
-        if expense.currency == planCurrency {
-            return expense.amount
-        }
-        // Expense has a base currency amount that matches the plan's currency
-        if let baseAmount = expense.baseCurrencyAmount,
-           expense.baseCurrency == planCurrency {
-            return baseAmount
-        }
-        // Cannot convert — foreign currency without matching base amount
-        return nil
-    }
-
     private func actualSpending(for category: ExpenseCategory) -> Decimal {
         expenses
             .filter { $0.category?.persistentModelID == category.persistentModelID }
-            .reduce(Decimal.zero) { $0 + (budgetAmount(for: $1) ?? Decimal.zero) }
+            .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: planCurrency) ?? Decimal.zero) }
+    }
+
+    private var planItemsByCategory: [PersistentIdentifier: BudgetPlanItem] {
+        guard let plan = currentPlan else { return [:] }
+        return Dictionary(uniqueKeysWithValues: plan.items.compactMap { item in
+            guard let id = item.category?.persistentModelID else { return nil }
+            return (id, item)
+        })
     }
 
     private func planItem(for category: ExpenseCategory) -> BudgetPlanItem? {
-        currentPlan?.items.first {
-            $0.category?.persistentModelID == category.persistentModelID
-        }
+        planItemsByCategory[category.persistentModelID]
     }
 
     private func ensurePlanExists() -> BudgetPlan {
@@ -89,11 +79,9 @@ struct BudgetPlanQueryListView: View {
                 return amount == Decimal.zero ? "" : "\(amount)"
             },
             set: { newValue in
-                let value = Decimal(string: newValue) ?? Decimal.zero
+                let value = max(Decimal.zero, Decimal(string: newValue) ?? Decimal.zero)
                 let plan = ensurePlanExists()
-                if let item = plan.items.first(where: {
-                    $0.category?.persistentModelID == category.persistentModelID
-                }) {
+                if let item = planItemsByCategory[category.persistentModelID] {
                     item.plannedAmount = value
                 } else {
                     let item = BudgetPlanItem(plannedAmount: value, plan: plan, category: category)
@@ -108,12 +96,11 @@ struct BudgetPlanQueryListView: View {
     }
 
     private var totalActual: Decimal {
-        expenses.reduce(Decimal.zero) { $0 + (budgetAmount(for: $1) ?? Decimal.zero) }
+        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: planCurrency) ?? Decimal.zero) }
     }
 
-    /// Number of expenses this month that can't be converted to the plan's currency.
     private var unconvertibleExpenseCount: Int {
-        expenses.filter { budgetAmount(for: $0) == nil }.count
+        expenses.filter { $0.convertedAmount(to: planCurrency) == nil }.count
     }
 
     private var planCurrency: String {
@@ -135,7 +122,7 @@ struct BudgetPlanQueryListView: View {
                 return amount == Decimal.zero ? "" : "\(amount)"
             },
             set: { newValue in
-                let value = Decimal(string: newValue) ?? Decimal.zero
+                let value = max(Decimal.zero, Decimal(string: newValue) ?? Decimal.zero)
                 let plan = ensurePlanExists()
                 plan.monthlyBudget = value
             }
@@ -144,71 +131,19 @@ struct BudgetPlanQueryListView: View {
 
     var body: some View {
         List {
-            Section {
-                HStack {
-                    Text("Monthly Budget")
-                    Spacer()
-                    TextField(
-                        "0",
-                        text: monthlyBudgetBinding
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 120)
-                    .multilineTextAlignment(.trailing)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                    )
-                    Text(planCurrency)
-                        .foregroundStyle(.secondary)
+            BudgetSummarySection(
+                monthlyBudgetBinding: monthlyBudgetBinding,
+                planCurrency: planCurrency,
+                totalPlanned: totalPlanned,
+                monthlyBudget: monthlyBudget,
+                unplannedAmount: unplannedAmount,
+                totalActual: totalActual,
+                unconvertibleExpenseCount: unconvertibleExpenseCount,
+                onShowForeignExpenses: {
+                    monthFilter.foreignOnly = true
+                    selectedSidebarItem = .expenses
                 }
-                .padding(.vertical, 4)
-                HStack {
-                    Text("Total Planned")
-                    Spacer()
-                    Text("\(totalPlanned, format: .number) \(planCurrency)")
-                        .fontWeight(.semibold)
-                }
-                .padding(.vertical, 4)
-                if monthlyBudget > 0 {
-                    HStack {
-                        Text("Unplanned")
-                        Spacer()
-                        Text("\(unplannedAmount, format: .number) \(planCurrency)")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(unplannedAmount < 0 ? .red : .secondary)
-                    }
-                    .padding(.vertical, 4)
-                }
-                HStack {
-                    Text("Total Spent")
-                    Spacer()
-                    Text("\(totalActual, format: .number) \(planCurrency)")
-                        .fontWeight(.semibold)
-                        .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
-                }
-                .padding(.vertical, 4)
-                if totalActual > 0, totalPlanned > 0 {
-                    BudgetProgressBar(spent: totalActual, planned: totalPlanned)
-                        .padding(.vertical, 4)
-                        .listRowSeparator(.hidden)
-                }
-                if unconvertibleExpenseCount > 0 {
-                    Button {
-                        monthFilter.foreignOnly = true
-                        selectedSidebarItem = .expenses
-                    } label: {
-                        Label(
-                            "\(unconvertibleExpenseCount) expense(s) in foreign currency excluded",
-                            systemImage: "exclamationmark.triangle"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.vertical, 4)
-                }
-            }
+            )
 
             Section("Categories") {
                 ForEach(categories) { category in

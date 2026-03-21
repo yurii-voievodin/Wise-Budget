@@ -39,7 +39,7 @@ final class CSVExporter {
                 currency: income.currency,
                 category: income.category?.name,
                 description: income.descriptionText,
-                destination: nil,
+                destination: income.source,
                 baseCurrencyAmount: income.baseCurrencyAmount,
                 baseCurrency: income.baseCurrency
             ))

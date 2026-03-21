@@ -4,7 +4,7 @@ import SwiftData
 struct IncomeQueryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var incomes: [Income]
-    @Query private var allIncomes: [Income]
+    @State private var hasAnyIncomes = true
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
@@ -48,51 +48,65 @@ struct IncomeQueryListView: View {
     }
 
     var body: some View {
-        if allIncomes.isEmpty {
-            emptyStateView
-        } else if filteredIncomes.isEmpty {
-            monthEmptyStateView
-        } else {
-            List {
-                ForEach(groupedIncomes, id: \.date) { group in
-                    Section {
-                        ForEach(group.incomes) { income in
-                            Button {
-                                incomeToEdit = income
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        if let desc = income.descriptionText {
-                                            Text(desc)
-                                                .font(.body)
-                                                .fontWeight(.medium)
+        Group {
+            if !hasAnyIncomes {
+                emptyStateView
+            } else if filteredIncomes.isEmpty {
+                monthEmptyStateView
+            } else {
+                List {
+                    ForEach(groupedIncomes, id: \.date) { group in
+                        Section {
+                            ForEach(group.incomes) { income in
+                                Button {
+                                    incomeToEdit = income
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            if let desc = income.descriptionText {
+                                                Text(desc)
+                                                    .font(.body)
+                                                    .fontWeight(.medium)
+                                            }
+                                            if let category = income.category {
+                                                Label(category.name, systemImage: category.displayIconName)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.tertiary)
+                                            }
+                                            if let source = income.source {
+                                                Text(source)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.tertiary)
+                                            }
                                         }
-                                        if let category = income.category {
-                                            Label(category.name, systemImage: category.displayIconName)
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                        }
+                                        Spacer()
+                                        CurrencyAmountView(item: income)
                                     }
-                                    Spacer()
-                                    CurrencyAmountView(item: income)
+                                    .contentShape(Rectangle())
                                 }
-                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                        }
-                        .onDelete { offsets in
-                            deleteIncomes(from: group.incomes, at: offsets)
-                        }
-                    } header: {
-                        HStack {
-                            Text(group.date, format: Date.FormatStyle(date: .long))
-                            Spacer()
-                            Text(dayTotal(for: group.incomes), format: .number)
+                            .onDelete { offsets in
+                                deleteIncomes(from: group.incomes, at: offsets)
+                            }
+                        } header: {
+                            HStack {
+                                Text(group.date, format: Date.FormatStyle(date: .long))
+                                Spacer()
+                                Text(dayTotal(for: group.incomes), format: .number)
+                            }
                         }
                     }
                 }
             }
         }
+        .onAppear { checkHasAnyIncomes() }
+        .onChange(of: incomes.count) { checkHasAnyIncomes() }
+    }
+
+    private func checkHasAnyIncomes() {
+        let descriptor = FetchDescriptor<Income>()
+        hasAnyIncomes = (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
 
     private var monthEmptyStateView: some View {

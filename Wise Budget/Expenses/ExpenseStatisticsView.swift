@@ -33,15 +33,7 @@ struct ExpenseStatisticsView: View {
         }
 
         return grouped.map { name, items in
-            let sum = items.reduce(Decimal.zero) { total, expense in
-                if expense.currency == defaultCurrency {
-                    return total + expense.amount
-                } else if let baseAmount = expense.baseCurrencyAmount,
-                          expense.baseCurrency == defaultCurrency {
-                    return total + baseAmount
-                }
-                return total
-            }
+            let sum = items.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
             let icon = items.first?.category?.displayIconName ?? "folder"
             return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
@@ -52,15 +44,7 @@ struct ExpenseStatisticsView: View {
     // MARK: - Computed Statistics
 
     private var totalInDefaultCurrency: Decimal {
-        expenses.reduce(Decimal.zero) { total, expense in
-            if expense.currency == defaultCurrency {
-                return total + expense.amount
-            } else if let baseAmount = expense.baseCurrencyAmount,
-                      expense.baseCurrency == defaultCurrency {
-                return total + baseAmount
-            }
-            return total
-        }
+        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
     }
 
     private var daysInMonth: Int {

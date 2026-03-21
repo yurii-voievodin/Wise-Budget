@@ -41,22 +41,10 @@ struct BudgetPlanChartView: View {
         currentPlan?.currency ?? defaultCurrency
     }
 
-    private func budgetAmount(for expense: Expense) -> Decimal? {
-        let currency = planCurrency
-        if expense.currency == currency {
-            return expense.amount
-        }
-        if let baseAmount = expense.baseCurrencyAmount,
-           expense.baseCurrency == currency {
-            return baseAmount
-        }
-        return nil
-    }
-
     private func actualSpending(for category: ExpenseCategory) -> Decimal {
         expenses
             .filter { $0.category?.persistentModelID == category.persistentModelID }
-            .reduce(Decimal.zero) { $0 + (budgetAmount(for: $1) ?? Decimal.zero) }
+            .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: planCurrency) ?? Decimal.zero) }
     }
 
     private func plannedAmount(for category: ExpenseCategory) -> Decimal {

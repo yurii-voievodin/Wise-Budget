@@ -33,15 +33,7 @@ struct IncomeStatisticsView: View {
         }
 
         return grouped.map { name, items in
-            let sum = items.reduce(Decimal.zero) { total, income in
-                if income.currency == defaultCurrency {
-                    return total + income.amount
-                } else if let baseAmount = income.baseCurrencyAmount,
-                          income.baseCurrency == defaultCurrency {
-                    return total + baseAmount
-                }
-                return total
-            }
+            let sum = items.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
             let icon = items.first?.category?.displayIconName ?? "folder"
             return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
@@ -52,15 +44,16 @@ struct IncomeStatisticsView: View {
     // MARK: - Computed Statistics
 
     private var totalInDefaultCurrency: Decimal {
-        incomes.reduce(Decimal.zero) { total, income in
-            if income.currency == defaultCurrency {
-                return total + income.amount
-            } else if let baseAmount = income.baseCurrencyAmount,
-                      income.baseCurrency == defaultCurrency {
-                return total + baseAmount
-            }
-            return total
-        }
+        incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
+    }
+
+    private var daysInMonth: Int {
+        Calendar.current.range(of: .day, in: .month, for: filter.startOfMonth)?.count ?? 30
+    }
+
+    private var dailyAverage: Decimal {
+        guard daysInMonth > 0 else { return .zero }
+        return totalInDefaultCurrency / Decimal(daysInMonth)
     }
 
     private var currencyBreakdown: [(currency: String, total: Decimal)] {
@@ -116,6 +109,10 @@ struct IncomeStatisticsView: View {
             LabeledContent("Total (\(defaultCurrency))") {
                 Text("\(totalInDefaultCurrency, format: .number) \(defaultCurrency)")
                     .fontWeight(.semibold)
+            }
+            LabeledContent("Daily Average (\(defaultCurrency))") {
+                Text("\(dailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
+                    .monospacedDigit()
             }
         }
     }

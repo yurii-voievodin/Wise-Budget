@@ -43,15 +43,7 @@ struct ExpenseCalendarView: View {
         var totals: [Int: Decimal] = [:]
         for expense in expenses {
             let day = calendar.component(.day, from: expense.date)
-            let amount: Decimal
-            if expense.currency == defaultCurrency {
-                amount = expense.amount
-            } else if let baseAmount = expense.baseCurrencyAmount,
-                      expense.baseCurrency == defaultCurrency {
-                amount = baseAmount
-            } else {
-                amount = expense.amount
-            }
+            let amount = expense.convertedAmount(to: defaultCurrency) ?? expense.amount
             totals[day, default: .zero] += amount
         }
         return totals
@@ -62,15 +54,7 @@ struct ExpenseCalendarView: View {
     }
 
     private var monthTotal: Decimal {
-        expenses.reduce(Decimal.zero) { total, expense in
-            if expense.currency == defaultCurrency {
-                return total + expense.amount
-            } else if let baseAmount = expense.baseCurrencyAmount,
-                      expense.baseCurrency == defaultCurrency {
-                return total + baseAmount
-            }
-            return total
-        }
+        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? $1.amount) }
     }
 
     private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
@@ -195,18 +179,23 @@ struct ExpenseCalendarView: View {
         return today.year == filter.year && today.month == filter.month && today.day == day
     }
 
+    private static let heatMapMinOpacity = 0.05
+    private static let heatMapOpacityRange = 0.25
+
     private func intensityForDay(total: Decimal?) -> Double {
         guard let total, total > 0, maxDailyTotal > 0 else { return 0 }
         let ratio = NSDecimalNumber(decimal: total / maxDailyTotal).doubleValue
-        // Scale from 0.05 to 0.3 for a subtle heat-map effect
-        return 0.05 + ratio * 0.25
+        return Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
     }
 
-    private func formattedAmount(_ value: Decimal) -> String {
-        let number = NSDecimalNumber(decimal: value)
+    private static let amountFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
-        return formatter.string(from: number) ?? "\(value)"
+        return formatter
+    }()
+
+    private func formattedAmount(_ value: Decimal) -> String {
+        Self.amountFormatter.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
     }
 }

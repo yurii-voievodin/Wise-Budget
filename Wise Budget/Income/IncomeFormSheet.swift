@@ -5,18 +5,23 @@ struct IncomeFormSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \IncomeCategory.name) private var categories: [IncomeCategory]
 
+    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+
     @State private var amount: Decimal?
     @State private var currency: String
     @State private var date = Date()
     @State private var selectedCategory: IncomeCategory?
     @State private var descriptionText: String = ""
+    @State private var source: String = ""
+    @State private var baseCurrencyAmount: Decimal?
 
     var incomeToEdit: Income?
-    var onSave: (Decimal, String, Date, IncomeCategory?, String?) -> Void
+    var onSave: (Decimal, String, Date, IncomeCategory?, String?, String?, Decimal?, String?) -> Void
 
     private var isEditing: Bool { incomeToEdit != nil }
+    private var isForeignCurrency: Bool { currency != defaultCurrency }
 
-    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?, String?) -> Void) {
+    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?, String?, String?, Decimal?, String?) -> Void) {
         self.incomeToEdit = income
         self.onSave = onSave
         let storedCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
@@ -27,6 +32,8 @@ struct IncomeFormSheet: View {
             _date = State(initialValue: income.date)
             _selectedCategory = State(initialValue: income.category)
             _descriptionText = State(initialValue: income.descriptionText ?? "")
+            _source = State(initialValue: income.source ?? "")
+            _baseCurrencyAmount = State(initialValue: income.baseCurrencyAmount)
         } else {
             _currency = State(initialValue: storedCurrency)
         }
@@ -49,7 +56,12 @@ struct IncomeFormSheet: View {
                             .tag(code)
                     }
                 }
+                if isForeignCurrency {
+                    TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
+                        .frame(width: 200)
+                }
                 TextField("Description", text: $descriptionText)
+                TextField("Source", text: $source)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
             }
             .padding(.horizontal)
@@ -64,10 +76,13 @@ struct IncomeFormSheet: View {
                     Button("Save") {
                         guard let amount else { return }
                         let desc = descriptionText.trimmingCharacters(in: .whitespaces)
-                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc)
+                        let src = source.trimmingCharacters(in: .whitespaces)
+                        let baseAmount = isForeignCurrency ? baseCurrencyAmount : nil
+                        let baseCur = isForeignCurrency ? defaultCurrency : nil
+                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, src.isEmpty ? nil : src, baseAmount, baseCur)
                         dismiss()
                     }
-                    .disabled(amount == nil)
+                    .disabled(amount == nil || (amount ?? .zero) <= .zero)
                 }
             }
         }
@@ -76,6 +91,6 @@ struct IncomeFormSheet: View {
 }
 
 #Preview("Add Income Sheet") {
-    IncomeFormSheet { _, _, _, _, _ in }
+    IncomeFormSheet { _, _, _, _, _, _, _, _ in }
         .modelContainer(for: [IncomeCategory.self, Income.self], inMemory: true)
 }

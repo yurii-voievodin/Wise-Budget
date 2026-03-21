@@ -82,7 +82,7 @@ struct ExpenseFormSheet: View {
                         onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, dest.isEmpty ? nil : dest, baseAmount, baseCur)
                         dismiss()
                     }
-                    .disabled(amount == nil)
+                    .disabled(amount == nil || (amount ?? .zero) <= .zero)
                 }
             }
         }

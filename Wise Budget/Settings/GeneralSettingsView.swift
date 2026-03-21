@@ -9,6 +9,7 @@ struct GeneralSettingsView: View {
 
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
+    @State private var errorMessage: String?
 
     var body: some View {
         List {
@@ -53,6 +54,11 @@ struct GeneralSettingsView: View {
                 }
             }
         }
+        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
 
     }
 
@@ -65,7 +71,7 @@ struct GeneralSettingsView: View {
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {
-            print("Failed to delete expenses: \(error)")
+            errorMessage = "Failed to delete expenses: \(error.localizedDescription)"
         }
     }
 
@@ -78,10 +84,9 @@ struct GeneralSettingsView: View {
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {
-            print("Failed to delete incomes: \(error)")
+            errorMessage = "Failed to delete incomes: \(error.localizedDescription)"
         }
     }
-
 
 }
 

@@ -19,7 +19,13 @@ struct Wise_BudgetApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // If the store is corrupted, fall back to in-memory so the app can still launch
+            let fallback = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallback])
+            } catch {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
         }
     }()
 

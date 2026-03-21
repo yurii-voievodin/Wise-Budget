@@ -117,7 +117,7 @@ struct WiseConnectSheet: View {
 
     private var profileSelectionView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Connected as \(connectedName!)", systemImage: "checkmark.circle.fill")
+            Label("Connected as \(connectedName ?? "")", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .font(.callout)
 
@@ -190,7 +190,7 @@ struct WiseConnectSheet: View {
                     selectedProfile = firstProfile
                     connectedName = firstProfile.fullName
                     isConnecting = false
-                    onConnected(connectedName!)
+                    onConnected(firstProfile.fullName)
                 }
 
                 logger.info("connected as \(firstProfile.fullName, privacy: .private)")

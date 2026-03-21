@@ -4,7 +4,7 @@ import SwiftData
 struct ExpenseQueryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
-    @Query private var allExpenses: [Expense]
+    @State private var hasAnyExpenses = true
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
@@ -48,56 +48,65 @@ struct ExpenseQueryListView: View {
     }
 
     var body: some View {
-        if allExpenses.isEmpty {
-            emptyStateView
-        } else if filteredExpenses.isEmpty {
-            monthEmptyStateView
-        } else {
-            List {
-                ForEach(groupedExpenses, id: \.date) { group in
-                    Section {
-                        ForEach(group.expenses) { expense in
-                            Button {
-                                expenseToEdit = expense
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        if let desc = expense.descriptionText {
-                                            Text(desc)
-                                                .font(.body)
-                                                .fontWeight(.medium)
+        Group {
+            if !hasAnyExpenses {
+                emptyStateView
+            } else if filteredExpenses.isEmpty {
+                monthEmptyStateView
+            } else {
+                List {
+                    ForEach(groupedExpenses, id: \.date) { group in
+                        Section {
+                            ForEach(group.expenses) { expense in
+                                Button {
+                                    expenseToEdit = expense
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            if let desc = expense.descriptionText {
+                                                Text(desc)
+                                                    .font(.body)
+                                                    .fontWeight(.medium)
+                                            }
+                                            if let category = expense.category {
+                                                Label(category.name, systemImage: category.displayIconName)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.tertiary)
+                                            }
+                                            if let dest = expense.destination {
+                                                Text(dest)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.tertiary)
+                                            }
                                         }
-                                        if let category = expense.category {
-                                            Label(category.name, systemImage: category.displayIconName)
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        if let dest = expense.destination {
-                                            Text(dest)
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                        }
+                                        Spacer()
+                                        CurrencyAmountView(item: expense)
                                     }
-                                    Spacer()
-                                    CurrencyAmountView(item: expense)
+                                    .contentShape(Rectangle())
                                 }
-                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                        }
-                        .onDelete { offsets in
-                            deleteExpenses(from: group.expenses, at: offsets)
-                        }
-                    } header: {
-                        HStack {
-                            Text(group.date, format: Date.FormatStyle(date: .long))
-                            Spacer()
-                            Text(dayTotal(for: group.expenses), format: .number)
+                            .onDelete { offsets in
+                                deleteExpenses(from: group.expenses, at: offsets)
+                            }
+                        } header: {
+                            HStack {
+                                Text(group.date, format: Date.FormatStyle(date: .long))
+                                Spacer()
+                                Text(dayTotal(for: group.expenses), format: .number)
+                            }
                         }
                     }
                 }
             }
         }
+        .onAppear { checkHasAnyExpenses() }
+        .onChange(of: expenses.count) { checkHasAnyExpenses() }
+    }
+
+    private func checkHasAnyExpenses() {
+        let descriptor = FetchDescriptor<Expense>()
+        hasAnyExpenses = (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
 
     private var monthEmptyStateView: some View {

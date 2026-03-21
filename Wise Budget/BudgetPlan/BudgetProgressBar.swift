@@ -13,13 +13,17 @@ struct BudgetProgressBar: View {
         min(ratio, 1.0)
     }
 
+    private static let thresholdLow = 0.5
+    private static let thresholdMedium = 0.75
+    private static let thresholdHigh = 1.0
+
     private var barColor: Color {
         switch ratio {
-        case ..<0.5:
+        case ..<Self.thresholdLow:
             return .green
-        case 0.5..<0.75:
+        case Self.thresholdLow..<Self.thresholdMedium:
             return .yellow
-        case 0.75..<1:
+        case Self.thresholdMedium..<Self.thresholdHigh:
             return .orange
         default:
             return .red

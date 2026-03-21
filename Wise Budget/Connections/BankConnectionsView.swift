@@ -168,29 +168,25 @@ struct BankConnectionsView: View {
     // MARK: - Sync Methods
 
     private func syncMonobank() {
+        guard !isSyncing else { return }
         isSyncing = true
-        Task {
+        Task { @MainActor in
+            defer { isSyncing = false }
             do {
                 let result = try await MonobankSyncService.sync(
                     context: modelContext,
                     lastSyncTimestamp: monobankLastSync > 0 ? monobankLastSync : nil
                 )
-                await MainActor.run {
-                    monobankLastSync = Date().timeIntervalSince1970
-                    isSyncing = false
-                    if result.expensesImported == 0 && result.incomesImported == 0 {
-                        syncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                    } else {
-                        syncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                    }
-                    postNotification(title: "Monobank Sync", message: syncResultMessage)
+                monobankLastSync = Date().timeIntervalSince1970
+                if result.expensesImported == 0 && result.incomesImported == 0 {
+                    syncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
+                } else {
+                    syncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
                 }
+                postNotification(title: "Monobank Sync", message: syncResultMessage)
             } catch {
-                await MainActor.run {
-                    isSyncing = false
-                    syncResultMessage = error.localizedDescription
-                    postNotification(title: "Monobank Sync", message: syncResultMessage)
-                }
+                syncResultMessage = error.localizedDescription
+                postNotification(title: "Monobank Sync", message: syncResultMessage)
             }
         }
     }
@@ -202,29 +198,25 @@ struct BankConnectionsView: View {
     }
 
     private func syncWise() {
+        guard !isWiseSyncing else { return }
         isWiseSyncing = true
-        Task {
+        Task { @MainActor in
+            defer { isWiseSyncing = false }
             do {
                 let result = try await WiseSyncService.sync(
                     context: modelContext,
                     lastSyncTimestamp: wiseLastSync > 0 ? wiseLastSync : nil
                 )
-                await MainActor.run {
-                    wiseLastSync = Date().timeIntervalSince1970
-                    isWiseSyncing = false
-                    if result.expensesImported == 0 && result.incomesImported == 0 {
-                        wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                    } else {
-                        wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                    }
-                    postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
+                wiseLastSync = Date().timeIntervalSince1970
+                if result.expensesImported == 0 && result.incomesImported == 0 {
+                    wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
+                } else {
+                    wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
                 }
+                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
             } catch {
-                await MainActor.run {
-                    isWiseSyncing = false
-                    wiseSyncResultMessage = error.localizedDescription
-                    postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
-                }
+                wiseSyncResultMessage = error.localizedDescription
+                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
             }
         }
     }

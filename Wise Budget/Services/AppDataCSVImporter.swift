@@ -151,6 +151,7 @@ final class AppDataCSVImporter {
                     date: row.date,
                     category: category,
                     descriptionText: row.description,
+                    source: row.destination,
                     baseCurrencyAmount: row.baseCurrencyAmount,
                     baseCurrency: row.baseCurrency
                 )
