@@ -107,8 +107,16 @@ final class WiseSyncService {
         }
 
         let absAmount = abs(amount)
-        let categoryName = categoryForActivityType(activity.type)
         let description = stripHTML(activity.title ?? activity.description ?? "Wise Activity")
+
+        // For card transactions, try merchant name matching first for better categorization
+        let categoryName: String
+        if activity.type == "CARD_TRANSACTION" || activity.type == "CARD_PAYMENT",
+           let merchantCategory = MerchantCategoryMapping.category(for: description) {
+            categoryName = merchantCategory
+        } else {
+            categoryName = categoryForActivityType(activity.type)
+        }
 
         // Parse secondary amount for currency conversion info
         let baseCurrencyAmount: Decimal?
@@ -183,7 +191,7 @@ final class WiseSyncService {
         string.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     }
 
-    /// Maps Wise activity type to app category.
+    /// Maps Wise activity type to app category (fallback when merchant name matching fails).
     static func categoryForActivityType(_ type: String) -> String {
         switch type {
         case "CARD_TRANSACTION", "CARD_PAYMENT":

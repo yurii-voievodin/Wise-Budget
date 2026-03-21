@@ -154,6 +154,8 @@ final class WiseAPIClient {
         return allActivities
     }
 
+    // MARK: - Request Helpers
+
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
         // Log request details
         let method = request.httpMethod ?? "GET"
