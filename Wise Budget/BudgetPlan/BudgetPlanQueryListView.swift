@@ -136,7 +136,7 @@ struct BudgetPlanQueryListView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
                 }
-                if totalPlanned > 0 {
+                if totalActual > 0, totalPlanned > 0 {
                     BudgetProgressBar(spent: totalActual, planned: totalPlanned)
                 }
                 if unconvertibleExpenseCount > 0 {
@@ -178,9 +178,9 @@ struct BudgetPlanQueryListView: View {
                             Text(planCurrency)
                                 .foregroundStyle(.secondary)
                         }
-                        let planned = planItem(for: category)?.plannedAmount ?? Decimal.zero
-                        if planned > 0 {
-                            BudgetProgressBar(spent: actual, planned: planned)
+                        if actual > 0 {
+                            let planned = planItem(for: category)?.plannedAmount ?? Decimal.zero
+                            BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
                         }
                     }
                     .padding(.vertical, 2)
