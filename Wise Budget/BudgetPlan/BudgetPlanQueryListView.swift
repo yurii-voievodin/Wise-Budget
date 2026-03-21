@@ -80,17 +80,21 @@ struct BudgetPlanQueryListView: View {
         return plan
     }
 
-    private func plannedBinding(for category: ExpenseCategory) -> Binding<Decimal> {
+    private func plannedBinding(for category: ExpenseCategory) -> Binding<String> {
         Binding(
-            get: { planItem(for: category)?.plannedAmount ?? Decimal.zero },
+            get: {
+                let amount = planItem(for: category)?.plannedAmount ?? Decimal.zero
+                return amount == Decimal.zero ? "" : "\(amount)"
+            },
             set: { newValue in
+                let value = Decimal(string: newValue) ?? Decimal.zero
                 let plan = ensurePlanExists()
                 if let item = plan.items.first(where: {
                     $0.category?.persistentModelID == category.persistentModelID
                 }) {
-                    item.plannedAmount = newValue
+                    item.plannedAmount = value
                 } else {
-                    let item = BudgetPlanItem(plannedAmount: newValue, plan: plan, category: category)
+                    let item = BudgetPlanItem(plannedAmount: value, plan: plan, category: category)
                     modelContext.insert(item)
                 }
             }
@@ -163,8 +167,7 @@ struct BudgetPlanQueryListView: View {
                                 .foregroundStyle(.secondary)
                             TextField(
                                 "0",
-                                value: plannedBinding(for: category),
-                                format: .number
+                                text: plannedBinding(for: category)
                             )
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
