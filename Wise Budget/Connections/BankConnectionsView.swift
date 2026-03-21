@@ -22,11 +22,13 @@ struct BankConnectionsView: View {
     @State private var wiseSyncResultMessage: String?
 
     private var isMonobankConnected: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+        !monobankConnectedName.isEmpty
+            || KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
     }
 
     private var isWiseConnected: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+        !wiseConnectedName.isEmpty
+            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
     var body: some View {
