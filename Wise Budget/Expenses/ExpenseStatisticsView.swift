@@ -63,6 +63,15 @@ struct ExpenseStatisticsView: View {
         }
     }
 
+    private var daysInMonth: Int {
+        Calendar.current.range(of: .day, in: .month, for: filter.startOfMonth)?.count ?? 30
+    }
+
+    private var dailyAverage: Decimal {
+        guard daysInMonth > 0 else { return .zero }
+        return totalInDefaultCurrency / Decimal(daysInMonth)
+    }
+
     private var currencyBreakdown: [(currency: String, total: Decimal)] {
         let grouped = Dictionary(grouping: expenses, by: \.currency)
         let totals = grouped.map { currency, items in
@@ -117,6 +126,10 @@ struct ExpenseStatisticsView: View {
             LabeledContent("Total (\(defaultCurrency))") {
                 Text("\(totalInDefaultCurrency, format: .number) \(defaultCurrency)")
                     .fontWeight(.semibold)
+            }
+            LabeledContent("Daily Average (\(defaultCurrency))") {
+                Text("\(dailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
+                    .monospacedDigit()
             }
         }
     }

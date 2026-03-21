@@ -14,6 +14,7 @@ struct ExpenseListView: View {
 
     enum ExpenseTab: Hashable {
         case expenses
+        case calendar
         case statistics
     }
 
@@ -28,6 +29,10 @@ struct ExpenseListView: View {
                     syncService: syncService
                 )
                 .id(filter)
+            }
+            Tab("Calendar", systemImage: "calendar", value: .calendar) {
+                ExpenseCalendarView(filter: filter, syncService: syncService)
+                    .id(filter)
             }
             Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
                 ExpenseStatisticsView(filter: filter, syncService: syncService)
