@@ -146,24 +146,27 @@ final class WiseSyncService {
         )
     }
 
-    /// Parses a formatted amount string like "10.00 EUR", "-25.50 GBP", or "1,234.56 USD".
+    /// Parses a formatted amount string like "10.00 EUR", "-25.50 GBP", "1,234.56 USD",
+    /// or "<positive>+ 3,754.76 EUR</positive>".
     /// Returns (amount as Decimal, currency code) or nil if parsing fails.
     static func parseFormattedAmount(_ formatted: String) -> (Decimal, String)? {
-        let trimmed = formatted.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return nil }
+        // Strip XML/HTML tags and trim
+        let stripped = stripHTML(formatted).trimmingCharacters(in: .whitespaces)
+        guard !stripped.isEmpty else { return nil }
 
         // Split into components — the currency code is typically the last 3-letter word
-        let parts = trimmed.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        let parts = stripped.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         guard parts.count >= 2 else { return nil }
 
         let currencyCode = parts.last!
         // Currency codes are 3 uppercase letters
         guard currencyCode.count == 3, currencyCode == currencyCode.uppercased() else { return nil }
 
-        // Everything before the currency is the number (may contain commas, minus sign, etc.)
+        // Everything before the currency is the number (may contain commas, +/- signs, etc.)
         let numberParts = parts.dropLast()
         let numberString = numberParts.joined()
             .replacingOccurrences(of: ",", with: "") // Remove thousand separators
+            .replacingOccurrences(of: "+", with: "") // Remove leading plus sign
 
         guard let amount = Decimal(string: numberString) else { return nil }
 
