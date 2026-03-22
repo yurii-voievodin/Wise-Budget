@@ -49,10 +49,15 @@ struct BudgetPlanQueryListView: View {
             .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: planCurrency) ?? Decimal.zero) }
     }
 
+    private var categoryIds: Set<PersistentIdentifier> {
+        Set(categories.map(\.persistentModelID))
+    }
+
     private var planItemsByCategory: [PersistentIdentifier: BudgetPlanItem] {
         guard let plan = currentPlan else { return [:] }
+        let validIds = categoryIds
         return Dictionary(uniqueKeysWithValues: plan.items.compactMap { item in
-            guard let id = item.category?.persistentModelID else { return nil }
+            guard let id = item.category?.persistentModelID, validIds.contains(id) else { return nil }
             return (id, item)
         })
     }
@@ -130,6 +135,14 @@ struct BudgetPlanQueryListView: View {
     }
 
     var body: some View {
+        if currentPlan == nil {
+            BudgetEmptyStateView(filter: filter)
+        } else {
+            budgetList
+        }
+    }
+
+    private var budgetList: some View {
         List {
             BudgetSummarySection(
                 monthlyBudgetBinding: monthlyBudgetBinding,
@@ -168,7 +181,12 @@ struct BudgetPlanQueryListView: View {
 
     private func updateResetAction() {
         guard let plan = currentPlan else { resetAction = nil; return }
-        let hasNonZeroAmount = plan.items.contains { $0.plannedAmount != Decimal.zero }
+        let validIds = categoryIds
+        let validItems = plan.items.filter { item in
+            guard let id = item.category?.persistentModelID else { return false }
+            return validIds.contains(id)
+        }
+        let hasNonZeroAmount = validItems.contains { $0.plannedAmount != Decimal.zero }
         let currencyDiffers = plan.currency != defaultCurrency
         let hasBudget = (plan.monthlyBudget ?? Decimal.zero) != Decimal.zero
         guard hasNonZeroAmount || currencyDiffers || hasBudget else { resetAction = nil; return }
@@ -176,7 +194,7 @@ struct BudgetPlanQueryListView: View {
         resetAction = {
             plan.currency = currency
             plan.monthlyBudget = Decimal.zero
-            for item in plan.items {
+            for item in validItems {
                 item.plannedAmount = Decimal.zero
             }
         }
