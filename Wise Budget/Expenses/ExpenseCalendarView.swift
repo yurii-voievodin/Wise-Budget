@@ -6,6 +6,8 @@ struct ExpenseCalendarView: View {
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
+    @State private var selectedDay: Int?
+
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService
 
@@ -134,6 +136,23 @@ struct ExpenseCalendarView: View {
                         .frame(height: 64)
                 case .day(let day):
                     dayCellView(day: day)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if expensesForDay(day).isEmpty {
+                                selectedDay = nil
+                            } else {
+                                selectedDay = selectedDay == day ? nil : day
+                            }
+                        }
+                        .popover(isPresented: Binding(
+                            get: { selectedDay == day },
+                            set: { if !$0 { selectedDay = nil } }
+                        )) {
+                            ExpenseDayDetailView(
+                                expenses: expensesForDay(day),
+                                date: calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date()
+                            )
+                        }
                 }
             }
         }
@@ -145,10 +164,10 @@ struct ExpenseCalendarView: View {
 
         return VStack(spacing: 2) {
             Text("\(day)")
-                .font(.caption2)
-                .fontWeight(.medium)
+                .font(.caption)
+                .fontWeight(.bold)
                 .foregroundStyle(isToday(day: day) ? .white : .primary)
-                .frame(width: 20, height: 20)
+                .frame(width: 22, height: 22)
                 .background {
                     if isToday(day: day) {
                         Circle().fill(.blue)
@@ -156,12 +175,11 @@ struct ExpenseCalendarView: View {
                 }
 
             if let total {
-                Text(formattedAmount(total))
-                    .font(.system(size: 10))
-                    .fontWeight(.medium)
-                    .foregroundStyle(.primary)
+                Text("\(formattedAmount(total)) \(defaultCurrency)")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.5)
             }
         }
         .frame(maxWidth: .infinity)
@@ -170,6 +188,10 @@ struct ExpenseCalendarView: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.red.opacity(intensity))
         )
+    }
+
+    private func expensesForDay(_ day: Int) -> [Expense] {
+        expenses.filter { calendar.component(.day, from: $0.date) == day }
     }
 
     // MARK: - Helpers
