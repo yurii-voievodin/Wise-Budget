@@ -1,12 +1,17 @@
 import SwiftUI
 import SwiftData
 
+private struct IdentifiableDate: Identifiable {
+    let date: Date
+    var id: Date { date }
+}
+
 struct ExpenseCalendarView: View {
     @Query private var expenses: [Expense]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
-    @State private var selectedDay: Int?
+    @State private var selectedDate: IdentifiableDate?
 
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService
@@ -139,22 +144,17 @@ struct ExpenseCalendarView: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             if expensesForDay(day).isEmpty {
-                                selectedDay = nil
+                                selectedDate = nil
                             } else {
-                                selectedDay = selectedDay == day ? nil : day
+                                let date = calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date()
+                                selectedDate = IdentifiableDate(date: date)
                             }
-                        }
-                        .popover(isPresented: Binding(
-                            get: { selectedDay == day },
-                            set: { if !$0 { selectedDay = nil } }
-                        )) {
-                            ExpenseDayDetailView(
-                                expenses: expensesForDay(day),
-                                date: calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date()
-                            )
                         }
                 }
             }
+        }
+        .popover(item: $selectedDate) { item in
+            ExpenseDayDetailView(date: item.date)
         }
     }
 

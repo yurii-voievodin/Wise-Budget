@@ -1,10 +1,25 @@
 import SwiftUI
+import SwiftData
 
 struct ExpenseDayDetailView: View {
-    let expenses: [Expense]
+    @Query private var expenses: [Expense]
+
     let date: Date
 
     @State private var expenseToEdit: Expense?
+
+    init(date: Date) {
+        self.date = date
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        self._expenses = Query(
+            filter: #Predicate<Expense> { expense in
+                expense.date >= startOfDay && expense.date < endOfDay
+            },
+            sort: \.date
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
