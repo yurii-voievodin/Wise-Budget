@@ -57,8 +57,13 @@ struct IncomeFormSheet: View {
                     }
                 }
                 if isForeignCurrency {
-                    TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
-                        .frame(width: 200)
+                    BaseCurrencyField(
+                        baseCurrencyAmount: $baseCurrencyAmount,
+                        amount: amount,
+                        currency: currency,
+                        defaultCurrency: defaultCurrency,
+                        date: date
+                    )
                 }
                 TextField("Description", text: $descriptionText)
                 TextField("Source", text: $source)

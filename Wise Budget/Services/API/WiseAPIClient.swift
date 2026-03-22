@@ -5,6 +5,13 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "WiseAPI")
 
 // MARK: - Response Models
 
+struct WiseRate: Codable {
+    let rate: Double
+    let source: String
+    let target: String
+    let time: String
+}
+
 struct WiseProfile: Codable, Identifiable {
     let id: Int
     let type: String
@@ -152,6 +159,40 @@ final class WiseAPIClient {
 
         logger.info("fetched \(allActivities.count) total activities for profile \(profileId)")
         return allActivities
+    }
+
+    /// Fetches the exchange rate for a currency pair at a specific point in time.
+    func fetchRate(source: String, target: String, time: Date) async throws -> WiseRate {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+
+        var components = URLComponents(string: "\(baseURL)/v1/rates")!
+        components.queryItems = [
+            URLQueryItem(name: "source", value: source),
+            URLQueryItem(name: "target", value: target),
+            URLQueryItem(name: "time", value: isoFormatter.string(from: time)),
+        ]
+
+        var request = URLRequest(url: components.url!)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        logger.debug("GET /v1/rates?source=\(source)&target=\(target)")
+
+        let (data, response) = try await performRequest(request)
+        try validateResponse(response)
+
+        do {
+            let rates = try JSONDecoder().decode([WiseRate].self, from: data)
+            guard let rate = rates.first else {
+                throw WiseAPIError.decodingError(NSError(domain: "WiseAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "No rate returned"]))
+            }
+            return rate
+        } catch let error as WiseAPIError {
+            throw error
+        } catch {
+            logger.error("rate decoding failed: \(error.localizedDescription)")
+            throw WiseAPIError.decodingError(error)
+        }
     }
 
     // MARK: - Request Helpers
