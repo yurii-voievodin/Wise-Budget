@@ -11,8 +11,9 @@ final class Income: CurrencyConvertible {
     var source: String?
     var baseCurrencyAmount: Decimal?
     var baseCurrency: String?
+    var externalId: String?
 
-    init(amount: Decimal, currency: String, date: Date = Date(), category: IncomeCategory? = nil, descriptionText: String? = nil, source: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil) {
+    init(amount: Decimal, currency: String, date: Date = Date(), category: IncomeCategory? = nil, descriptionText: String? = nil, source: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
         self.amount = amount
         self.currency = currency
         self.date = date
@@ -21,5 +22,6 @@ final class Income: CurrencyConvertible {
         self.source = source
         self.baseCurrencyAmount = baseCurrencyAmount
         self.baseCurrency = baseCurrency
+        self.externalId = externalId
     }
 }

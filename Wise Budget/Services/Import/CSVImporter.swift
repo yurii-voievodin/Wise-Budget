@@ -19,8 +19,9 @@ struct CSVTransaction {
     let destination: String?
     let baseCurrencyAmount: Decimal?
     let baseCurrency: String?
+    let externalId: String?
 
-    init(direction: String, status: String, date: Date, amount: Decimal, currency: String, categoryName: String, targetName: String?, destination: String?, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil) {
+    init(direction: String, status: String, date: Date, amount: Decimal, currency: String, categoryName: String, targetName: String?, destination: String?, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
         self.direction = direction
         self.status = status
         self.date = date
@@ -31,6 +32,7 @@ struct CSVTransaction {
         self.destination = destination
         self.baseCurrencyAmount = baseCurrencyAmount
         self.baseCurrency = baseCurrency
+        self.externalId = externalId
     }
 }
 
@@ -142,7 +144,6 @@ final class CSVImporter {
 
     private struct TransactionKey: Hashable {
         let day: Date
-        let category: String
         let currency: String
         let amount: Decimal
     }
@@ -160,20 +161,28 @@ final class CSVImporter {
         let existingExpenses = try context.fetch(FetchDescriptor<Expense>())
         let existingIncomes = try context.fetch(FetchDescriptor<Income>())
 
+        // Primary dedup: external IDs from bank APIs
+        var existingExternalIds = Set<String>()
+        for expense in existingExpenses {
+            if let id = expense.externalId { existingExternalIds.insert(id) }
+        }
+        for income in existingIncomes {
+            if let id = income.externalId { existingExternalIds.insert(id) }
+        }
+
+        // Fallback dedup: date + amount + currency (for manually created or CSV-imported transactions)
         var existingKeys = Set<TransactionKey>()
         let calendar = Calendar.current
-        for expense in existingExpenses {
+        for expense in existingExpenses where expense.externalId == nil {
             existingKeys.insert(TransactionKey(
                 day: calendar.startOfDay(for: expense.date),
-                category: expense.category?.name ?? "",
                 currency: expense.currency,
                 amount: expense.amount
             ))
         }
-        for income in existingIncomes {
+        for income in existingIncomes where income.externalId == nil {
             existingKeys.insert(TransactionKey(
                 day: calendar.startOfDay(for: income.date),
-                category: income.category?.name ?? "",
                 currency: income.currency,
                 amount: income.amount
             ))
@@ -187,14 +196,19 @@ final class CSVImporter {
                 continue
             }
 
+            // Check external ID first (most reliable)
+            if let externalId = transaction.externalId, existingExternalIds.contains(externalId) {
+                result.duplicatesSkipped += 1
+                continue
+            }
+
+            // Fallback: check by date + amount + currency (only against records without externalId)
             let key = TransactionKey(
                 day: calendar.startOfDay(for: transaction.date),
-                category: transaction.categoryName,
                 currency: transaction.currency,
                 amount: transaction.amount
             )
-
-            if existingKeys.contains(key) {
+            if transaction.externalId == nil, existingKeys.contains(key) {
                 result.duplicatesSkipped += 1
                 continue
             }
@@ -218,10 +232,15 @@ final class CSVImporter {
                     descriptionText: transaction.targetName,
                     destination: transaction.destination,
                     baseCurrencyAmount: transaction.baseCurrencyAmount,
-                    baseCurrency: transaction.baseCurrency
+                    baseCurrency: transaction.baseCurrency,
+                    externalId: transaction.externalId
                 )
                 context.insert(expense)
-                existingKeys.insert(key)
+                if let externalId = transaction.externalId {
+                    existingExternalIds.insert(externalId)
+                } else {
+                    existingKeys.insert(key)
+                }
                 result.expensesImported += 1
 
             } else if transaction.direction == "IN" {
@@ -242,10 +261,15 @@ final class CSVImporter {
                     category: category,
                     descriptionText: transaction.targetName,
                     baseCurrencyAmount: transaction.baseCurrencyAmount,
-                    baseCurrency: transaction.baseCurrency
+                    baseCurrency: transaction.baseCurrency,
+                    externalId: transaction.externalId
                 )
                 context.insert(income)
-                existingKeys.insert(key)
+                if let externalId = transaction.externalId {
+                    existingExternalIds.insert(externalId)
+                } else {
+                    existingKeys.insert(key)
+                }
                 result.incomesImported += 1
 
             } else {

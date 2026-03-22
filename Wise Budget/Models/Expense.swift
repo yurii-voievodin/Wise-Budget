@@ -11,8 +11,9 @@ final class Expense: CurrencyConvertible {
     var destination: String?
     var baseCurrencyAmount: Decimal?
     var baseCurrency: String?
+    var externalId: String?
 
-    init(amount: Decimal, currency: String, date: Date = Date(), category: ExpenseCategory? = nil, descriptionText: String? = nil, destination: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil) {
+    init(amount: Decimal, currency: String, date: Date = Date(), category: ExpenseCategory? = nil, descriptionText: String? = nil, destination: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
         self.amount = amount
         self.currency = currency
         self.date = date
@@ -21,5 +22,6 @@ final class Expense: CurrencyConvertible {
         self.destination = destination
         self.baseCurrencyAmount = baseCurrencyAmount
         self.baseCurrency = baseCurrency
+        self.externalId = externalId
     }
 }

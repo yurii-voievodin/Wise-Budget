@@ -177,7 +177,8 @@ final class MonobankSyncService {
             targetName: description,
             destination: nil,
             baseCurrencyAmount: baseCurrencyAmount,
-            baseCurrency: baseCurrency
+            baseCurrency: baseCurrency,
+            externalId: "mono_\(statement.id)"
         )
     }
 }

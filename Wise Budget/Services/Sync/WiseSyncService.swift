@@ -141,7 +141,8 @@ final class WiseSyncService {
             targetName: description,
             destination: nil,
             baseCurrencyAmount: baseCurrencyAmount,
-            baseCurrency: baseCurrency
+            baseCurrency: baseCurrency,
+            externalId: "wise_\(activity.id)"
         )
     }
 
