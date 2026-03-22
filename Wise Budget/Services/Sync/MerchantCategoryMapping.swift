@@ -26,6 +26,12 @@ enum MerchantCategoryMapping {
     /// More specific keywords should come before generic ones.
     static let rules: [(keyword: String, category: String)] = {
         var r = [(String, String)]()
+        
+        // ── Other ────────────────────────────────────────────
+        r += [
+            ("barber", "Other"),
+            ("claude", "Other"),
+        ]
 
         // ── Auto / Transport ────────────────────────────────────────────
         r += [
@@ -50,6 +56,7 @@ enum MerchantCategoryMapping {
             ("taxi", "Auto"),
             ("balice", "Auto"),
             ("km-prona", "Auto"),
+            ("global technology", "Auto")
         ]
 
         // ── Groceries ───────────────────────────────────────────────────
@@ -65,6 +72,7 @@ enum MerchantCategoryMapping {
             ("zabka", "Groceries"),
             ("my market", "Groceries"),
             ("lajkonik", "Groceries"),
+            ("beryozka", "Groceries")
         ]
 
         // ── Cafes / Restaurants ─────────────────────────────────────────
@@ -105,8 +113,6 @@ enum MerchantCategoryMapping {
             ("pepco", "Shopping"),
             ("dji", "Shopping"),
             ("ikea", "Shopping"),
-            ("garmin", "Shopping"),
-            ("pulse", "Shopping"),
             ("intertop", "Shopping"),
             ("praktiker", "Shopping"),
             ("teknopolis", "Shopping"),
@@ -114,17 +120,16 @@ enum MerchantCategoryMapping {
             ("технополіс", "Shopping"),
             ("levi store", "Shopping"),
             ("apple", "Shopping"),
-            ("claude", "Shopping"),
+            
             ("carvertical", "Shopping"),
         ]
 
         // ── Personal Items ──────────────────────────────────────────────
         r += [
-            ("barbershop", "Personal Items"),
-            ("barber", "Personal Items"),
             ("rossmann", "Personal Items"),
             ("apteka", "Personal Items"),
             ("medicover", "Personal Items"),
+            ("garmin", "Personal Items"),
         ]
 
         // ── Travel ──────────────────────────────────────────────────────
@@ -132,6 +137,7 @@ enum MerchantCategoryMapping {
             ("booking.com", "Travel"),
             ("hotel", "Travel"),
             ("airbnb", "Travel"),
+            ("Такси", "Travel")
         ]
 
         // ── Entertainment ───────────────────────────────────────────────
@@ -152,6 +158,12 @@ enum MerchantCategoryMapping {
             ("київстар", "Utilities"),
             ("kyivstar", "Utilities"),
         ]
+        
+        // ── Medical ───────────────────────────────────────────────────
+        r += [
+            ("pulse", "Medical"),
+        ]
+        
 
         return r
     }()

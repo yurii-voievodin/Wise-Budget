@@ -46,6 +46,30 @@ struct ExpenseCalendarView: View {
         return (weekday + 5) % 7 // Mon=0, Tue=1 ... Sun=6
     }
 
+    /// Classifies an expense: if its currency or baseCurrency matches defaultCurrency,
+    /// returns the amount in defaultCurrency; otherwise returns (originalCurrency, originalAmount).
+    private func classifyExpense(_ expense: Expense) -> (currency: String, amount: Decimal) {
+        if expense.currency == defaultCurrency {
+            return (defaultCurrency, expense.amount)
+        } else if expense.baseCurrency == defaultCurrency, let baseAmount = expense.baseCurrencyAmount {
+            return (defaultCurrency, baseAmount)
+        } else {
+            return (expense.currency, expense.amount)
+        }
+    }
+
+    /// Daily totals grouped by currency, with convertible expenses folded into defaultCurrency.
+    private var dailyTotalsByCurrency: [Int: [String: Decimal]] {
+        var totals: [Int: [String: Decimal]] = [:]
+        for expense in expenses {
+            let day = calendar.component(.day, from: expense.date)
+            let (currency, amount) = classifyExpense(expense)
+            totals[day, default: [:]][currency, default: .zero] += amount
+        }
+        return totals
+    }
+
+    /// Flat daily totals converted to default currency (for heat map intensity)
     private var dailyTotals: [Int: Decimal] {
         var totals: [Int: Decimal] = [:]
         for expense in expenses {
@@ -60,8 +84,13 @@ struct ExpenseCalendarView: View {
         dailyTotals.values.max() ?? .zero
     }
 
-    private var monthTotal: Decimal {
-        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? $1.amount) }
+    private var monthTotalsByCurrency: [String: Decimal] {
+        var totals: [String: Decimal] = [:]
+        for expense in expenses {
+            let (currency, amount) = classifyExpense(expense)
+            totals[currency, default: .zero] += amount
+        }
+        return totals
     }
 
     private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
@@ -98,13 +127,23 @@ struct ExpenseCalendarView: View {
     // MARK: - Subviews
 
     private var totalHeader: some View {
-        VStack(spacing: 4) {
+        let totals = monthTotalsByCurrency
+        let sortedTotals = totals.sorted { a, b in
+            if a.key == defaultCurrency { return true }
+            if b.key == defaultCurrency { return false }
+            return a.key < b.key
+        }
+
+        return VStack(spacing: 4) {
             Text("Month Total")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Text("\(monthTotal, format: .number) \(defaultCurrency)")
-                .font(.title2)
-                .fontWeight(.semibold)
+            ForEach(sortedTotals, id: \.key) { currency, total in
+                Text("\(formattedAmount(total)) \(currency)")
+                    .font(currency == defaultCurrency ? .title2 : .headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(currency == defaultCurrency ? .primary : .secondary)
+            }
         }
     }
 
@@ -161,6 +200,7 @@ struct ExpenseCalendarView: View {
     private func dayCellView(day: Int) -> some View {
         let total = dailyTotals[day]
         let intensity = intensityForDay(total: total)
+        let currencyTotals = dailyTotalsByCurrency[day] ?? [:]
 
         return VStack(spacing: 2) {
             Text("\(day)")
@@ -174,16 +214,23 @@ struct ExpenseCalendarView: View {
                     }
                 }
 
-            if let total {
-                Text("\(formattedAmount(total)) \(defaultCurrency)")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+            if !currencyTotals.isEmpty {
+                let sorted = currencyTotals.sorted { a, b in
+                    if a.key == defaultCurrency { return true }
+                    if b.key == defaultCurrency { return false }
+                    return a.key < b.key
+                }
+                ForEach(sorted, id: \.key) { currency, amount in
+                    Text("\(formattedAmount(amount)) \(currency)")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 64)
+        .frame(minHeight: 64)
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.red.opacity(intensity))

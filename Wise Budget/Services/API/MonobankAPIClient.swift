@@ -119,8 +119,37 @@ final class MonobankAPIClient {
     }
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        // Log request details
+        let method = request.httpMethod ?? "GET"
+        let url = request.url?.absoluteString ?? "unknown"
+        logger.debug("REQUEST: \(method) \(url)")
+
+        if let headers = request.allHTTPHeaderFields {
+            let safeHeaders = headers.map { key, value in
+                if key == "X-Token" {
+                    return "\(key): ***"
+                }
+                return "\(key): \(value)"
+            }.joined(separator: ", ")
+            logger.debug("HEADERS: \(safeHeaders)")
+        }
+
+        if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+            logger.debug("BODY: \(bodyString)")
+        }
+
         do {
-            return try await session.data(for: request)
+            let (data, response) = try await session.data(for: request)
+
+            // Log response details
+            if let httpResponse = response as? HTTPURLResponse {
+                logger.debug("RESPONSE: HTTP \(httpResponse.statusCode)")
+            }
+            if let rawBody = String(data: data, encoding: .utf8) {
+                logger.debug("RESPONSE BODY: \(rawBody)")
+            }
+
+            return (data, response)
         } catch {
             logger.error("network request failed: \(error.localizedDescription)")
             throw MonobankAPIError.networkError(error)

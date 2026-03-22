@@ -49,7 +49,7 @@ struct ExpenseQueryListView: View {
 
     var body: some View {
         Group {
-            if !hasAnyExpenses {
+            if !hasAnyExpenses && !syncService.hasBankToken {
                 emptyStateView
             } else if filteredExpenses.isEmpty {
                 monthEmptyStateView
