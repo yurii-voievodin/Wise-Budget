@@ -88,9 +88,17 @@ final class WiseSyncService {
             return nil
         }
 
-        // Determine direction based on activity type and amount sign.
-        // The Wise API returns positive amounts for outgoing payments (e.g. "18.55 EUR" for a card payment),
-        // so we cannot rely on the sign alone. Use the activity type to identify expenses.
+        // Skip inter-balance transfers (e.g. moving money between EUR and savings jars)
+        if activity.type == "INTERBALANCE" {
+            logger.debug("skipping activity \(activity.id): inter-balance transfer")
+            return nil
+        }
+
+        // Determine direction: the Wise API wraps incoming amounts in <positive> tags
+        // (e.g. "<positive>+ 3,754.76 EUR</positive>") and outgoing amounts are plain
+        // (e.g. "18.55 EUR"). Check for this tag first — it's the most reliable signal.
+        let isExplicitlyPositive = amountString.contains("<positive>")
+
         let expenseTypes: Set<String> = [
             "CARD_PAYMENT", "CARD_TRANSACTION",
             "DIRECT_DEBIT_TRANSACTION", "DIRECT_DEBIT_INSTRUCTION",
@@ -100,7 +108,11 @@ final class WiseSyncService {
         let direction: String
         if amount == 0 {
             return nil // Skip zero-amount
-        } else if amount < 0 || expenseTypes.contains(activity.type) {
+        } else if isExplicitlyPositive || amount < 0 {
+            // Negative parsed amount means the raw string had a minus sign → income
+            // <positive> tag means Wise explicitly marked it as incoming
+            direction = amount < 0 ? "OUT" : "IN"
+        } else if expenseTypes.contains(activity.type) {
             direction = "OUT"
         } else {
             direction = "IN"
