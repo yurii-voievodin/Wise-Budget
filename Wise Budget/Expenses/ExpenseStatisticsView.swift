@@ -111,7 +111,7 @@ struct ExpenseStatisticsView: View {
                 Text("\(totalInDefaultCurrency, format: .number) \(defaultCurrency)")
                     .fontWeight(.semibold)
             }
-            LabeledContent("Daily Average (\(defaultCurrency))") {
+            LabeledContent("Daily Average") {
                 Text("\(dailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .monospacedDigit()
             }

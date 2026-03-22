@@ -10,6 +10,7 @@ struct BudgetPlanView: View {
     enum BudgetPlanTab: Hashable {
         case plan
         case chart
+        case statistics
     }
 
     var body: some View {
@@ -24,6 +25,10 @@ struct BudgetPlanView: View {
             }
             Tab("Chart", systemImage: "chart.bar", value: .chart) {
                 BudgetPlanChartView(filter: monthFilter)
+                    .id(monthFilter)
+            }
+            Tab("Statistics", systemImage: "chart.line.uptrend.xyaxis", value: .statistics) {
+                BudgetStatisticsView(filter: monthFilter)
                     .id(monthFilter)
             }
         }
