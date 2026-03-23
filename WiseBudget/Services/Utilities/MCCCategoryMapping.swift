@@ -45,7 +45,7 @@ enum MCCCategoryMapping {
         for code in [7832, 7841, 7911, 7922, 7929, 7932, 7933, 7941, 7991, 7993, 7994, 7995, 7996, 7998, 7999] { map[code] = .entertainment }
 
         // Shopping / Clothing / Electronics
-        for code in [5137, 5139, 5611, 5621, 5631, 5641, 5651, 5655, 5661, 5691, 5699, 5732, 5733, 5735] { map[code] = .shopping }
+        for code in [5137, 5139, 5611, 5621, 5631, 5641, 5651, 5655, 5661, 5691, 5699, 5732, 5733, 5735, 8999] { map[code] = .shopping }
 
         // Digital goods / Software / Subscriptions
         for code in [5815, 5816, 5817, 5818, 5262] { map[code] = .subscription }
