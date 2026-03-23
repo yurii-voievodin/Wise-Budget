@@ -193,6 +193,7 @@ struct ExpenseCalendarView: View {
                     Color.clear
                         .frame(height: 64)
                 case .day(let day):
+                    let isSelected = selectedDate.map { calendar.component(.day, from: $0.date) == day } ?? false
                     dayCellView(day: day, averageDailyIncome: avgIncome)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -203,11 +204,16 @@ struct ExpenseCalendarView: View {
                                 selectedDate = IdentifiableDate(date: date)
                             }
                         }
+                        .overlay {
+                            if isSelected {
+                                Color.clear
+                                    .popover(item: $selectedDate) { item in
+                                        ExpenseDayDetailView(date: item.date)
+                                    }
+                            }
+                        }
                 }
             }
-        }
-        .popover(item: $selectedDate) { item in
-            ExpenseDayDetailView(date: item.date)
         }
     }
 
