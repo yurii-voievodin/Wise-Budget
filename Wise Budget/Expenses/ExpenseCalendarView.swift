@@ -213,41 +213,15 @@ struct ExpenseCalendarView: View {
 
     private func dayCellView(day: Int, averageDailyIncome: Decimal) -> some View {
         let total = dailyTotals[day]
-        let currencyTotals = dailyTotalsByCurrency[day] ?? [:]
         let (bgColor, bgOpacity) = colorForDay(total: total, averageDailyIncome: averageDailyIncome)
 
-        return VStack(spacing: 2) {
-            Text("\(day)")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(isToday(day: day) ? .white : .primary)
-                .frame(width: 22, height: 22)
-                .background {
-                    if isToday(day: day) {
-                        Circle().fill(.blue)
-                    }
-                }
-
-            if !currencyTotals.isEmpty {
-                let sorted = currencyTotals.sorted { a, b in
-                    if a.key == defaultCurrency { return true }
-                    if b.key == defaultCurrency { return false }
-                    return a.key < b.key
-                }
-                ForEach(sorted, id: \.key) { currency, amount in
-                    Text("\(formattedAmount(amount)) \(currency)")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: 64)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(bgColor.opacity(bgOpacity))
+        return ExpenseCalendarDayCellView(
+            day: day,
+            isToday: isToday(day: day),
+            defaultCurrency: defaultCurrency,
+            currencyTotals: dailyTotalsByCurrency[day] ?? [:],
+            backgroundColor: bgColor,
+            backgroundOpacity: bgOpacity
         )
     }
 
@@ -283,14 +257,7 @@ struct ExpenseCalendarView: View {
         return (.red, opacity)
     }
 
-    private static let amountFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter
-    }()
-
     private func formattedAmount(_ value: Decimal) -> String {
-        Self.amountFormatter.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
+        ExpenseCalendarDayCellView.formattedAmount(value)
     }
 }
