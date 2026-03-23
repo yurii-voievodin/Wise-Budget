@@ -214,21 +214,22 @@ struct MonobankConnectSheet: View {
 
     // MARK: - Account Details Cache
 
-    /// Persists account id→currencyCode mapping so sync can skip fetchClientInfo().
+    /// Persists account id, currencyCode, and IBAN so sync can skip fetchClientInfo().
     static func saveAccountDetails(_ accounts: [MonobankAccount]) {
-        let entries = accounts.map { "\($0.id):\($0.currencyCode)" }
+        let entries = accounts.map { "\($0.id):\($0.currencyCode):\($0.iban ?? "")" }
         UserDefaults.standard.set(entries.joined(separator: ","), forKey: "monobankAccountDetails")
         logger.info("cached \(accounts.count) account details")
     }
 
     /// Loads cached account details. Returns nil if nothing is cached.
-    static func loadAccountDetails() -> [(id: String, currencyCode: Int)]? {
+    static func loadAccountDetails() -> [(id: String, currencyCode: Int, iban: String?)]? {
         guard let stored = UserDefaults.standard.string(forKey: "monobankAccountDetails"),
               !stored.isEmpty else { return nil }
-        let entries = stored.components(separatedBy: ",").compactMap { entry -> (id: String, currencyCode: Int)? in
+        let entries = stored.components(separatedBy: ",").compactMap { entry -> (id: String, currencyCode: Int, iban: String?)? in
             let parts = entry.components(separatedBy: ":")
-            guard parts.count == 2, let code = Int(parts[1]) else { return nil }
-            return (id: parts[0], currencyCode: code)
+            guard parts.count >= 2, let code = Int(parts[1]) else { return nil }
+            let iban = parts.count >= 3 && !parts[2].isEmpty ? parts[2] : nil
+            return (id: parts[0], currencyCode: code, iban: iban)
         }
         return entries.isEmpty ? nil : entries
     }

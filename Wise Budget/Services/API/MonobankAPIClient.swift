@@ -18,6 +18,7 @@ struct MonobankAccount: Codable, Identifiable {
     let balance: Int
     let type: String?
     let maskedPan: [String]?
+    let iban: String?
 }
 
 struct MonobankStatement: Codable, Identifiable {
@@ -33,6 +34,7 @@ struct MonobankStatement: Codable, Identifiable {
     let hold: Bool
     let cashbackAmount: Int?
     let comment: String?
+    let counterIban: String?
 }
 
 // MARK: - Error Types

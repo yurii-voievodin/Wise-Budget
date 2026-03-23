@@ -10,7 +10,7 @@ final class MonobankSyncService {
     private static let maxWindowSeconds: TimeInterval = 31 * 24 * 60 * 60
 
     /// Delay between consecutive API calls to respect rate limits.
-    private static let rateLimitDelay: TimeInterval = 5.0
+    private static let rateLimitDelay: TimeInterval = 2.0
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -31,8 +31,10 @@ final class MonobankSyncService {
         let selectedIds = MonobankConnectSheet.loadSelectedAccountIds()
 
         // Use cached account details to avoid an extra API call
-        let accountsToSync: [(id: String, currencyCode: Int)]
+        let allCachedAccounts: [(id: String, currencyCode: Int, iban: String?)]
+        let accountsToSync: [(id: String, currencyCode: Int, iban: String?)]
         if let cached = MonobankConnectSheet.loadAccountDetails() {
+            allCachedAccounts = cached
             if selectedIds.isEmpty {
                 accountsToSync = cached
                 logger.info("using cached accounts, syncing all \(cached.count)")
@@ -45,7 +47,8 @@ final class MonobankSyncService {
             logger.debug("no cached accounts, fetching client info...")
             let clientInfo = try await client.fetchClientInfo()
             MonobankConnectSheet.saveAccountDetails(clientInfo.accounts)
-            let all = clientInfo.accounts.map { (id: $0.id, currencyCode: $0.currencyCode) }
+            let all = clientInfo.accounts.map { (id: $0.id, currencyCode: $0.currencyCode, iban: $0.iban) }
+            allCachedAccounts = all
             if selectedIds.isEmpty {
                 accountsToSync = all
             } else {
@@ -53,6 +56,9 @@ final class MonobankSyncService {
             }
             logger.info("fetched and cached \(clientInfo.accounts.count) accounts, syncing \(accountsToSync.count)")
         }
+
+        // Collect all user IBANs to detect own-account transfers
+        let ownIbans = Set(allCachedAccounts.compactMap { $0.iban })
 
         let fromDate = Date(timeIntervalSince1970: fromTimestamp)
         let toDate = Date(timeIntervalSince1970: toTimestamp)
@@ -84,7 +90,7 @@ final class MonobankSyncService {
                 )
 
                 let transactions = statements.compactMap { statement -> CSVTransaction? in
-                    convertStatement(statement, accountCurrency: currency)
+                    convertStatement(statement, accountCurrency: currency, ownIbans: ownIbans)
                 }
                 allTransactions.append(contentsOf: transactions)
                 logger.debug("fetched \(statements.count) statements, \(transactions.count) converted")
@@ -128,9 +134,22 @@ final class MonobankSyncService {
     }
 
     /// Converts a Monobank API statement into a CSVTransaction for import.
-    private static func convertStatement(_ statement: MonobankStatement, accountCurrency: String) -> CSVTransaction? {
+    private static func convertStatement(_ statement: MonobankStatement, accountCurrency: String, ownIbans: Set<String>) -> CSVTransaction? {
         // Skip held (pending) transactions
         guard !statement.hold else { return nil }
+
+        // Skip own-account transfers
+        if let counterIban = statement.counterIban, ownIbans.contains(counterIban) {
+            logger.debug("skipping own-account transfer (IBAN match): \(statement.id)")
+            return nil
+        }
+
+        // Skip FOP ↔ personal account transfers (incoming side has no counterIban)
+        let desc = statement.description.lowercased()
+        if desc.contains("рахунку фоп") || desc.contains("рахунок фоп") {
+            logger.debug("skipping FOP transfer: \(statement.id)")
+            return nil
+        }
 
         let date = Date(timeIntervalSince1970: TimeInterval(statement.time))
 

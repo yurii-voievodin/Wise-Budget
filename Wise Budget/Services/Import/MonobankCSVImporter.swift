@@ -11,10 +11,10 @@ final class MonobankCSVImporter {
         var map = [Int: String]()
 
         // Airlines
-        for code in [3000, 3001, 3002, 3003, 4511] { map[code] = "Travel" }
+        for code in [3000, 3001, 3002, 3003, 4511, 4131] { map[code] = "Travel" }
 
         // Hotels / Lodging
-        for code in [3500, 3501, 7011] { map[code] = "Travel" }
+        for code in [3500, 3501, 7011, 4722] { map[code] = "Travel" }
 
         // Car rental
         for code in [3351, 3352, 3353, 7512] { map[code] = "Auto" }
@@ -26,7 +26,7 @@ final class MonobankCSVImporter {
         for code in [5511, 5521, 5531, 5532, 5533, 7531, 7534, 7535, 7538, 7542, 7549] { map[code] = "Auto" }
 
         // Public transport
-        for code in [4111, 4112, 4121, 4131, 4215, 4789] { map[code] = "Auto" }
+        for code in [4111, 4112, 4121, 4215, 4789] { map[code] = "Auto" }
 
         // Groceries
         for code in [5411, 5422, 5441, 5451, 5462, 5499] { map[code] = "Groceries" }
@@ -35,7 +35,7 @@ final class MonobankCSVImporter {
         for code in [5811, 5812, 5813, 5814] { map[code] = "Cafes" }
 
         // Utilities / Telecom
-        for code in [4814, 4899, 4900] { map[code] = "Utilities" }
+        for code in [4814, 4899, 4900, 5734] { map[code] = "Utilities" }
 
         // Medical
         for code in [5912, 5122, 8011, 8021, 8031, 8041, 8042, 8043, 8049, 8050, 8062, 8071, 8099] { map[code] = "Medical" }
@@ -44,10 +44,10 @@ final class MonobankCSVImporter {
         for code in [7832, 7841, 7911, 7922, 7929, 7932, 7933, 7941, 7991, 7993, 7994, 7995, 7996, 7998, 7999] { map[code] = "Entertainment" }
 
         // Shopping / Clothing / Electronics
-        for code in [5137, 5139, 5611, 5621, 5631, 5641, 5651, 5655, 5661, 5691, 5699, 5732, 5733, 5734, 5735] { map[code] = "Shopping" }
+        for code in [5137, 5139, 5611, 5621, 5631, 5641, 5651, 5655, 5661, 5691, 5699, 5732, 5733, 5735] { map[code] = "Shopping" }
 
         // Digital goods / Software / Subscriptions
-        for code in [5815, 5816, 5817, 5818, 5262] { map[code] = "Shopping" }
+        for code in [5815, 5816, 5817, 5818, 5262] { map[code] = "Utilities" }
 
         // Home / Hardware
         for code in [5200, 5211, 5231, 5251, 5261, 5712, 5713, 5714, 5718, 5719, 5722] { map[code] = "Home" }
