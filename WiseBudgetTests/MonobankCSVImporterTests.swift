@@ -77,27 +77,27 @@ struct MonobankCSVImporterTests {
     // MARK: - MCC Category Mapping
 
     @Test func mccMappedToShopping() {
-        let category = MonobankCSVImporter.categoryName(forMCC: 5621)
+        let category = MCCCategoryMapping.categoryName(forMCC: 5621)
         #expect(category == "Shopping")
     }
 
     @Test func mccMappedToCafes() {
-        let category = MonobankCSVImporter.categoryName(forMCC: 5814)
+        let category = MCCCategoryMapping.categoryName(forMCC: 5814)
         #expect(category == "Cafes")
     }
 
     @Test func mccMappedToEntertainment() {
-        let category = MonobankCSVImporter.categoryName(forMCC: 7841)
+        let category = MCCCategoryMapping.categoryName(forMCC: 7841)
         #expect(category == "Entertainment")
     }
 
     @Test func mccMappedToOtherForTransfers() {
-        let category = MonobankCSVImporter.categoryName(forMCC: 4829)
+        let category = MCCCategoryMapping.categoryName(forMCC: 4829)
         #expect(category == "Other")
     }
 
     @Test func unknownMCCDefaultsToOther() {
-        let category = MonobankCSVImporter.categoryName(forMCC: 9999)
+        let category = MCCCategoryMapping.categoryName(forMCC: 9999)
         #expect(category == "Other")
     }
 

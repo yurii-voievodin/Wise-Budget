@@ -39,16 +39,16 @@ struct CSVTransaction {
 final class CSVImporter {
 
     static let categoryMapping: [String: String] = [
-        "Продукти харчування": "Groceries",
-        "Ресторани": "Cafes",
-        "Рахунки": "Utilities",
-        "Транспорт": "Auto",
-        "Магазини": "Shopping",
-        "Житло": "Home",
-        "Засоби гігієни": "Personal Items",
-        "Зарплата": "Salary",
-        "Заощадження": "Savings",
-        "Загальне": "Other",
+        "Продукти харчування": DefaultExpenseCategory.groceries.rawValue,
+        "Ресторани": DefaultExpenseCategory.cafes.rawValue,
+        "Рахунки": DefaultExpenseCategory.utilities.rawValue,
+        "Транспорт": DefaultExpenseCategory.auto.rawValue,
+        "Магазини": DefaultExpenseCategory.shopping.rawValue,
+        "Житло": DefaultExpenseCategory.home.rawValue,
+        "Засоби гігієни": DefaultExpenseCategory.personalItems.rawValue,
+        "Зарплата": DefaultIncomeCategory.salary.rawValue,
+        "Заощадження": DefaultExpenseCategory.other.rawValue,
+        "Загальне": DefaultExpenseCategory.other.rawValue,
     ]
 
     private static let dateFormatter: DateFormatter = {

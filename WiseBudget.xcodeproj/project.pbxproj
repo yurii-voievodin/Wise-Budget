@@ -12,38 +12,38 @@
 			containerPortal = 360EFA9B2F69BD5A00C39E99 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 360EFAA22F69BD5A00C39E99;
-			remoteInfo = "WiseBudget";
+			remoteInfo = WiseBudget;
 		};
 		360EFABD2F69BD5B00C39E99 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 360EFA9B2F69BD5A00C39E99 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 360EFAA22F69BD5A00C39E99;
-			remoteInfo = "WiseBudget";
+			remoteInfo = WiseBudget;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		360EFAA32F69BD5A00C39E99 /* WiseBudget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WiseBudget.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		360EFAB22F69BD5B00C39E99 /* WiseBudgetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WiseBudgetTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		360EFABC2F69BD5B00C39E99 /* WiseBudgetUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WiseBudgetUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		36194AC52F6B086B00B0C082 /* WiseBudget.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WiseBudget.xctestplan"; sourceTree = "<group>"; };
+		360EFAA32F69BD5A00C39E99 /* WiseBudget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WiseBudget.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		360EFAB22F69BD5B00C39E99 /* WiseBudgetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WiseBudgetTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		360EFABC2F69BD5B00C39E99 /* WiseBudgetUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WiseBudgetUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		36194AC52F6B086B00B0C082 /* WiseBudget.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = WiseBudget.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		360EFAA52F69BD5A00C39E99 /* WiseBudget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WiseBudget";
+			path = WiseBudget;
 			sourceTree = "<group>";
 		};
 		360EFAB52F69BD5B00C39E99 /* WiseBudgetTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WiseBudgetTests";
+			path = WiseBudgetTests;
 			sourceTree = "<group>";
 		};
 		360EFABF2F69BD5B00C39E99 /* WiseBudgetUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WiseBudgetUITests";
+			path = WiseBudgetUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -112,10 +112,10 @@
 			fileSystemSynchronizedGroups = (
 				360EFAA52F69BD5A00C39E99 /* WiseBudget */,
 			);
-			name = "WiseBudget";
+			name = WiseBudget;
 			packageProductDependencies = (
 			);
-			productName = "WiseBudget";
+			productName = WiseBudget;
 			productReference = 360EFAA32F69BD5A00C39E99 /* WiseBudget.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -135,10 +135,10 @@
 			fileSystemSynchronizedGroups = (
 				360EFAB52F69BD5B00C39E99 /* WiseBudgetTests */,
 			);
-			name = "WiseBudgetTests";
+			name = WiseBudgetTests;
 			packageProductDependencies = (
 			);
-			productName = "WiseBudgetTests";
+			productName = WiseBudgetTests;
 			productReference = 360EFAB22F69BD5B00C39E99 /* WiseBudgetTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -158,10 +158,10 @@
 			fileSystemSynchronizedGroups = (
 				360EFABF2F69BD5B00C39E99 /* WiseBudgetUITests */,
 			);
-			name = "WiseBudgetUITests";
+			name = WiseBudgetUITests;
 			packageProductDependencies = (
 			);
-			productName = "WiseBudgetUITests";
+			productName = WiseBudgetUITests;
 			productReference = 360EFABC2F69BD5B00C39E99 /* WiseBudgetUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
@@ -396,7 +396,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "WiseBudget/WiseBudget.entitlements";
+				CODE_SIGN_ENTITLEMENTS = WiseBudget/WiseBudget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -406,8 +406,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_CFBundleDisplayName = "Wise Budget";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -432,7 +432,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "WiseBudget/WiseBudget.entitlements";
+				CODE_SIGN_ENTITLEMENTS = WiseBudget/WiseBudget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -520,7 +520,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = "WiseBudget";
+				TEST_TARGET_NAME = WiseBudget;
 			};
 			name = Debug;
 		};
@@ -539,7 +539,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = "WiseBudget";
+				TEST_TARGET_NAME = WiseBudget;
 			};
 			name = Release;
 		};

@@ -47,6 +47,7 @@ struct WiseBudgetApp: App {
                     DataSeeder.prepopulateCategories(in: context)
                     DataSeeder.prepopulateIncomeCategories(in: context)
                     DataSeeder.migrateCategoryIcons(in: context)
+                    DataSeeder.prepopulateSubscriptionCategory(in: context)
                     BankSyncService.requestNotificationPermission()
                     disableFullScreen()
                 }

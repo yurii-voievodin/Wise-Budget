@@ -97,7 +97,7 @@ struct WiseBudgetTests {
             "Житло": "Home",
             "Засоби гігієни": "Personal Items",
             "Зарплата": "Salary",
-            "Заощадження": "Savings",
+            "Заощадження": "Other",
             "Загальне": "Other",
         ]
         for (ukrainian, english) in expectedMappings {

@@ -8,21 +8,8 @@ enum DataSeeder {
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
         guard existingCount == 0 else { return }
 
-        let defaults: [(name: String, icon: String)] = [
-            ("Auto", "car"),
-            ("Cafes", "cup.and.saucer"),
-            ("Entertainment", "film"),
-            ("Groceries", "cart"),
-            ("Home", "house"),
-            ("Medical", "cross.case"),
-            ("Other", "ellipsis.circle"),
-            ("Personal Items", "bag"),
-            ("Taxes", "doc.text"),
-            ("Travel", "airplane"),
-            ("Utilities", "bolt"),
-        ]
-        for item in defaults {
-            context.insert(ExpenseCategory(name: item.name, iconName: item.icon))
+        for category in DefaultExpenseCategory.allCases {
+            context.insert(ExpenseCategory(name: category.rawValue, iconName: category.iconName))
         }
     }
 
@@ -31,16 +18,8 @@ enum DataSeeder {
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
         guard existingCount == 0 else { return }
 
-        let defaults: [(name: String, icon: String)] = [
-            ("Freelance", "laptopcomputer"),
-            ("Gifts", "gift"),
-            ("Investments", "chart.line.uptrend.xyaxis"),
-            ("Other", "ellipsis.circle"),
-            ("Rental", "key"),
-            ("Salary", "banknote"),
-        ]
-        for item in defaults {
-            context.insert(IncomeCategory(name: item.name, iconName: item.icon))
+        for category in DefaultIncomeCategory.allCases {
+            context.insert(IncomeCategory(name: category.rawValue, iconName: category.iconName))
         }
     }
 
@@ -48,28 +27,12 @@ enum DataSeeder {
         let key = "didMigrateCategoryIcons"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
 
-        let expenseIcons: [String: String] = [
-            "Auto": "car",
-            "Cafes": "cup.and.saucer",
-            "Entertainment": "film",
-            "Groceries": "cart",
-            "Home": "house",
-            "Medical": "cross.case",
-            "Other": "ellipsis.circle",
-            "Personal Items": "bag",
-            "Taxes": "doc.text",
-            "Travel": "airplane",
-            "Utilities": "bolt",
-        ]
-
-        let incomeIcons: [String: String] = [
-            "Freelance": "laptopcomputer",
-            "Gifts": "gift",
-            "Investments": "chart.line.uptrend.xyaxis",
-            "Other": "ellipsis.circle",
-            "Rental": "key",
-            "Salary": "banknote",
-        ]
+        let expenseIcons = Dictionary(
+            uniqueKeysWithValues: DefaultExpenseCategory.allCases.map { ($0.rawValue, $0.iconName) }
+        )
+        let incomeIcons = Dictionary(
+            uniqueKeysWithValues: DefaultIncomeCategory.allCases.map { ($0.rawValue, $0.iconName) }
+        )
 
         if let expenseCategories = try? context.fetch(FetchDescriptor<ExpenseCategory>()) {
             for category in expenseCategories where category.iconName == nil {
@@ -83,6 +46,26 @@ enum DataSeeder {
             }
         }
 
+        UserDefaults.standard.set(true, forKey: key)
+    }
+
+    static func prepopulateSubscriptionCategory(in context: ModelContext) {
+        let key = "didAddSubscriptionCategory"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        let descriptor = FetchDescriptor<ExpenseCategory>()
+        guard let existing = try? context.fetch(descriptor) else { return }
+
+        let name = DefaultExpenseCategory.subscription.rawValue
+        guard !existing.contains(where: { $0.name == name }) else {
+            UserDefaults.standard.set(true, forKey: key)
+            return
+        }
+
+        context.insert(ExpenseCategory(
+            name: name,
+            iconName: DefaultExpenseCategory.subscription.iconName
+        ))
         UserDefaults.standard.set(true, forKey: key)
     }
 }

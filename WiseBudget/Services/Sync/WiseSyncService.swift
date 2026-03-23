@@ -201,19 +201,19 @@ final class WiseSyncService {
     static func categoryForActivityType(_ type: String) -> String {
         switch type {
         case "CARD_TRANSACTION", "CARD_PAYMENT":
-            return "Shopping"
+            return DefaultExpenseCategory.shopping.rawValue
         case "DIRECT_DEBIT_TRANSACTION", "DIRECT_DEBIT_INSTRUCTION":
-            return "Utilities"
+            return DefaultExpenseCategory.subscription.rawValue
         case "TRANSFER", "SEND_ORDER", "SEND_ORDER_EXECUTION", "BATCH_TRANSFER":
-            return "Other"
+            return DefaultExpenseCategory.other.rawValue
         case "BALANCE_TRANSACTION":
-            return "Other"
+            return DefaultExpenseCategory.other.rawValue
         case "CARD_CASHBACK", "BALANCE_CASHBACK", "REWARD", "REWARDS_REDEMPTION":
-            return "Other"
+            return DefaultExpenseCategory.other.rawValue
         case "FEE_REFUND", "INCIDENT_REFUND":
-            return "Other"
+            return DefaultExpenseCategory.other.rawValue
         default:
-            return "Other"
+            return DefaultExpenseCategory.other.rawValue
         }
     }
 

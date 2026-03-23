@@ -183,7 +183,7 @@ final class MonobankSyncService {
             baseCurrency = accountCurrency
         }
 
-        let categoryName = MonobankCSVImporter.categoryName(forMCC: statement.mcc)
+        let categoryName = MCCCategoryMapping.categoryName(forMCC: statement.mcc)
 
         let description = statement.comment ?? statement.description
 
