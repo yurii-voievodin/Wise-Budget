@@ -12,6 +12,7 @@ struct CategoryChartSection: View {
     let slices: [CategoryChartSlice]
     let currency: String
     let emptyText: String
+    var colorMap: [String: Color] = [:]
 
     private var grandTotal: Double {
         slices.reduce(0) { $0 + $1.total }
@@ -31,12 +32,16 @@ struct CategoryChartSection: View {
                     )
                     .foregroundStyle(by: .value("Category", slice.name))
                 }
+                .chartForegroundStyleScale(domain: slices.map(\.name), range: slices.map { colorMap[$0.name] ?? .gray })
                 .chartLegend(.hidden)
                 .frame(height: 150)
                 .padding(.vertical, 8)
 
                 ForEach(slices) { slice in
                     HStack {
+                        Circle()
+                            .fill(colorMap[slice.name] ?? .gray)
+                            .frame(width: 10, height: 10)
                         Label(slice.name, systemImage: slice.iconName)
                         Spacer()
                         Text(String(format: "%.1f%%", slice.total / grandTotal * 100))

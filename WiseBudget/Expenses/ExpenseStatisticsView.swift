@@ -38,7 +38,7 @@ struct ExpenseStatisticsView: View {
             return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
         .filter { $0.total > 0 }
-        .sorted { $0.total > $1.total }
+        .sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) }
     }
 
     // MARK: - Computed Statistics
@@ -99,7 +99,7 @@ struct ExpenseStatisticsView: View {
     }
 
     private var categoryChartSection: some View {
-        CategoryChartSection(slices: slices, currency: defaultCurrency, emptyText: "No expenses")
+        CategoryChartSection(slices: slices, currency: defaultCurrency, emptyText: "No expenses", colorMap: DefaultExpenseCategory.chartColorMap)
     }
 
     private var overviewSection: some View {
