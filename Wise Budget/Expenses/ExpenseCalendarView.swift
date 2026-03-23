@@ -8,6 +8,7 @@ private struct IdentifiableDate: Identifiable {
 
 struct ExpenseCalendarView: View {
     @Query private var expenses: [Expense]
+    @Query private var incomes: [Income]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
@@ -26,6 +27,12 @@ struct ExpenseCalendarView: View {
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
                 expense.date >= startDate && expense.date < endDate
+            },
+            sort: \.date
+        )
+        self._incomes = Query(
+            filter: #Predicate<Income> { income in
+                income.date >= startDate && income.date < endDate
             },
             sort: \.date
         )
@@ -82,6 +89,12 @@ struct ExpenseCalendarView: View {
 
     private var maxDailyTotal: Decimal {
         dailyTotals.values.max() ?? .zero
+    }
+
+    private var averageDailyIncome: Decimal {
+        let total = incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
+        guard daysInMonth > 0 else { return .zero }
+        return total / Decimal(daysInMonth)
     }
 
     private var monthTotalsByCurrency: [String: Decimal] {
@@ -166,6 +179,7 @@ struct ExpenseCalendarView: View {
 
     private var calendarGrid: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+        let avgIncome = averageDailyIncome
         return LazyVGrid(columns: columns, spacing: 4) {
             ForEach(calendarCells) { cell in
                 switch cell {
@@ -179,7 +193,7 @@ struct ExpenseCalendarView: View {
                     Color.clear
                         .frame(height: 64)
                 case .day(let day):
-                    dayCellView(day: day)
+                    dayCellView(day: day, averageDailyIncome: avgIncome)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             if expensesForDay(day).isEmpty {
@@ -197,10 +211,10 @@ struct ExpenseCalendarView: View {
         }
     }
 
-    private func dayCellView(day: Int) -> some View {
+    private func dayCellView(day: Int, averageDailyIncome: Decimal) -> some View {
         let total = dailyTotals[day]
-        let intensity = intensityForDay(total: total)
         let currencyTotals = dailyTotalsByCurrency[day] ?? [:]
+        let (bgColor, bgOpacity) = colorForDay(total: total, averageDailyIncome: averageDailyIncome)
 
         return VStack(spacing: 2) {
             Text("\(day)")
@@ -233,7 +247,7 @@ struct ExpenseCalendarView: View {
         .frame(minHeight: 64)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.red.opacity(intensity))
+                .fill(bgColor.opacity(bgOpacity))
         )
     }
 
@@ -250,11 +264,23 @@ struct ExpenseCalendarView: View {
 
     private static let heatMapMinOpacity = 0.05
     private static let heatMapOpacityRange = 0.25
+    private static let noExpenseOpacity = 0.06
 
-    private func intensityForDay(total: Decimal?) -> Double {
-        guard let total, total > 0, maxDailyTotal > 0 else { return 0 }
+    private func colorForDay(total: Decimal?, averageDailyIncome: Decimal) -> (Color, Double) {
+        guard let total, total > 0 else {
+            return (.green, Self.noExpenseOpacity)
+        }
+
+        if averageDailyIncome > 0 && total <= averageDailyIncome {
+            let ratio = NSDecimalNumber(decimal: total / averageDailyIncome).doubleValue
+            let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
+            return (.yellow, opacity)
+        }
+
+        guard maxDailyTotal > 0 else { return (.red, Self.heatMapMinOpacity) }
         let ratio = NSDecimalNumber(decimal: total / maxDailyTotal).doubleValue
-        return Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
+        let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
+        return (.red, opacity)
     }
 
     private static let amountFormatter: NumberFormatter = {
