@@ -4,11 +4,13 @@ import SwiftData
 struct IncomeListView: View {
     @Environment(\.modelContext) private var modelContext
 
+    @Query(sort: \IncomeCategory.name) private var incomeCategories: [IncomeCategory]
+
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
     @State private var selectedTab: IncomeTab = .income
-    @State private var isManagingCategories = false
     @State private var syncService = BankSyncService()
+    @State private var selectedCategoryName: String?
     @Binding var filter: MonthFilter
     @Binding var selectedSidebarItem: SidebarItem
 
@@ -22,6 +24,7 @@ struct IncomeListView: View {
             Tab("Income", systemImage: "list.bullet", value: .income) {
                 IncomeQueryListView(
                     filter: filter,
+                    selectedCategoryName: selectedCategoryName,
                     incomeToEdit: $incomeToEdit,
                     isAddingIncome: $isAddingIncome,
                     selectedSidebarItem: $selectedSidebarItem,
@@ -38,12 +41,11 @@ struct IncomeListView: View {
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            CategoryFilterToolbar(
+                selectedCategoryName: $selectedCategoryName,
+                categories: incomeCategories.map { ($0.name, $0.displayIconName) }
+            )
             BankSyncToolbar(syncService: syncService, filter: filter)
-            ToolbarItem {
-                Button(action: { isManagingCategories = true }) {
-                    Label("Manage Categories", systemImage: "tag")
-                }
-            }
             if selectedTab == .income {
                 ToolbarItem {
                     Button(action: { isAddingIncome = true }) {
@@ -73,9 +75,6 @@ struct IncomeListView: View {
                     income.baseCurrency = baseCurrency
                 }
             }
-        }
-        .sheet(isPresented: $isManagingCategories) {
-            IncomeCategoryManagementSheet()
         }
     }
 }

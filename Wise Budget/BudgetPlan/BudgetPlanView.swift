@@ -4,6 +4,7 @@ import SwiftData
 struct BudgetPlanView: View {
     @Binding var selectedSidebarItem: SidebarItem
     @Binding var monthFilter: MonthFilter
+    @Binding var expenseCategoryFilter: String?
 
     @State private var selectedTab: BudgetPlanTab = .plan
 
@@ -19,7 +20,8 @@ struct BudgetPlanView: View {
                 BudgetPlanQueryListView(
                     filter: monthFilter,
                     selectedSidebarItem: $selectedSidebarItem,
-                    monthFilter: $monthFilter
+                    monthFilter: $monthFilter,
+                    expenseCategoryFilter: $expenseCategoryFilter
                 )
                 .id(monthFilter)
             }
@@ -47,7 +49,7 @@ extension FocusedValues {
     NavigationSplitView {
         Text("Sidebar")
     } detail: {
-        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), monthFilter: .constant(MonthFilter(year: 2025, month: 1)))
+        BudgetPlanView(selectedSidebarItem: .constant(.budgetPlan), monthFilter: .constant(MonthFilter(year: 2025, month: 1)), expenseCategoryFilter: .constant(nil))
     }
     .modelContainer(PreviewSampleData.container)
 }

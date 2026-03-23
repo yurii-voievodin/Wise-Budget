@@ -9,13 +9,15 @@ struct ExpenseQueryListView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let filter: MonthFilter
+    let selectedCategoryName: String?
     @Binding var expenseToEdit: Expense?
     @Binding var isAddingExpense: Bool
     @Binding var selectedSidebarItem: SidebarItem
     @Bindable var syncService: BankSyncService
 
-    init(filter: MonthFilter, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
+    init(filter: MonthFilter, selectedCategoryName: String?, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
         self.filter = filter
+        self.selectedCategoryName = selectedCategoryName
         self._expenseToEdit = expenseToEdit
         self._isAddingExpense = isAddingExpense
         self._selectedSidebarItem = selectedSidebarItem
@@ -34,8 +36,14 @@ struct ExpenseQueryListView: View {
     }
 
     private var filteredExpenses: [Expense] {
-        guard filter.foreignOnly else { return expenses }
-        return expenses.filterForeignCurrency(defaultCurrency: defaultCurrency)
+        var result = expenses
+        if filter.foreignOnly {
+            result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
+        }
+        if let categoryName = selectedCategoryName {
+            result = result.filter { $0.category?.name == categoryName }
+        }
+        return result
     }
 
     private var groupedExpenses: [(date: Date, expenses: [Expense])] {

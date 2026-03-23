@@ -5,11 +5,13 @@ struct ExpenseListView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var filter: MonthFilter
     @Binding var selectedSidebarItem: SidebarItem
+    @Binding var selectedCategoryName: String?
+
+    @Query(sort: \ExpenseCategory.name) private var expenseCategories: [ExpenseCategory]
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
     @State private var selectedTab: ExpenseTab = .expenses
-    @State private var isManagingCategories = false
     @State private var syncService = BankSyncService()
 
     enum ExpenseTab: Hashable {
@@ -23,6 +25,7 @@ struct ExpenseListView: View {
             Tab("Expenses", systemImage: "list.bullet", value: .expenses) {
                 ExpenseQueryListView(
                     filter: filter,
+                    selectedCategoryName: selectedCategoryName,
                     expenseToEdit: $expenseToEdit,
                     isAddingExpense: $isAddingExpense,
                     selectedSidebarItem: $selectedSidebarItem,
@@ -43,12 +46,11 @@ struct ExpenseListView: View {
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            CategoryFilterToolbar(
+                selectedCategoryName: $selectedCategoryName,
+                categories: expenseCategories.map { ($0.name, $0.displayIconName) }
+            )
             BankSyncToolbar(syncService: syncService, filter: filter)
-            ToolbarItem {
-                Button(action: { isManagingCategories = true }) {
-                    Label("Manage Categories", systemImage: "tag")
-                }
-            }
             if selectedTab == .expenses {
                 ToolbarItem {
                     Button(action: { isAddingExpense = true }) {
@@ -78,9 +80,6 @@ struct ExpenseListView: View {
                     expense.baseCurrency = baseCurrency
                 }
             }
-        }
-        .sheet(isPresented: $isManagingCategories) {
-            ExpenseCategoryManagementSheet()
         }
     }
 }

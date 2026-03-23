@@ -9,13 +9,15 @@ struct IncomeQueryListView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let filter: MonthFilter
+    let selectedCategoryName: String?
     @Binding var incomeToEdit: Income?
     @Binding var isAddingIncome: Bool
     @Binding var selectedSidebarItem: SidebarItem
     @Bindable var syncService: BankSyncService
 
-    init(filter: MonthFilter, incomeToEdit: Binding<Income?>, isAddingIncome: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
+    init(filter: MonthFilter, selectedCategoryName: String?, incomeToEdit: Binding<Income?>, isAddingIncome: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
         self.filter = filter
+        self.selectedCategoryName = selectedCategoryName
         self._incomeToEdit = incomeToEdit
         self._isAddingIncome = isAddingIncome
         self._selectedSidebarItem = selectedSidebarItem
@@ -34,8 +36,14 @@ struct IncomeQueryListView: View {
     }
 
     private var filteredIncomes: [Income] {
-        guard filter.foreignOnly else { return incomes }
-        return incomes.filterForeignCurrency(defaultCurrency: defaultCurrency)
+        var result = incomes
+        if filter.foreignOnly {
+            result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
+        }
+        if let categoryName = selectedCategoryName {
+            result = result.filter { $0.category?.name == categoryName }
+        }
+        return result
     }
 
     private var groupedIncomes: [(date: Date, incomes: [Income])] {

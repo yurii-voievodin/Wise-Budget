@@ -7,12 +7,23 @@ struct BudgetCategoryRow: View {
     let planned: Decimal
     let currency: String
     @Binding var plannedText: String
+    var onCategoryTap: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label(categoryName, systemImage: categoryIcon)
-                    .fontWeight(.medium)
+                if let onCategoryTap {
+                    Button {
+                        onCategoryTap()
+                    } label: {
+                        Label(categoryName, systemImage: categoryIcon)
+                            .fontWeight(.medium)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Label(categoryName, systemImage: categoryIcon)
+                        .fontWeight(.medium)
+                }
                 Spacer()
                 Text("\(actual, format: .number)")
                     .foregroundStyle(.secondary)

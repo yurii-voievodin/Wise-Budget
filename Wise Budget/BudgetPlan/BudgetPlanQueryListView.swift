@@ -11,14 +11,16 @@ struct BudgetPlanQueryListView: View {
 
     @Binding var selectedSidebarItem: SidebarItem
     @Binding var monthFilter: MonthFilter
+    @Binding var expenseCategoryFilter: String?
     let filter: MonthFilter
 
     @State private var resetAction: (() -> Void)?
 
-    init(filter: MonthFilter, selectedSidebarItem: Binding<SidebarItem>, monthFilter: Binding<MonthFilter>) {
+    init(filter: MonthFilter, selectedSidebarItem: Binding<SidebarItem>, monthFilter: Binding<MonthFilter>, expenseCategoryFilter: Binding<String?>) {
         self.filter = filter
         self._selectedSidebarItem = selectedSidebarItem
         self._monthFilter = monthFilter
+        self._expenseCategoryFilter = expenseCategoryFilter
 
         let filterYear = filter.year
         let filterMonth = filter.month
@@ -168,7 +170,11 @@ struct BudgetPlanQueryListView: View {
                         actual: actual,
                         planned: planItem(for: category)?.plannedAmount ?? Decimal.zero,
                         currency: planCurrency,
-                        plannedText: plannedBinding(for: category)
+                        plannedText: plannedBinding(for: category),
+                        onCategoryTap: {
+                            expenseCategoryFilter = category.name
+                            selectedSidebarItem = .expenses
+                        }
                     )
                 }
             }
