@@ -1,10 +1,10 @@
 import Testing
 import Foundation
 import SwiftData
-@testable import Wise_Budget
+@testable import WiseBudget
 
 @MainActor
-struct Wise_BudgetTests {
+struct WiseBudgetTests {
 
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self])

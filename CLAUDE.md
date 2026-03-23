@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build
-xcodebuild build -project "Wise Budget.xcodeproj" -scheme "Wise Budget"
+xcodebuild build -project WiseBudget.xcodeproj -scheme WiseBudget
 
 # Run all tests
-xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget"
+xcodebuild test -project WiseBudget.xcodeproj -scheme WiseBudget
 
 # Run a single test file (filter by class name)
-xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget" \
-  -only-testing:"Wise BudgetTests/CSVExportImportTests"
+xcodebuild test -project WiseBudget.xcodeproj -scheme WiseBudget \
+  -only-testing:WiseBudgetTests/CSVExportImportTests
 ```
 
 ## Architecture
@@ -28,9 +28,9 @@ xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget" \
 
 | Target | Purpose |
 |---|---|
-| `Wise Budget` | Main app (`Wise_BudgetApp.swift` entry point) |
-| `Wise BudgetTests` | Unit tests using Swift Testing (`@Test` macro) |
-| `Wise BudgetUITests` | UI tests using XCTest (currently disabled in test plan) |
+| `WiseBudget` | Main app (`WiseBudgetApp.swift` entry point) |
+| `WiseBudgetTests` | Unit tests using Swift Testing (`@Test` macro) |
+| `WiseBudgetUITests` | UI tests using XCTest (currently disabled in test plan) |
 
 ### Data Models
 
@@ -41,7 +41,7 @@ Six SwiftData `@Model` classes in `Models/`:
 - **BudgetPlan** — year/month/currency/monthlyBudget, owns `BudgetPlanItem` array (cascade delete).
 - **BudgetPlanItem** — planned amount per expense category within a budget plan.
 
-`ModelContainer` is configured in `Wise_BudgetApp.swift` and injected into the view hierarchy.
+`ModelContainer` is configured in `WiseBudgetApp.swift` and injected into the view hierarchy.
 
 ### Bank Sync Pipeline
 

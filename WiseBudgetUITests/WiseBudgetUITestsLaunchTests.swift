@@ -1,13 +1,13 @@
 //
-//  Wise_BudgetUITestsLaunchTests.swift
-//  Wise BudgetUITests
+//  WiseBudgetUITestsLaunchTests.swift
+//  WiseBudgetUITests
 //
 //  Created by Yurii Voievodin on 17/03/2026.
 //
 
 import XCTest
 
-final class Wise_BudgetUITestsLaunchTests: XCTestCase {
+final class WiseBudgetUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

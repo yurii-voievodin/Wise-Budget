@@ -11,27 +11,27 @@
   "defaultOptions" : {
     "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
-      "containerPath" : "container:Wise Budget.xcodeproj",
+      "containerPath" : "container:WiseBudget.xcodeproj",
       "identifier" : "360EFAA22F69BD5A00C39E99",
-      "name" : "Wise Budget"
+      "name" : "WiseBudget"
     }
   },
   "testTargets" : [
     {
       "parallelizable" : true,
       "target" : {
-        "containerPath" : "container:Wise Budget.xcodeproj",
+        "containerPath" : "container:WiseBudget.xcodeproj",
         "identifier" : "360EFAB12F69BD5B00C39E99",
-        "name" : "Wise BudgetTests"
+        "name" : "WiseBudgetTests"
       }
     },
     {
       "enabled" : false,
       "parallelizable" : true,
       "target" : {
-        "containerPath" : "container:Wise Budget.xcodeproj",
+        "containerPath" : "container:WiseBudget.xcodeproj",
         "identifier" : "360EFABB2F69BD5B00C39E99",
-        "name" : "Wise BudgetUITests"
+        "name" : "WiseBudgetUITests"
       }
     }
   ],

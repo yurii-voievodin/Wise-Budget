@@ -4,7 +4,7 @@ import AppKit
 import UniformTypeIdentifiers
 
 @main
-struct Wise_BudgetApp: App {
+struct WiseBudgetApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Expense.self,

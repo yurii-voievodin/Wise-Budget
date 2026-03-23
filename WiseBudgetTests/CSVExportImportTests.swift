@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 import SwiftData
-@testable import Wise_Budget
+@testable import WiseBudget
 
 @MainActor
 struct CSVExportImportTests {

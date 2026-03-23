@@ -1,13 +1,13 @@
 //
-//  Wise_BudgetUITests.swift
-//  Wise BudgetUITests
+//  WiseBudgetUITests.swift
+//  WiseBudgetUITests
 //
 //  Created by Yurii Voievodin on 17/03/2026.
 //
 
 import XCTest
 
-final class Wise_BudgetUITests: XCTestCase {
+final class WiseBudgetUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

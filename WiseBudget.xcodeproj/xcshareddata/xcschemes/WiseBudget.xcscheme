@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "360EFAA22F69BD5A00C39E99"
-               BuildableName = "Wise Budget.app"
-               BlueprintName = "Wise Budget"
-               ReferencedContainer = "container:Wise Budget.xcodeproj">
+               BuildableName = "WiseBudget.app"
+               BlueprintName = "WiseBudget"
+               ReferencedContainer = "container:WiseBudget.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -30,7 +30,7 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:Wise Budget.xctestplan"
+            reference = "container:WiseBudget.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -41,9 +41,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "360EFAB12F69BD5B00C39E99"
-               BuildableName = "Wise BudgetTests.xctest"
-               BlueprintName = "Wise BudgetTests"
-               ReferencedContainer = "container:Wise Budget.xcodeproj">
+               BuildableName = "WiseBudgetTests.xctest"
+               BlueprintName = "WiseBudgetTests"
+               ReferencedContainer = "container:WiseBudget.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -52,9 +52,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "360EFABB2F69BD5B00C39E99"
-               BuildableName = "Wise BudgetUITests.xctest"
-               BlueprintName = "Wise BudgetUITests"
-               ReferencedContainer = "container:Wise Budget.xcodeproj">
+               BuildableName = "WiseBudgetUITests.xctest"
+               BlueprintName = "WiseBudgetUITests"
+               ReferencedContainer = "container:WiseBudget.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -74,9 +74,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "360EFAA22F69BD5A00C39E99"
-            BuildableName = "Wise Budget.app"
-            BlueprintName = "Wise Budget"
-            ReferencedContainer = "container:Wise Budget.xcodeproj">
+            BuildableName = "WiseBudget.app"
+            BlueprintName = "WiseBudget"
+            ReferencedContainer = "container:WiseBudget.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -91,9 +91,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "360EFAA22F69BD5A00C39E99"
-            BuildableName = "Wise Budget.app"
-            BlueprintName = "Wise Budget"
-            ReferencedContainer = "container:Wise Budget.xcodeproj">
+            BuildableName = "WiseBudget.app"
+            BlueprintName = "WiseBudget"
+            ReferencedContainer = "container:WiseBudget.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
