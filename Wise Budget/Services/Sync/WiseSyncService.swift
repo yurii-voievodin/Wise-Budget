@@ -12,9 +12,8 @@ final class WiseSyncService {
         return f
     }()
 
-    /// Syncs Wise activities into the given model context.
-    /// Fetches all completed activities from the last sync date (or start of current month) until now.
-    static func sync(context: ModelContext, lastSyncTimestamp: Double?) async throws -> ImportResult {
+    /// Syncs Wise activities into the given model context for the specified date range.
+    static func sync(context: ModelContext, fromTimestamp: Double, toTimestamp: Double) async throws -> ImportResult {
         logger.info("sync started")
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.wiseService) else {
@@ -39,18 +38,9 @@ final class WiseSyncService {
 
         logger.debug("using profile \(profile.id) (\(profile.fullName, privacy: .private))")
 
-        // Determine the start date
-        let fromDate: Date
-        if let lastSync = lastSyncTimestamp, lastSync > 0 {
-            fromDate = Date(timeIntervalSince1970: lastSync)
-            logger.debug("sync from last sync: \(dateFormatter.string(from: fromDate))")
-        } else {
-            let calendar = Calendar.current
-            let components = calendar.dateComponents([.year, .month], from: Date())
-            fromDate = calendar.date(from: components) ?? Date()
-            logger.debug("sync from start of month: \(dateFormatter.string(from: fromDate))")
-        }
-        let toDate = Date()
+        let fromDate = Date(timeIntervalSince1970: fromTimestamp)
+        let toDate = Date(timeIntervalSince1970: toTimestamp)
+        logger.debug("sync from: \(dateFormatter.string(from: fromDate))")
         logger.debug("sync to: \(dateFormatter.string(from: toDate))")
 
         // Fetch all completed activities (handles pagination internally)

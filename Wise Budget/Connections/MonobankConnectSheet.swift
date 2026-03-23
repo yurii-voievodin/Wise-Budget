@@ -202,6 +202,7 @@ struct MonobankConnectSheet: View {
     private func saveSelectedAccounts() {
         let ids = selectedAccountIds.sorted().joined(separator: ",")
         selectedAccountsData = ids
+        Self.saveAccountDetails(accounts)
         logger.info("saved \(selectedAccountIds.count) selected accounts")
     }
 
@@ -209,6 +210,27 @@ struct MonobankConnectSheet: View {
         let stored = UserDefaults.standard.string(forKey: "monobankSelectedAccounts") ?? ""
         guard !stored.isEmpty else { return [] }
         return Set(stored.components(separatedBy: ","))
+    }
+
+    // MARK: - Account Details Cache
+
+    /// Persists account id→currencyCode mapping so sync can skip fetchClientInfo().
+    static func saveAccountDetails(_ accounts: [MonobankAccount]) {
+        let entries = accounts.map { "\($0.id):\($0.currencyCode)" }
+        UserDefaults.standard.set(entries.joined(separator: ","), forKey: "monobankAccountDetails")
+        logger.info("cached \(accounts.count) account details")
+    }
+
+    /// Loads cached account details. Returns nil if nothing is cached.
+    static func loadAccountDetails() -> [(id: String, currencyCode: Int)]? {
+        guard let stored = UserDefaults.standard.string(forKey: "monobankAccountDetails"),
+              !stored.isEmpty else { return nil }
+        let entries = stored.components(separatedBy: ",").compactMap { entry -> (id: String, currencyCode: Int)? in
+            let parts = entry.components(separatedBy: ":")
+            guard parts.count == 2, let code = Int(parts[1]) else { return nil }
+            return (id: parts[0], currencyCode: code)
+        }
+        return entries.isEmpty ? nil : entries
     }
 
     private func connectAccount() {

@@ -9,7 +9,7 @@ struct BankSyncToolbar: ToolbarContent {
     var body: some ToolbarContent {
         if syncService.hasBankToken && !filter.isFutureMonth {
             ToolbarItem {
-                Button(action: { syncService.sync(context: context, from: filter.startOfMonth) }) {
+                Button(action: { syncService.sync(context: context, from: filter.startOfMonth, to: filter.startOfNextMonth) }) {
                     if syncService.isSyncing {
                         ProgressView()
                             .controlSize(.small)

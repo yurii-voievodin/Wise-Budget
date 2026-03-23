@@ -10,7 +10,7 @@ final class MonobankSyncService {
     private static let maxWindowSeconds: TimeInterval = 31 * 24 * 60 * 60
 
     /// Delay between consecutive API calls to respect rate limits.
-    private static let rateLimitDelay: TimeInterval = 1.0
+    private static let rateLimitDelay: TimeInterval = 5.0
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -18,9 +18,8 @@ final class MonobankSyncService {
         return f
     }()
 
-    /// Syncs Monobank transactions into the given model context.
-    /// Fetches statements from the last sync date (or start of current month) until now.
-    static func sync(context: ModelContext, lastSyncTimestamp: Double?) async throws -> ImportResult {
+    /// Syncs Monobank transactions into the given model context for the specified date range.
+    static func sync(context: ModelContext, fromTimestamp: Double, toTimestamp: Double) async throws -> ImportResult {
         logger.info("sync started")
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
@@ -29,36 +28,43 @@ final class MonobankSyncService {
         }
 
         let client = MonobankAPIClient(token: token)
-
-        // Fetch account list
-        logger.debug("fetching client info...")
-        let clientInfo = try await client.fetchClientInfo()
         let selectedIds = MonobankConnectSheet.loadSelectedAccountIds()
-        let accountsToSync: [MonobankAccount]
-        if selectedIds.isEmpty {
-            accountsToSync = clientInfo.accounts
-            logger.info("no account filter set, syncing all \(clientInfo.accounts.count) accounts")
+
+        // Use cached account details to avoid an extra API call
+        let accountsToSync: [(id: String, currencyCode: Int)]
+        if let cached = MonobankConnectSheet.loadAccountDetails() {
+            if selectedIds.isEmpty {
+                accountsToSync = cached
+                logger.info("using cached accounts, syncing all \(cached.count)")
+            } else {
+                accountsToSync = cached.filter { selectedIds.contains($0.id) }
+                logger.info("using cached accounts, syncing \(accountsToSync.count) of \(cached.count) (filtered)")
+            }
         } else {
-            accountsToSync = clientInfo.accounts.filter { selectedIds.contains($0.id) }
-            logger.info("syncing \(accountsToSync.count) of \(clientInfo.accounts.count) accounts (filtered by selection)")
+            // Fallback: fetch from API if no cache (e.g. first sync after app update)
+            logger.debug("no cached accounts, fetching client info...")
+            let clientInfo = try await client.fetchClientInfo()
+            MonobankConnectSheet.saveAccountDetails(clientInfo.accounts)
+            let all = clientInfo.accounts.map { (id: $0.id, currencyCode: $0.currencyCode) }
+            if selectedIds.isEmpty {
+                accountsToSync = all
+            } else {
+                accountsToSync = all.filter { selectedIds.contains($0.id) }
+            }
+            logger.info("fetched and cached \(clientInfo.accounts.count) accounts, syncing \(accountsToSync.count)")
         }
 
-        // Determine the start date for fetching
-        let fromDate: Date
-        if let lastSync = lastSyncTimestamp, lastSync > 0 {
-            fromDate = Date(timeIntervalSince1970: lastSync)
-            logger.debug("sync from last sync: \(dateFormatter.string(from: fromDate))")
-        } else {
-            // Default: start of current month
-            let calendar = Calendar.current
-            let components = calendar.dateComponents([.year, .month], from: Date())
-            fromDate = calendar.date(from: components) ?? Date()
-            logger.debug("sync from start of month: \(dateFormatter.string(from: fromDate))")
-        }
-        let toDate = Date()
+        let fromDate = Date(timeIntervalSince1970: fromTimestamp)
+        let toDate = Date(timeIntervalSince1970: toTimestamp)
+        logger.debug("sync from: \(dateFormatter.string(from: fromDate))")
         logger.debug("sync to: \(dateFormatter.string(from: toDate))")
 
         var allTransactions: [CSVTransaction] = []
+        var requestCount = 0
+
+        // Count total requests to know when we're on the last one
+        let windowsPerAccount = dateWindows(from: fromDate, to: toDate).count
+        let totalRequests = accountsToSync.count * windowsPerAccount
 
         for account in accountsToSync {
             let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
@@ -83,17 +89,12 @@ final class MonobankSyncService {
                 allTransactions.append(contentsOf: transactions)
                 logger.debug("fetched \(statements.count) statements, \(transactions.count) converted")
 
-                // Respect rate limits between calls
-                if windows.count > 1 {
-                    logger.debug("rate limit delay between windows...")
+                requestCount += 1
+                // Respect rate limits between consecutive API calls
+                if requestCount < totalRequests {
+                    logger.debug("rate limit delay (\(rateLimitDelay)s)...")
                     try await Task.sleep(nanoseconds: UInt64(rateLimitDelay * 1_000_000_000))
                 }
-            }
-
-            // Small delay between accounts
-            if accountsToSync.count > 1 {
-                logger.debug("rate limit delay between accounts...")
-                try await Task.sleep(nanoseconds: UInt64(rateLimitDelay * 1_000_000_000))
             }
         }
 

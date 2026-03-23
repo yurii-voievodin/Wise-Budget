@@ -173,9 +173,17 @@ struct BankConnectionsView: View {
         Task { @MainActor in
             defer { isSyncing = false }
             do {
+                let fromTs: Double
+                if monobankLastSync > 0 {
+                    fromTs = monobankLastSync
+                } else {
+                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
+                    fromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
+                }
                 let result = try await MonobankSyncService.sync(
                     context: modelContext,
-                    lastSyncTimestamp: monobankLastSync > 0 ? monobankLastSync : nil
+                    fromTimestamp: fromTs,
+                    toTimestamp: Date().timeIntervalSince1970
                 )
                 monobankLastSync = Date().timeIntervalSince1970
                 if result.expensesImported == 0 && result.incomesImported == 0 {
@@ -195,6 +203,8 @@ struct BankConnectionsView: View {
         try? KeychainHelper.deleteToken(service: KeychainHelper.monobankService)
         monobankConnectedName = ""
         monobankLastSync = 0
+        UserDefaults.standard.removeObject(forKey: "monobankAccountDetails")
+        UserDefaults.standard.removeObject(forKey: "monobankSelectedAccounts")
     }
 
     private func syncWise() {
@@ -203,9 +213,17 @@ struct BankConnectionsView: View {
         Task { @MainActor in
             defer { isWiseSyncing = false }
             do {
+                let wiseFromTs: Double
+                if wiseLastSync > 0 {
+                    wiseFromTs = wiseLastSync
+                } else {
+                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
+                    wiseFromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
+                }
                 let result = try await WiseSyncService.sync(
                     context: modelContext,
-                    lastSyncTimestamp: wiseLastSync > 0 ? wiseLastSync : nil
+                    fromTimestamp: wiseFromTs,
+                    toTimestamp: Date().timeIntervalSince1970
                 )
                 wiseLastSync = Date().timeIntervalSince1970
                 if result.expensesImported == 0 && result.incomesImported == 0 {

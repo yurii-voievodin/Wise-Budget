@@ -36,7 +36,7 @@ struct MonthEmptyStateView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     Button {
-                        syncService.sync(context: modelContext, from: filter.startOfMonth)
+                        syncService.sync(context: modelContext, from: filter.startOfMonth, to: filter.startOfNextMonth)
                     } label: {
                         Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
                     }

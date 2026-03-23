@@ -159,6 +159,7 @@ struct MonobankAccountsSheet: View {
     private func saveAndClose() {
         let ids = selectedAccountIds.sorted().joined(separator: ",")
         selectedAccountsData = ids
+        MonobankConnectSheet.saveAccountDetails(accounts)
         logger.info("updated account selection: \(selectedAccountIds.count) accounts")
         dismiss()
     }

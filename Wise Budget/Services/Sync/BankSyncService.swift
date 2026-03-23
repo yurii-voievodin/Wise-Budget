@@ -23,8 +23,8 @@ final class BankSyncService {
         return Date().timeIntervalSince(lastSync) < 60
     }
 
-    /// Syncs all connected banks starting from the given date.
-    func sync(context: ModelContext, from startOfMonth: Date) {
+    /// Syncs all connected banks for the given month (startOfMonth ..< endOfMonth).
+    func sync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) {
         guard !isSyncing else { return }
         isSyncing = true
 
@@ -35,12 +35,14 @@ final class BankSyncService {
             var errors: [String] = []
 
             let syncFrom = startOfMonth.timeIntervalSince1970
+            let syncTo = endOfMonth.timeIntervalSince1970
 
             if KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil {
                 do {
                     let result = try await MonobankSyncService.sync(
                         context: context,
-                        lastSyncTimestamp: syncFrom
+                        fromTimestamp: syncFrom,
+                        toTimestamp: syncTo
                     )
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported
@@ -55,7 +57,8 @@ final class BankSyncService {
                 do {
                     let result = try await WiseSyncService.sync(
                         context: context,
-                        lastSyncTimestamp: syncFrom
+                        fromTimestamp: syncFrom,
+                        toTimestamp: syncTo
                     )
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported
