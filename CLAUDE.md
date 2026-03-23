@@ -8,14 +8,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 xcodebuild build -project "Wise Budget.xcodeproj" -scheme "Wise Budget"
 
-# Run all tests (unit + UI)
+# Run all tests
 xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget"
+
+# Run a single test file (filter by class name)
+xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget" \
+  -only-testing:"Wise BudgetTests/CSVExportImportTests"
 ```
 
 ## Architecture
 
 - **Platform:** macOS (deployment target 26.2)
-- **UI:** SwiftUI with `NavigationSplitView` layout
+- **UI:** SwiftUI with `NavigationSplitView` (3-column layout)
 - **Data:** SwiftData with `@Model`, `@Query`, `@Environment(\.modelContext)`
 - **Swift version:** 5.0
 - **No external dependencies**
@@ -26,8 +30,41 @@ xcodebuild test -project "Wise Budget.xcodeproj" -scheme "Wise Budget"
 |---|---|
 | `Wise Budget` | Main app (`Wise_BudgetApp.swift` entry point) |
 | `Wise BudgetTests` | Unit tests using Swift Testing (`@Test` macro) |
-| `Wise BudgetUITests` | UI tests using XCTest |
+| `Wise BudgetUITests` | UI tests using XCTest (currently disabled in test plan) |
 
-### Data Layer
+### Data Models
 
-SwiftData `ModelContainer` is configured at the app level in `Wise_BudgetApp.swift` and injected into the view hierarchy. Models live alongside views in the main target (e.g., `Item.swift`).
+Six SwiftData `@Model` classes in `Models/`:
+
+- **Expense** / **Income** — both conform to `CurrencyConvertible` protocol (tracks `amount`, `currency`, `baseCurrencyAmount`, `baseCurrency`). Linked to their respective category via optional relationship.
+- **ExpenseCategory** / **IncomeCategory** — name + iconName, inverse relationship to transactions (`.nullify` delete rule). Default categories seeded by `DataSeeder`.
+- **BudgetPlan** — year/month/currency/monthlyBudget, owns `BudgetPlanItem` array (cascade delete).
+- **BudgetPlanItem** — planned amount per expense category within a budget plan.
+
+`ModelContainer` is configured in `Wise_BudgetApp.swift` and injected into the view hierarchy.
+
+### Bank Sync Pipeline
+
+Dual-bank sync orchestrated by `BankSyncService` (`@Observable`, `@MainActor`):
+
+1. **API Clients** (`Services/API/`) — `WiseAPIClient` (api.wise.com) and `MonobankAPIClient` (api.monobank.ua). Auth tokens stored in Keychain.
+2. **Sync Services** (`Services/Sync/`) — `WiseSyncService` and `MonobankSyncService` run in parallel. Both convert API responses into `CSVTransaction` structs, then import via `CSVImporter`.
+3. **Deduplication** — each transaction gets an `externalId` (`wise_{id}` or `mono_{id}`). Import skips existing IDs.
+4. **Categorization** — Wise card transactions use `MerchantCategoryMapping` (keyword→category). Monobank uses MCC codes. Fallback: activity type → default category.
+5. **Rate limiting** — 60s sync cooldown, 1s delay between Monobank API calls, 31-day sliding window for Monobank.
+
+### Import/Export
+
+- `CSVImporter` — parses Wise CSV exports, maps Ukrainian category names to English, filters by status (COMPLETED/REFUNDED) and direction (OUT→expense, IN→income, NEUTRAL→skip).
+- `MonobankCSVImporter` / `AppDataCSVImporter` — format-specific importers.
+- `CSVExporter` — exports all expenses & incomes to CSV for backup.
+
+### Key Services
+
+- **KeychainHelper** — secure token storage (`com.wisebudget.wise-token`, `com.wisebudget.monobank-token`).
+- **DataSeeder** — prepopulates default categories on first launch; handles icon migrations via UserDefaults flags.
+- **ExchangeRateService** — fetches historical rates from Wise API, caches by currency pair + date.
+
+### Testing Patterns
+
+Tests use Swift Testing framework (`@Test` macro), not XCTest. Test setup uses in-memory `ModelContainer` for isolation. Tests that touch SwiftData require `@MainActor`.
