@@ -159,7 +159,7 @@ struct DashboardView: View {
                     HStack {
                         Text("Budget")
                         Spacer()
-                        Text("\(totalExpenses, format: .number) / \(totalPlanned, format: .number) \(plan.currency)")
+                        Text("\(totalExpenses, format: .number) / \(totalPlanned, format: .number) \(plan.currency ?? "")")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
