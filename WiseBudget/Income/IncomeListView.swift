@@ -40,11 +40,13 @@ struct IncomeListView: View {
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
-            ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
-            CategoryFilterToolbar(
-                selectedCategoryName: $selectedCategoryName,
-                categories: incomeCategories.map { ($0.name, $0.displayIconName) }
-            )
+            if selectedTab == .income {
+                ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+                CategoryFilterToolbar(
+                    selectedCategoryName: $selectedCategoryName,
+                    categories: incomeCategories.map { ($0.name, $0.displayIconName) }
+                )
+            }
             BankSyncToolbar(syncService: syncService, filter: filter)
             if selectedTab == .income {
                 ToolbarItem {

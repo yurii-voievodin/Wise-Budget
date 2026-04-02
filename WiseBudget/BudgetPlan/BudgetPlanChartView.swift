@@ -90,6 +90,19 @@ struct BudgetPlanChartView: View {
                             y: .value("Category", entry.categoryName)
                         )
                         .foregroundStyle(by: .value("Type", "Spent"))
+                        .annotation(position: .trailing, alignment: .leading) {
+                            HStack(spacing: 4) {
+                                Text("\(Decimal(entry.planned), format: .number)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.blue)
+                                if entry.actual > 0 {
+                                    Text("/ \(Decimal(entry.actual), format: .number)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .padding(.leading, 4)
+                        }
                     }
                     .chartForegroundStyleScale([
                         "Planned": Color.blue,
@@ -102,24 +115,6 @@ struct BudgetPlanChartView: View {
                     }
                     .frame(height: CGFloat(chartData.count) * 50 + 40)
                     .padding(.vertical, 8)
-                }
-
-                Section("Details") {
-                    ForEach(chartData) { entry in
-                        HStack {
-                            Label(entry.categoryName, systemImage: entry.iconName)
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text("Planned: \(Decimal(entry.planned), format: .number) \(planCurrency)")
-                                    .font(.caption)
-                                    .foregroundStyle(.blue)
-                                Text("Spent: \(Decimal(entry.actual), format: .number) \(planCurrency)")
-                                    .font(.caption)
-                                    .foregroundStyle(entry.actual > entry.planned && entry.planned > 0 ? .red : .orange)
-                            }
-                            .monospacedDigit()
-                        }
-                    }
                 }
             }
             .formStyle(.grouped)

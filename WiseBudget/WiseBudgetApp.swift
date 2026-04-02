@@ -51,13 +51,13 @@ struct WiseBudgetApp: App {
                     BankSyncService.requestNotificationPermission()
                     disableFullScreen()
                 }
-                .alert("Reset Budget Plan", isPresented: $showResetPlanConfirmation) {
-                    Button("Reset", role: .destructive) {
+                .alert("Delete Budget Plan", isPresented: $showResetPlanConfirmation) {
+                    Button("Delete", role: .destructive) {
                         resetBudgetPlan?()
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("This will reset all planned amounts to zero and update the currency to the default. This action cannot be undone.")
+                    Text("This will delete the budget plan for the selected month. This action cannot be undone.")
                 }
                 .alert("Export", isPresented: $showingExportAlert) {
                     Button("OK") {}

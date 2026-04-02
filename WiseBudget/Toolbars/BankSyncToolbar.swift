@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Toolbar button that syncs all connected banks for the selected month.
 /// Only visible when a bank token exists and the selected month is not in the future.

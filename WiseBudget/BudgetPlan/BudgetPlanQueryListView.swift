@@ -181,28 +181,12 @@ struct BudgetPlanQueryListView: View {
         }
         .focusedSceneValue(\.resetBudgetPlan, resetAction)
         .onAppear { updateResetAction() }
-        .onChange(of: totalPlanned) { updateResetAction() }
-        .onChange(of: monthlyBudget) { updateResetAction() }
     }
 
     private func updateResetAction() {
         guard let plan = currentPlan else { resetAction = nil; return }
-        let validIds = categoryIds
-        let validItems = plan.items.filter { item in
-            guard let id = item.category?.persistentModelID else { return false }
-            return validIds.contains(id)
-        }
-        let hasNonZeroAmount = validItems.contains { $0.plannedAmount != Decimal.zero }
-        let currencyDiffers = plan.currency != defaultCurrency
-        let hasBudget = (plan.monthlyBudget ?? Decimal.zero) != Decimal.zero
-        guard hasNonZeroAmount || currencyDiffers || hasBudget else { resetAction = nil; return }
-        let currency = defaultCurrency
         resetAction = {
-            plan.currency = currency
-            plan.monthlyBudget = Decimal.zero
-            for item in validItems {
-                item.plannedAmount = Decimal.zero
-            }
+            modelContext.delete(plan)
         }
     }
 }
