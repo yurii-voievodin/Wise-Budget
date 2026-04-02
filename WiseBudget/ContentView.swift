@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedSidebarItem: SidebarItem = .expenses
+    @State private var selectedSidebarItem: SidebarItem = .dashboard
     @State private var monthFilter: MonthFilter = .currentMonth()
     @State private var expenseCategoryFilter: String?
 
@@ -10,7 +10,7 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
                 Section {
-                    ForEach([SidebarItem.budgetPlan, .expenses, .income, .comparison], id: \.self) { item in
+                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .comparison], id: \.self) { item in
                         Label(item.rawValue, systemImage: item.systemImage)
                             .tag(item)
                     }
@@ -23,6 +23,12 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
             switch selectedSidebarItem {
+            case .dashboard:
+                DashboardView(monthFilter: $monthFilter)
+                    .id(monthFilter)
+                    .toolbar {
+                        MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
+                    }
             case .budgetPlan:
                 BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, monthFilter: $monthFilter, expenseCategoryFilter: $expenseCategoryFilter)
             case .expenses:

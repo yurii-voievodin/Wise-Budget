@@ -1,6 +1,7 @@
 import Foundation
 
 enum SidebarItem: String, CaseIterable, Identifiable {
+    case dashboard = "Dashboard"
     case budgetPlan = "Budget Plan"
     case expenses = "Expenses"
     case income = "Income"
@@ -11,6 +12,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .dashboard: "square.grid.2x2"
         case .expenses: "arrow.up.circle"
         case .income: "arrow.down.circle"
         case .comparison: "chart.bar.xaxis"

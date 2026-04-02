@@ -11,17 +11,20 @@ struct ExpenseListView: View {
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
-    @State private var selectedTab: ExpenseTab = .expenses
+    @State private var selectedTab: ExpenseTab = .calendar
     @State private var syncService = BankSyncService()
 
     enum ExpenseTab: Hashable {
         case expenses
         case calendar
-        case statistics
     }
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            Tab("Calendar", systemImage: "calendar", value: .calendar) {
+                ExpenseCalendarView(filter: filter, syncService: syncService)
+                    .id(filter)
+            }
             Tab("Expenses", systemImage: "list.bullet", value: .expenses) {
                 ExpenseQueryListView(
                     filter: filter,
@@ -33,14 +36,6 @@ struct ExpenseListView: View {
                 )
                 .id(filter)
             }
-            Tab("Calendar", systemImage: "calendar", value: .calendar) {
-                ExpenseCalendarView(filter: filter, syncService: syncService)
-                    .id(filter)
-            }
-            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
-                ExpenseStatisticsView(filter: filter, syncService: syncService)
-                    .id(filter)
-            }
         }
         .navigationTitle("")
         .toolbar {
@@ -51,15 +46,13 @@ struct ExpenseListView: View {
                     selectedCategoryName: $selectedCategoryName,
                     categories: expenseCategories.map { ($0.name, $0.displayIconName) }
                 )
-            }
-            BankSyncToolbar(syncService: syncService, filter: filter)
-            if selectedTab == .expenses {
                 ToolbarItem {
                     Button(action: { isAddingExpense = true }) {
                         Label("Add Expense", systemImage: "plus")
                     }
                 }
             }
+            BankSyncToolbar(syncService: syncService, filter: filter)
         }
         .sheet(isPresented: $isAddingExpense) {
             ExpenseFormSheet { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
