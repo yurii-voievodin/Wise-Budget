@@ -46,68 +46,26 @@ struct ExpenseQueryListView: View {
         return result
     }
 
-    private var groupedExpenses: [(date: Date, expenses: [Expense])] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: filteredExpenses) { expense in
-            calendar.startOfDay(for: expense.date)
-        }
-        return grouped.sorted { $0.key > $1.key }
-            .map { (date: $0.key, expenses: $0.value) }
-    }
-
     var body: some View {
-        Group {
-            if !hasAnyExpenses && !syncService.hasBankToken {
-                emptyStateView
-            } else if filteredExpenses.isEmpty {
-                monthEmptyStateView
-            } else {
-                List {
-                    ForEach(groupedExpenses, id: \.date) { group in
-                        Section {
-                            ForEach(group.expenses) { expense in
-                                Button {
-                                    expenseToEdit = expense
-                                } label: {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            if let desc = expense.descriptionText {
-                                                Text(desc)
-                                                    .font(.body)
-                                                    .fontWeight(.medium)
-                                            }
-                                            if let category = expense.category {
-                                                Label(category.name, systemImage: category.displayIconName)
-                                                    .font(.caption)
-                                                    .foregroundStyle(.tertiary)
-                                            }
-                                            if let dest = expense.destination {
-                                                Text(dest)
-                                                    .font(.caption)
-                                                    .foregroundStyle(.tertiary)
-                                            }
-                                        }
-                                        Spacer()
-                                        CurrencyAmountView(item: expense)
-                                    }
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .onDelete { offsets in
-                                deleteExpenses(from: group.expenses, at: offsets)
-                            }
-                        } header: {
-                            HStack {
-                                Text(group.date, format: Date.FormatStyle(date: .long))
-                                Spacer()
-                                Text(dayTotal(for: group.expenses), format: .number)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        TransactionListContent(
+            groups: groupByDate(filteredExpenses, dateKeyPath: \.date),
+            hasAnyItems: hasAnyExpenses,
+            hasBankToken: syncService.hasBankToken,
+            filter: filter,
+            syncService: syncService,
+            emptyTitle: "No Expenses Yet",
+            emptyIcon: "creditcard",
+            monthEmptyTitle: "No Expenses This Month",
+            monthEmptyIcon: "creditcard",
+            addLabel: "Add Expense",
+            descriptionText: { $0.descriptionText },
+            categoryName: { $0.category?.name },
+            categoryIcon: { $0.category?.displayIconName },
+            extraField: { $0.destination },
+            onSelect: { expenseToEdit = $0 },
+            onAdd: { isAddingExpense = true },
+            onNavigateToBank: { selectedSidebarItem = .bankConnections }
+        )
         .onAppear { checkHasAnyExpenses() }
         .onChange(of: expenses.count) { checkHasAnyExpenses() }
     }
@@ -115,58 +73,5 @@ struct ExpenseQueryListView: View {
     private func checkHasAnyExpenses() {
         let descriptor = FetchDescriptor<Expense>()
         hasAnyExpenses = (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
-    }
-
-    private var monthEmptyStateView: some View {
-        MonthEmptyStateView(
-            title: "No Expenses This Month",
-            systemImage: "creditcard",
-            filter: filter,
-            syncService: syncService
-        )
-    }
-
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "creditcard")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("No Expenses Yet")
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text("Add your first expense, import from a CSV file,\nor connect a bank account to get started.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            HStack(spacing: 12) {
-                Button {
-                    isAddingExpense = true
-                } label: {
-                    Label("Add Expense", systemImage: "plus")
-                }
-
-                Button {
-                    selectedSidebarItem = .bankConnections
-                } label: {
-                    Label("Connect Bank", systemImage: "link")
-                }
-            }
-            .padding(.top, 4)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func dayTotal(for expenses: [Expense]) -> Decimal {
-        expenses.reduce(Decimal.zero) { $0 + $1.amount }
-    }
-
-    private func deleteExpenses(from groupExpenses: [Expense], at offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(groupExpenses[index])
-            }
-        }
     }
 }

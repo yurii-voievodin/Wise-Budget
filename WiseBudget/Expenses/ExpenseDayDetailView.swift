@@ -12,7 +12,7 @@ struct ExpenseDayDetailView: View {
         self.date = date
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
                 expense.date >= startOfDay && expense.date < endOfDay

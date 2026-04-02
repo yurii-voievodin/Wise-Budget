@@ -214,24 +214,41 @@ struct MonobankConnectSheet: View {
 
     // MARK: - Account Details Cache
 
+    struct CachedAccountDetail: Codable {
+        let id: String
+        let currencyCode: Int
+        let iban: String?
+    }
+
     /// Persists account id, currencyCode, and IBAN so sync can skip fetchClientInfo().
     static func saveAccountDetails(_ accounts: [MonobankAccount]) {
-        let entries = accounts.map { "\($0.id):\($0.currencyCode):\($0.iban ?? "")" }
-        UserDefaults.standard.set(entries.joined(separator: ","), forKey: "monobankAccountDetails")
+        let entries = accounts.map { CachedAccountDetail(id: $0.id, currencyCode: $0.currencyCode, iban: $0.iban) }
+        if let data = try? JSONEncoder().encode(entries) {
+            UserDefaults.standard.set(data, forKey: "monobankAccountDetails")
+        }
         logger.info("cached \(accounts.count) account details")
     }
 
     /// Loads cached account details. Returns nil if nothing is cached.
     static func loadAccountDetails() -> [(id: String, currencyCode: Int, iban: String?)]? {
-        guard let stored = UserDefaults.standard.string(forKey: "monobankAccountDetails"),
-              !stored.isEmpty else { return nil }
-        let entries = stored.components(separatedBy: ",").compactMap { entry -> (id: String, currencyCode: Int, iban: String?)? in
-            let parts = entry.components(separatedBy: ":")
-            guard parts.count >= 2, let code = Int(parts[1]) else { return nil }
-            let iban = parts.count >= 3 && !parts[2].isEmpty ? parts[2] : nil
-            return (id: parts[0], currencyCode: code, iban: iban)
+        // Try new JSON format first
+        if let data = UserDefaults.standard.data(forKey: "monobankAccountDetails"),
+           let entries = try? JSONDecoder().decode([CachedAccountDetail].self, from: data),
+           !entries.isEmpty {
+            return entries.map { (id: $0.id, currencyCode: $0.currencyCode, iban: $0.iban) }
         }
-        return entries.isEmpty ? nil : entries
+        // Fall back to legacy comma-separated format for migration
+        if let stored = UserDefaults.standard.string(forKey: "monobankAccountDetails"),
+           !stored.isEmpty {
+            let entries = stored.components(separatedBy: ",").compactMap { entry -> (id: String, currencyCode: Int, iban: String?)? in
+                let parts = entry.components(separatedBy: ":")
+                guard parts.count >= 2, let code = Int(parts[1]) else { return nil }
+                let iban = parts.count >= 3 && !parts[2].isEmpty ? parts[2] : nil
+                return (id: parts[0], currencyCode: code, iban: iban)
+            }
+            return entries.isEmpty ? nil : entries
+        }
+        return nil
     }
 
     private func connectAccount() {

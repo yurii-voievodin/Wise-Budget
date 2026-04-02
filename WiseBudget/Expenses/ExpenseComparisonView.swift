@@ -65,16 +65,18 @@ struct ExpenseComparisonView: View {
             let current = MonthKey(year: filter.year, month: filter.month)
             return (0..<6).reversed().compactMap { offset in
                 let comps = DateComponents(year: current.year, month: current.month - offset)
-                guard let date = calendar.date(from: comps) else { return nil }
-                let c = calendar.dateComponents([.year, .month], from: date)
-                return MonthKey(year: c.year!, month: c.month!)
+                guard let date = calendar.date(from: comps),
+                      let year = calendar.dateComponents([.year, .month], from: date).year,
+                      let month = calendar.dateComponents([.year, .month], from: date).month else { return nil }
+                return MonthKey(year: year, month: month)
             }
         case .year:
             return (1...12).map { MonthKey(year: filter.year, month: $0) }
         case .lifetime:
-            let keys = Set(allExpenses.map { expense in
+            let keys = Set(allExpenses.compactMap { expense -> MonthKey? in
                 let c = calendar.dateComponents([.year, .month], from: expense.date)
-                return MonthKey(year: c.year!, month: c.month!)
+                guard let year = c.year, let month = c.month else { return nil }
+                return MonthKey(year: year, month: month)
             })
             return keys.sorted()
         }
@@ -96,13 +98,15 @@ struct ExpenseComparisonView: View {
 
         let filtered = allExpenses.filter { expense in
             let c = calendar.dateComponents([.year, .month], from: expense.date)
-            return validMonths.contains(MonthKey(year: c.year!, month: c.month!))
+            guard let year = c.year, let month = c.month else { return false }
+            return validMonths.contains(MonthKey(year: year, month: month))
         }
 
         var grouped: [MonthKey: [String: Double]] = [:]
         for expense in filtered {
             let c = calendar.dateComponents([.year, .month], from: expense.date)
-            let key = MonthKey(year: c.year!, month: c.month!)
+            guard let year = c.year, let month = c.month else { continue }
+            let key = MonthKey(year: year, month: month)
             let cat = expense.category?.name ?? "Uncategorized"
             let amount = NSDecimalNumber(decimal: expense.convertedAmount(to: defaultCurrency) ?? .zero).doubleValue
             grouped[key, default: [:]][cat, default: 0] += amount
