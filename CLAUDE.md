@@ -16,6 +16,10 @@ xcodebuild test -project WiseBudget.xcodeproj -scheme WiseBudget \
   -only-testing:WiseBudgetTests/CSVExportImportTests
 ```
 
+## Project File
+
+Do NOT modify `WiseBudget.xcodeproj/project.pbxproj` — the project uses automatic file discovery, so adding or removing source files does not require changes to the Xcode project file.
+
 ## Architecture
 
 - **Platform:** macOS (deployment target 26.2)
