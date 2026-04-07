@@ -56,6 +56,18 @@ struct BudgetSummarySection: View {
             }
             .padding(.vertical, 4)
 
+            if monthlyBudget > 0 {
+                let remaining = monthlyBudget - totalActual
+                HStack {
+                    Text("Remaining")
+                    Spacer()
+                    Text("\(remaining, format: .number) \(planCurrency)")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(remaining < 0 ? .red : .green)
+                }
+                .padding(.vertical, 4)
+            }
+
             if totalActual > 0, totalPlanned > 0 {
                 BudgetProgressBar(spent: totalActual, planned: totalPlanned)
                     .padding(.vertical, 4)

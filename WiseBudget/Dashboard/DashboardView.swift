@@ -5,8 +5,6 @@ import Charts
 struct DashboardView: View {
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
-    @Query private var budgetPlans: [BudgetPlan]
-
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var monthFilter: MonthFilter
@@ -16,9 +14,6 @@ struct DashboardView: View {
 
         let startDate = monthFilter.wrappedValue.startOfMonth
         let endDate = monthFilter.wrappedValue.startOfNextMonth
-        let filterYear = monthFilter.wrappedValue.year
-        let filterMonth = monthFilter.wrappedValue.month
-
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
                 expense.date >= startDate && expense.date < endDate
@@ -35,11 +30,6 @@ struct DashboardView: View {
             order: .reverse
         )
 
-        self._budgetPlans = Query(
-            filter: #Predicate<BudgetPlan> { plan in
-                plan.year == filterYear && plan.month == filterMonth
-            }
-        )
     }
 
     // MARK: - Computed
@@ -72,14 +62,6 @@ struct DashboardView: View {
 
     private var dailyBalance: Decimal {
         incomeDailyAverage - expenseDailyAverage
-    }
-
-    private var currentPlan: BudgetPlan? {
-        budgetPlans.first
-    }
-
-    private var totalPlanned: Decimal {
-        currentPlan?.items.reduce(Decimal.zero) { $0 + $1.plannedAmount } ?? .zero
     }
 
     private var expenseSlices: [CategoryChartSlice] {
@@ -153,19 +135,6 @@ struct DashboardView: View {
                     .fontWeight(.semibold)
                     .monospacedDigit()
                     .foregroundStyle(balance >= .zero ? .green : .red)
-            }
-            if let plan = currentPlan, totalPlanned > 0 {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Budget")
-                        Spacer()
-                        Text("\(totalExpenses, format: .number) / \(totalPlanned, format: .number) \(plan.currency ?? "")")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    }
-                    BudgetProgressBar(spent: totalExpenses, planned: totalPlanned)
-                }
-                .padding(.vertical, 4)
             }
         }
     }

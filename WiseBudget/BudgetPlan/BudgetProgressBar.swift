@@ -23,7 +23,7 @@ struct BudgetProgressBar: View {
             return .green
         case Self.thresholdLow..<Self.thresholdMedium:
             return .yellow
-        case Self.thresholdMedium..<Self.thresholdHigh:
+        case Self.thresholdMedium...Self.thresholdHigh:
             return .orange
         default:
             return .red
