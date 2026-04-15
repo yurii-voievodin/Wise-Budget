@@ -4,6 +4,7 @@ struct CurrencyAmountView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let item: CurrencyConvertible
+    var tintColor: Color?
 
     var body: some View {
         VStack(alignment: .trailing) {
@@ -15,6 +16,7 @@ struct CurrencyAmountView: View {
                 }
                 Text("\(item.amount, format: .number) \(item.currency)")
                     .font(.headline)
+                    .foregroundStyle(tintColor ?? .primary)
             }
             if let baseAmount = item.baseCurrencyAmount,
                let baseCur = item.baseCurrency {

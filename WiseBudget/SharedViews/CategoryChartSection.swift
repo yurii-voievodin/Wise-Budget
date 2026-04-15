@@ -27,6 +27,23 @@ struct CategoryChartSection: View {
                 }
                 .chartForegroundStyleScale(domain: slices.map(\.name), range: slices.map { colorMap[$0.name] ?? .gray })
                 .chartLegend(.hidden)
+                .chartBackground { proxy in
+                    GeometryReader { geo in
+                        if let frame = proxy.plotFrame {
+                            let rect = geo[frame]
+                            VStack(spacing: 2) {
+                                Text("\(Decimal(grandTotal), format: .number)")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .monospacedDigit()
+                                Text(currency)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .position(x: rect.midX, y: rect.midY)
+                        }
+                    }
+                }
                 .frame(height: 150)
                 .padding(.vertical, 8)
 

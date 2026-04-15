@@ -35,17 +35,18 @@ struct BankConnectionsView: View {
         List {
             Section("Monobank") {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Status")
-                            .fontWeight(.medium)
-                        if isMonobankConnected {
-                            Text("Connected as \(monobankConnectedName)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Not connected")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(isMonobankConnected ? .green : Color.secondary.opacity(0.3))
+                            .frame(width: 10, height: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isMonobankConnected ? "Connected" : "Not connected")
+                                .fontWeight(.medium)
+                            if isMonobankConnected {
+                                Text(monobankConnectedName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -72,29 +73,36 @@ struct BankConnectionsView: View {
                         Button("Connect") {
                             showConnectSheet = true
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
                 }
 
                 if isMonobankConnected && monobankLastSync > 0 {
-                    Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative) ago")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Label {
+                        Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative) ago")
+                    } icon: {
+                        Image(systemName: "clock")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 }
             }
 
             Section("Wise") {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Status")
-                            .fontWeight(.medium)
-                        if isWiseConnected {
-                            Text("Connected as \(wiseConnectedName)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Not connected")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(isWiseConnected ? .green : Color.secondary.opacity(0.3))
+                            .frame(width: 10, height: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isWiseConnected ? "Connected" : "Not connected")
+                                .fontWeight(.medium)
+                            if isWiseConnected {
+                                Text(wiseConnectedName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -117,13 +125,19 @@ struct BankConnectionsView: View {
                         Button("Connect") {
                             showWiseConnectSheet = true
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
                 }
 
                 if isWiseConnected && wiseLastSync > 0 {
-                    Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative) ago")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Label {
+                        Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative) ago")
+                    } icon: {
+                        Image(systemName: "clock")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 }
             }
         }

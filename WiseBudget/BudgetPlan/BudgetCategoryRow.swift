@@ -47,7 +47,17 @@ struct BudgetCategoryRow: View {
                     .foregroundStyle(.secondary)
             }
             if actual > 0 {
-                BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
+                HStack {
+                    BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
+                    if planned > 0 {
+                        let pct = Int(Double(truncating: actual as NSDecimalNumber) / Double(truncating: planned as NSDecimalNumber) * 100)
+                        Text("\(pct)%")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
             }
         }
         .padding(.vertical, 4)

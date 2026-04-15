@@ -26,7 +26,6 @@ struct BudgetSummarySection: View {
                 Text(planCurrency)
                     .foregroundStyle(.secondary)
             }
-            .padding(.vertical, 4)
 
             HStack {
                 Text("Total Planned")
@@ -35,7 +34,6 @@ struct BudgetSummarySection: View {
                     .fontWeight(.semibold)
                     .monospacedDigit()
             }
-            .padding(.vertical, 4)
 
             if monthlyBudget > 0 {
                 HStack {
@@ -46,7 +44,6 @@ struct BudgetSummarySection: View {
                         .monospacedDigit()
                         .foregroundStyle(unplannedAmount < 0 ? .red : .secondary)
                 }
-                .padding(.vertical, 4)
             }
 
             HStack {
@@ -57,7 +54,6 @@ struct BudgetSummarySection: View {
                     .monospacedDigit()
                     .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
             }
-            .padding(.vertical, 4)
 
             if monthlyBudget > 0 {
                 let remaining = monthlyBudget - totalActual
@@ -73,12 +69,10 @@ struct BudgetSummarySection: View {
                     }
                     .foregroundStyle(remaining < 0 ? .red : .green)
                 }
-                .padding(.vertical, 4)
             }
 
             if totalActual > 0, totalPlanned > 0 {
                 BudgetProgressBar(spent: totalActual, planned: totalPlanned)
-                    .padding(.vertical, 4)
                     .listRowSeparator(.hidden)
             }
 
@@ -94,7 +88,6 @@ struct BudgetSummarySection: View {
                     .foregroundStyle(.orange)
                 }
                 .buttonStyle(.plain)
-                .padding(.vertical, 4)
             }
         }
     }

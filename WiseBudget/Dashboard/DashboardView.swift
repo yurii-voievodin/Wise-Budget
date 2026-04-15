@@ -101,28 +101,40 @@ struct DashboardView: View {
     // MARK: - Sections
 
     private var emptyState: some View {
-        ContentUnavailableView(
-            "No Data This Month",
-            systemImage: "square.grid.2x2",
-            description: Text("Add expenses or income to see your monthly overview.")
-        )
+        ContentUnavailableView {
+            Label("No Data This Month", systemImage: "square.grid.2x2")
+                .foregroundStyle(.secondary)
+        } description: {
+            Text("Add expenses or income to see your monthly overview.")
+        }
     }
 
     private var summarySection: some View {
         Section("Month Summary") {
-            LabeledContent("Income") {
+            HStack {
+                Label("Income", systemImage: "arrow.down.circle.fill")
+                    .foregroundStyle(.green)
+                Spacer()
                 Text("\(totalIncome, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .monospacedDigit()
                     .foregroundStyle(.green)
             }
-            LabeledContent("Expenses") {
+            HStack {
+                Label("Expenses", systemImage: "arrow.up.circle.fill")
+                    .foregroundStyle(.red)
+                Spacer()
                 Text("\(totalExpenses, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .monospacedDigit()
                     .foregroundStyle(.red)
             }
-            LabeledContent("Balance") {
-                Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
+            HStack {
+                Label("Balance", systemImage: balance >= .zero ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .fontWeight(.semibold)
+                    .foregroundStyle(balance >= .zero ? .green : .red)
+                Spacer()
+                Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
+                    .font(.title3)
+                    .fontWeight(.bold)
                     .monospacedDigit()
                     .foregroundStyle(balance >= .zero ? .green : .red)
             }
@@ -131,17 +143,27 @@ struct DashboardView: View {
 
     private var dailyAveragesSection: some View {
         Section("Daily Averages") {
-            LabeledContent("Income") {
+            HStack {
+                Label("Income", systemImage: "arrow.down.circle")
+                    .foregroundStyle(.green)
+                Spacer()
                 Text("\(incomeDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .monospacedDigit()
                     .foregroundStyle(.green)
             }
-            LabeledContent("Expenses") {
+            HStack {
+                Label("Expenses", systemImage: "arrow.up.circle")
+                    .foregroundStyle(.red)
+                Spacer()
                 Text("\(expenseDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .monospacedDigit()
                     .foregroundStyle(.red)
             }
-            LabeledContent("Balance") {
+            HStack {
+                Label("Balance", systemImage: dailyBalance >= .zero ? "checkmark.circle" : "exclamationmark.circle")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(dailyBalance >= .zero ? .green : .red)
+                Spacer()
                 Text("\(dailyBalance >= .zero ? "+" : "")\(dailyBalance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                     .fontWeight(.semibold)
                     .monospacedDigit()

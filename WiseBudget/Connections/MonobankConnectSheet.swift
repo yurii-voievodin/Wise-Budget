@@ -85,8 +85,8 @@ struct MonobankConnectSheet: View {
             // Step 1
             VStack(alignment: .leading, spacing: 6) {
                 Label("Step 1", systemImage: "1.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
 
                 Text("Open the Monobank API portal and log in with your phone number.")
                     .font(.callout)
@@ -105,8 +105,8 @@ struct MonobankConnectSheet: View {
             // Step 2
             VStack(alignment: .leading, spacing: 6) {
                 Label("Step 2", systemImage: "2.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
 
                 Text("Copy your personal token and paste it below.")
                     .font(.callout)

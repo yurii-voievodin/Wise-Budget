@@ -18,6 +18,7 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     let categoryName: (T) -> String?
     let categoryIcon: (T) -> String?
     let extraField: (T) -> String?
+    var amountTintColor: Color?
     var onSelect: (T) -> Void
     var onAdd: () -> Void
     var onNavigateToBank: () -> Void
@@ -46,7 +47,8 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                                         categoryName: categoryName(item),
                                         categoryIcon: categoryIcon(item),
                                         extraField: extraField(item),
-                                        item: item
+                                        item: item,
+                                        amountTintColor: amountTintColor
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -61,9 +63,13 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                         } header: {
                             HStack {
                                 Text(group.date, format: Date.FormatStyle(date: .long))
+                                    .fontWeight(.semibold)
                                 Spacer()
                                 Text(dayTotal(for: group.items), format: .number)
+                                    .fontWeight(.medium)
+                                    .monospacedDigit()
                             }
+                            .font(.subheadline)
                         }
                     }
                 }

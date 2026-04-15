@@ -80,8 +80,8 @@ struct WiseConnectSheet: View {
             // Step 1
             VStack(alignment: .leading, spacing: 6) {
                 Label("Step 1", systemImage: "1.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
 
                 Text("Open Wise settings and create an API token with read-only access.")
                     .font(.callout)
@@ -100,8 +100,8 @@ struct WiseConnectSheet: View {
             // Step 2
             VStack(alignment: .leading, spacing: 6) {
                 Label("Step 2", systemImage: "2.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
 
                 Text("Copy your personal API token and paste it below.")
                     .font(.callout)

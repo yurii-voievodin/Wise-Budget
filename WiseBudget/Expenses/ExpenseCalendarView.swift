@@ -186,8 +186,8 @@ struct ExpenseCalendarView: View {
                 case .header(let index):
                     Text(orderedWeekdaySymbols[index])
                         .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary.opacity(0.7))
                         .frame(maxWidth: .infinity)
                 case .empty:
                     Color.clear

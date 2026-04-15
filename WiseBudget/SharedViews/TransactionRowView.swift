@@ -6,6 +6,7 @@ struct TransactionRowView: View {
     let categoryIcon: String?
     let extraField: String?
     let item: CurrencyConvertible
+    var amountTintColor: Color?
 
     var body: some View {
         HStack {
@@ -27,7 +28,7 @@ struct TransactionRowView: View {
                 }
             }
             Spacer()
-            CurrencyAmountView(item: item)
+            CurrencyAmountView(item: item, tintColor: amountTintColor)
         }
         .contentShape(Rectangle())
     }

@@ -10,7 +10,10 @@ final class ExpenseCategory {
     var expenses: [Expense] = []
 
     var displayIconName: String {
-        iconName ?? "folder"
+        if let iconName, iconName != "folder" {
+            return iconName
+        }
+        return DefaultExpenseCategory(rawValue: name)?.iconName ?? iconName ?? "folder"
     }
 
     init(name: String, iconName: String = "folder") {
