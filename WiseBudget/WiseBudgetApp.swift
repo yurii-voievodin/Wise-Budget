@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import AppKit
 import UniformTypeIdentifiers
 
 @main

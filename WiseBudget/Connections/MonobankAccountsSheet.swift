@@ -103,7 +103,7 @@ struct MonobankAccountsSheet: View {
             .padding(.vertical, 6)
             .padding(.horizontal, 8)
             .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
-            .cornerRadius(6)
+            .clipShape(.rect(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }

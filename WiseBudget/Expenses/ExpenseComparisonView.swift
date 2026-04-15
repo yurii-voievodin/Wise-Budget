@@ -26,7 +26,7 @@ struct ExpenseComparisonView: View {
             let df = DateFormatter()
             df.dateFormat = "MMM"
             let comps = DateComponents(year: year, month: month, day: 1)
-            let date = Calendar.current.date(from: comps) ?? Date()
+            let date = Calendar.current.date(from: comps) ?? Date.now
             return df.string(from: date)
         }
 
@@ -34,7 +34,7 @@ struct ExpenseComparisonView: View {
             let df = DateFormatter()
             df.dateFormat = "MMM yyyy"
             let comps = DateComponents(year: year, month: month, day: 1)
-            let date = Calendar.current.date(from: comps) ?? Date()
+            let date = Calendar.current.date(from: comps) ?? Date.now
             return df.string(from: date)
         }
 
@@ -220,10 +220,14 @@ struct ExpenseComparisonView: View {
 
     // MARK: - Helpers
 
+    private static let amountFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f
+    }()
+
     private func formatAmount(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
+        Self.amountFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
     }
 }

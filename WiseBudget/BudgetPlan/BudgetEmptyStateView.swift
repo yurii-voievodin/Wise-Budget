@@ -25,18 +25,11 @@ struct BudgetEmptyStateView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("No Budget Plan")
-                .font(.title2)
-                .fontWeight(.semibold)
+        ContentUnavailableView {
+            Label("No Budget Plan", systemImage: "chart.bar.doc.horizontal")
+        } description: {
             Text("Create a budget plan for \(filter.startOfMonth.formatted(.dateTime.month(.wide).year())) to track your spending goals.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        } actions: {
             HStack(spacing: 12) {
                 Button {
                     copyFromPreviousMonth()
@@ -51,10 +44,7 @@ struct BudgetEmptyStateView: View {
                     Label("Create Empty Budget", systemImage: "plus")
                 }
             }
-            .padding(.top, 4)
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func createEmptyBudget() {

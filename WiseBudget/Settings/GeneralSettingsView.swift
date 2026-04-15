@@ -10,6 +10,7 @@ struct GeneralSettingsView: View {
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
     @State private var errorMessage: String?
+    @State private var showErrorAlert = false
 
     var body: some View {
         List {
@@ -54,12 +55,12 @@ struct GeneralSettingsView: View {
                 }
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+        .alert("Error", isPresented: $showErrorAlert) {
             Button("OK") { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
         }
-
+        .onChange(of: errorMessage) { showErrorAlert = errorMessage != nil }
     }
 
     private func deleteAllExpenses() {

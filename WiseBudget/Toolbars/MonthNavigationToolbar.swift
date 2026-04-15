@@ -5,23 +5,22 @@ struct MonthNavigationToolbar: ToolbarContent {
     @Binding var month: Int
 
     @State private var isDatePickerPresented = false
-    @State private var pickerYear: Int = Calendar.current.component(.year, from: Date())
-    @State private var pickerMonth: Int = Calendar.current.component(.month, from: Date())
+    @State private var pickerYear: Int = Calendar.current.component(.year, from: Date.now)
+    @State private var pickerMonth: Int = Calendar.current.component(.month, from: Date.now)
 
     private var monthTitle: String {
         let comps = DateComponents(year: year, month: month, day: 1)
-        let date = Calendar.current.date(from: comps) ?? Date()
+        let date = Calendar.current.date(from: comps) ?? Date.now
         return date.formatted(.dateTime.month(.wide).year())
     }
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             HStack(spacing: 4) {
-                Button {
+                Button("Previous Month", systemImage: "chevron.left") {
                     moveMonth(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
                 }
+                .labelStyle(.iconOnly)
                 Button {
                     pickerYear = year
                     pickerMonth = month
@@ -50,7 +49,7 @@ struct MonthNavigationToolbar: ToolbarContent {
 
                         HStack {
                             Button("Current Month") {
-                                let now = Calendar.current.dateComponents([.year, .month], from: Date())
+                                let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
                                 year = now.year ?? year
                                 month = now.month ?? month
                                 isDatePickerPresented = false
@@ -66,18 +65,17 @@ struct MonthNavigationToolbar: ToolbarContent {
                     }
                     .padding()
                 }
-                Button {
+                Button("Next Month", systemImage: "chevron.right") {
                     moveMonth(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
                 }
+                .labelStyle(.iconOnly)
             }
         }
     }
 
     private func moveMonth(by delta: Int) {
         let comps = DateComponents(year: year, month: month + delta)
-        let date = Calendar.current.date(from: comps) ?? Date()
+        let date = Calendar.current.date(from: comps) ?? Date.now
         let newComps = Calendar.current.dateComponents([.year, .month], from: date)
         year = newComps.year ?? year
         month = newComps.month ?? month

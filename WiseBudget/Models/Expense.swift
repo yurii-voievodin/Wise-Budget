@@ -13,7 +13,7 @@ final class Expense: CurrencyConvertible {
     var baseCurrency: String?
     var externalId: String?
 
-    init(amount: Decimal, currency: String, date: Date = Date(), category: ExpenseCategory? = nil, descriptionText: String? = nil, destination: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
+    init(amount: Decimal, currency: String, date: Date = Date.now, category: ExpenseCategory? = nil, descriptionText: String? = nil, destination: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
         self.amount = amount
         self.currency = currency
         self.date = date

@@ -20,7 +20,7 @@ final class BankSyncService {
     /// Whether the 1-minute cooldown after a sync is still active.
     var isSyncCooldown: Bool {
         guard let lastSync = lastSyncDate else { return false }
-        return Date().timeIntervalSince(lastSync) < 60
+        return Date.now.timeIntervalSince(lastSync) < 60
     }
 
     /// Syncs all connected banks for the given month (startOfMonth ..< endOfMonth).
@@ -47,7 +47,7 @@ final class BankSyncService {
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
-                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "monobankLastSync")
+                    UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "monobankLastSync")
                 } catch {
                     errors.append("Monobank: \(error.localizedDescription)")
                 }
@@ -63,14 +63,14 @@ final class BankSyncService {
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
-                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "wiseLastSync")
+                    UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "wiseLastSync")
                 } catch {
                     errors.append("Wise: \(error.localizedDescription)")
                 }
             }
 
             isSyncing = false
-            lastSyncDate = Date()
+            lastSyncDate = Date.now
             if !errors.isEmpty {
                 syncResultMessage = errors.joined(separator: "\n")
             } else if totalExpenses == 0 && totalIncomes == 0 {

@@ -1,13 +1,6 @@
 import SwiftUI
 import Charts
 
-struct CategoryChartSlice: Identifiable {
-    let id = UUID()
-    let name: String
-    let iconName: String
-    let total: Double
-}
-
 struct CategoryChartSection: View {
     let slices: [CategoryChartSlice]
     let currency: String
@@ -44,7 +37,8 @@ struct CategoryChartSection: View {
                             .frame(width: 10, height: 10)
                         Label(slice.name, systemImage: slice.iconName)
                         Spacer()
-                        Text(String(format: "%.1f%%", slice.total / grandTotal * 100))
+                        let pct = slice.total / grandTotal * 100
+                        Text("\(pct, format: .number.precision(.fractionLength(1)))%")
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                         Text("\(Decimal(slice.total), format: .number) \(currency)")

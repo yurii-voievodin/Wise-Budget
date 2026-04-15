@@ -101,21 +101,11 @@ struct DashboardView: View {
     // MARK: - Sections
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "square.grid.2x2")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("No Data This Month")
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text("Add expenses or income to see your monthly overview.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ContentUnavailableView(
+            "No Data This Month",
+            systemImage: "square.grid.2x2",
+            description: Text("Add expenses or income to see your monthly overview.")
+        )
     }
 
     private var summarySection: some View {
@@ -179,7 +169,8 @@ struct DashboardView: View {
                     Text(slice.name)
                     Spacer()
                     if totalExpenses > 0 {
-                        Text(String(format: "%.0f%%", slice.total / NSDecimalNumber(decimal: totalExpenses).doubleValue * 100))
+                        let pct = slice.total / NSDecimalNumber(decimal: totalExpenses).doubleValue * 100
+                        Text("\(pct, format: .number.precision(.fractionLength(0)))%")
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                     }

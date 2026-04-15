@@ -19,10 +19,10 @@ struct BudgetSummarySection: View {
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 120)
                     .multilineTextAlignment(.trailing)
-                    .overlay(
+                    .overlay {
                         RoundedRectangle(cornerRadius: 5)
                             .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                    )
+                    }
                 Text(planCurrency)
                     .foregroundStyle(.secondary)
             }

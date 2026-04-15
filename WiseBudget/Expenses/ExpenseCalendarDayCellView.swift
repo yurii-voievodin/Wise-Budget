@@ -29,7 +29,7 @@ struct ExpenseCalendarDayCellView: View {
                 }
                 ForEach(sorted, id: \.key) { currency, amount in
                     Text("\(Self.formattedAmount(amount)) \(currency)")
-                        .font(.system(size: 9))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)

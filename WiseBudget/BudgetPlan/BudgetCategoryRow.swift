@@ -36,10 +36,10 @@ struct BudgetCategoryRow: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 80)
                 .multilineTextAlignment(.trailing)
-                .overlay(
+                .overlay {
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                )
+                }
                 Text(currency)
                     .foregroundStyle(.secondary)
             }

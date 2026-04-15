@@ -23,7 +23,7 @@ final class ExchangeRateService {
         }
 
         let cacheKey = "\(source)_\(target)_\(Self.dayString(from: date))"
-        if let entry = cache[cacheKey], Date().timeIntervalSince(entry.fetchedAt) < Self.cacheTTL {
+        if let entry = cache[cacheKey], Date.now.timeIntervalSince(entry.fetchedAt) < Self.cacheTTL {
             return Self.rounded(amount * entry.rate)
         }
 
@@ -31,7 +31,7 @@ final class ExchangeRateService {
             let client = WiseAPIClient(token: token)
             let wiseRate = try await client.fetchRate(source: source, target: target, time: date)
             let rate = Decimal(wiseRate.rate)
-            cache[cacheKey] = CacheEntry(rate: rate, fetchedAt: Date())
+            cache[cacheKey] = CacheEntry(rate: rate, fetchedAt: Date.now)
             logger.debug("Fetched rate \(source)->\(target): \(wiseRate.rate)")
             return Self.rounded(amount * rate)
         } catch {

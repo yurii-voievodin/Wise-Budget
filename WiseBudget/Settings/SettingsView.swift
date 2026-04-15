@@ -4,20 +4,17 @@ import SwiftData
 struct SettingsView: View {
     var body: some View {
         TabView {
-            GeneralSettingsView()
-                .tabItem {
-                    Label("General", systemImage: "gearshape")
-                }
+            Tab("General", systemImage: "gearshape") {
+                GeneralSettingsView()
+            }
 
-            ExpenseCategorySettingsView()
-                .tabItem {
-                    Label("Expense Categories", systemImage: "arrow.up.circle")
-                }
+            Tab("Expense Categories", systemImage: "arrow.up.circle") {
+                ExpenseCategorySettingsView()
+            }
 
-            IncomeCategorySettingsView()
-                .tabItem {
-                    Label("Income Categories", systemImage: "arrow.down.circle")
-                }
+            Tab("Income Categories", systemImage: "arrow.down.circle") {
+                IncomeCategorySettingsView()
+            }
         }
         .frame(width: 500, height: 350)
     }

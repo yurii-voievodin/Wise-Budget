@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 import OSLog
 
 private let logger = Logger(subsystem: "com.wisebudget", category: "WiseConnect")
@@ -142,7 +141,7 @@ struct WiseConnectSheet: View {
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
                         .background(selectedProfile?.id == profile.id ? Color.accentColor.opacity(0.08) : Color.clear)
-                        .cornerRadius(6)
+                        .clipShape(.rect(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
                 }

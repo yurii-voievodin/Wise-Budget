@@ -194,24 +194,25 @@ struct ExpenseCalendarView: View {
                         .frame(height: 64)
                 case .day(let day):
                     let isSelected = selectedDate.map { calendar.component(.day, from: $0.date) == day } ?? false
-                    dayCellView(day: day, averageDailyIncome: avgIncome)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if expensesForDay(day).isEmpty {
-                                selectedDate = nil
-                            } else {
-                                let date = calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date()
-                                selectedDate = IdentifiableDate(date: date)
-                            }
+                    Button {
+                        if expensesForDay(day).isEmpty {
+                            selectedDate = nil
+                        } else {
+                            let date = calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date.now
+                            selectedDate = IdentifiableDate(date: date)
                         }
-                        .overlay {
-                            if isSelected {
-                                Color.clear
-                                    .popover(item: $selectedDate) { item in
-                                        ExpenseDayDetailView(date: item.date)
-                                    }
-                            }
+                    } label: {
+                        dayCellView(day: day, averageDailyIncome: avgIncome)
+                    }
+                    .buttonStyle(.plain)
+                    .overlay {
+                        if isSelected {
+                            Color.clear
+                                .popover(item: $selectedDate) { item in
+                                    ExpenseDayDetailView(date: item.date)
+                                }
                         }
+                    }
                 }
             }
         }
@@ -238,7 +239,7 @@ struct ExpenseCalendarView: View {
     // MARK: - Helpers
 
     private func isToday(day: Int) -> Bool {
-        let today = calendar.dateComponents([.year, .month, .day], from: Date())
+        let today = calendar.dateComponents([.year, .month, .day], from: Date.now)
         return today.year == filter.year && today.month == filter.month && today.day == day
     }
 

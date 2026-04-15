@@ -177,15 +177,15 @@ struct BankConnectionsView: View {
                 if monobankLastSync > 0 {
                     fromTs = monobankLastSync
                 } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
-                    fromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
+                    let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
+                    fromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
                 }
                 let result = try await MonobankSyncService.sync(
                     context: modelContext,
                     fromTimestamp: fromTs,
-                    toTimestamp: Date().timeIntervalSince1970
+                    toTimestamp: Date.now.timeIntervalSince1970
                 )
-                monobankLastSync = Date().timeIntervalSince1970
+                monobankLastSync = Date.now.timeIntervalSince1970
                 if result.expensesImported == 0 && result.incomesImported == 0 {
                     syncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
                 } else {
@@ -217,15 +217,15 @@ struct BankConnectionsView: View {
                 if wiseLastSync > 0 {
                     wiseFromTs = wiseLastSync
                 } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
-                    wiseFromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
+                    let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
+                    wiseFromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
                 }
                 let result = try await WiseSyncService.sync(
                     context: modelContext,
                     fromTimestamp: wiseFromTs,
-                    toTimestamp: Date().timeIntervalSince1970
+                    toTimestamp: Date.now.timeIntervalSince1970
                 )
-                wiseLastSync = Date().timeIntervalSince1970
+                wiseLastSync = Date.now.timeIntervalSince1970
                 if result.expensesImported == 0 && result.incomesImported == 0 {
                     wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
                 } else {
