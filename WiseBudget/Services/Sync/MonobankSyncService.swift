@@ -102,7 +102,7 @@ final class MonobankSyncService {
                 // Respect rate limits between consecutive API calls
                 if requestCount < totalRequests {
                     logger.debug("rate limit delay (\(rateLimitDelay)s)...")
-                    try await Task.sleep(nanoseconds: UInt64(rateLimitDelay * 1_000_000_000))
+                    try await Task.sleep(for: .seconds(rateLimitDelay))
                 }
             }
         }

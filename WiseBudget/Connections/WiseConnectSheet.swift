@@ -175,35 +175,27 @@ struct WiseConnectSheet: View {
                 let fetchedProfiles = try await client.fetchProfiles()
 
                 guard let firstProfile = fetchedProfiles.first else {
-                    await MainActor.run {
-                        errorMessage = "No profiles found for this token."
-                        isConnecting = false
-                    }
+                    errorMessage = "No profiles found for this token."
+                    isConnecting = false
                     return
                 }
 
                 try KeychainHelper.save(token: trimmedToken, service: KeychainHelper.wiseService)
 
-                await MainActor.run {
-                    profiles = fetchedProfiles
-                    selectedProfile = firstProfile
-                    connectedName = firstProfile.fullName
-                    isConnecting = false
-                    onConnected(firstProfile.fullName)
-                }
+                profiles = fetchedProfiles
+                selectedProfile = firstProfile
+                connectedName = firstProfile.fullName
+                isConnecting = false
+                onConnected(firstProfile.fullName)
 
                 logger.info("connected as \(firstProfile.fullName, privacy: .private)")
             } catch let error as WiseAPIError {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isConnecting = false
-                }
+                errorMessage = error.localizedDescription
+                isConnecting = false
                 logger.error("connect failed: \(error.localizedDescription)")
             } catch {
-                await MainActor.run {
-                    errorMessage = "Connection failed: \(error.localizedDescription)"
-                    isConnecting = false
-                }
+                errorMessage = "Connection failed: \(error.localizedDescription)"
+                isConnecting = false
                 logger.error("connect failed: \(error.localizedDescription)")
             }
         }

@@ -264,27 +264,20 @@ struct MonobankConnectSheet: View {
 
                 try KeychainHelper.save(token: trimmedToken, service: KeychainHelper.monobankService)
 
-                await MainActor.run {
-                    connectedName = clientInfo.name ?? "Monobank User"
-                    accounts = clientInfo.accounts
-                    // Pre-select all accounts
-                    selectedAccountIds = Set(clientInfo.accounts.map { $0.id })
-                    isConnecting = false
-                    onConnected(connectedName!)
-                }
+                connectedName = clientInfo.name ?? "Monobank User"
+                accounts = clientInfo.accounts
+                selectedAccountIds = Set(clientInfo.accounts.map { $0.id })
+                isConnecting = false
+                onConnected(connectedName!)
 
                 logger.info("connected as \(clientInfo.name ?? "unknown", privacy: .private), \(clientInfo.accounts.count) accounts available")
             } catch let error as MonobankAPIError {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isConnecting = false
-                }
+                errorMessage = error.localizedDescription
+                isConnecting = false
                 logger.error("connect failed: \(error.localizedDescription)")
             } catch {
-                await MainActor.run {
-                    errorMessage = "Connection failed: \(error.localizedDescription)"
-                    isConnecting = false
-                }
+                errorMessage = "Connection failed: \(error.localizedDescription)"
+                isConnecting = false
                 logger.error("connect failed: \(error.localizedDescription)")
             }
         }

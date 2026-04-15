@@ -29,6 +29,11 @@ final class BankSyncService {
         isSyncing = true
 
         Task {
+            defer {
+                isSyncing = false
+                lastSyncDate = Date.now
+            }
+
             var totalExpenses = 0
             var totalIncomes = 0
             var totalDuplicates = 0
@@ -69,8 +74,6 @@ final class BankSyncService {
                 }
             }
 
-            isSyncing = false
-            lastSyncDate = Date.now
             if !errors.isEmpty {
                 syncResultMessage = errors.joined(separator: "\n")
             } else if totalExpenses == 0 && totalIncomes == 0 {
@@ -83,8 +86,8 @@ final class BankSyncService {
     }
 
     /// Request notification authorization. Call once at app launch.
-    static func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    static func requestNotificationPermission() async {
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
     private func postSyncNotification() {

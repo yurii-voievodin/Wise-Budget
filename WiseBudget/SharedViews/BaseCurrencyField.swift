@@ -11,6 +11,10 @@ struct BaseCurrencyField: View {
     @State private var isFetchingRate = false
     @State private var rateService = ExchangeRateService()
 
+    private var rateTrigger: String {
+        "\(amount?.description ?? "nil")|\(currency)|\(date.timeIntervalSince1970)"
+    }
+
     var body: some View {
         HStack {
             TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
@@ -29,17 +33,10 @@ struct BaseCurrencyField: View {
                 .controlSize(.small)
             }
         }
-        .onChange(of: amount) { fetchSuggestedRate() }
-        .onChange(of: currency) { fetchSuggestedRate() }
-        .onChange(of: date) { fetchSuggestedRate() }
-        .task { fetchSuggestedRate() }
-    }
-
-    private func fetchSuggestedRate() {
-        suggestedAmount = nil
-        guard let amount, amount > .zero else { return }
-        isFetchingRate = true
-        Task {
+        .task(id: rateTrigger) {
+            suggestedAmount = nil
+            guard let amount, amount > .zero else { return }
+            isFetchingRate = true
             let result = await rateService.suggestedConversion(amount: amount, from: currency, to: defaultCurrency, on: date)
             isFetchingRate = false
             suggestedAmount = result

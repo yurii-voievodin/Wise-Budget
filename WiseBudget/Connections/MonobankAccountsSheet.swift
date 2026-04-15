@@ -62,8 +62,8 @@ struct MonobankAccountsSheet: View {
         }
         .padding(20)
         .frame(width: 380, height: 400)
-        .onAppear {
-            loadAccounts()
+        .task {
+            await loadAccounts()
         }
     }
 
@@ -124,35 +124,27 @@ struct MonobankAccountsSheet: View {
         return f
     }()
 
-    private func loadAccounts() {
+    private func loadAccounts() async {
         selectedAccountIds = MonobankConnectSheet.loadSelectedAccountIds()
 
-        Task {
-            do {
-                guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
-                    await MainActor.run {
-                        errorMessage = "No token found. Please reconnect."
-                        isLoading = false
-                    }
-                    return
-                }
-
-                let client = MonobankAPIClient(token: token)
-                let clientInfo = try await client.fetchClientInfo()
-
-                await MainActor.run {
-                    accounts = clientInfo.accounts
-                    isLoading = false
-                }
-
-                logger.debug("loaded \(clientInfo.accounts.count) accounts")
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                }
-                logger.error("failed to load accounts: \(error.localizedDescription)")
+        do {
+            guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
+                errorMessage = "No token found. Please reconnect."
+                isLoading = false
+                return
             }
+
+            let client = MonobankAPIClient(token: token)
+            let clientInfo = try await client.fetchClientInfo()
+
+            accounts = clientInfo.accounts
+            isLoading = false
+
+            logger.debug("loaded \(clientInfo.accounts.count) accounts")
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+            logger.error("failed to load accounts: \(error.localizedDescription)")
         }
     }
 
