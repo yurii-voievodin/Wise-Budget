@@ -130,6 +130,92 @@ struct MonobankSyncServiceTests {
 
     // MARK: - Same currency (no conversion needed)
 
+    // MARK: - Edge cases
+
+    @Test func zeroAmountTransactionReturnsNil() {
+        let statement = makeStatement(amount: 0, operationAmount: 0)
+        let result = MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        )
+        #expect(result == nil, "Zero-amount transactions should be skipped")
+    }
+
+    @Test func ownAccountTransferReturnsNil() {
+        let ownIban = "UA213223130000026007233566001"
+        let statement = makeStatement(counterIban: ownIban)
+        let result = MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [ownIban],
+            defaultCurrency: "UAH"
+        )
+        #expect(result == nil, "Own-account transfers should be skipped")
+    }
+
+    @Test func fopTransferReturnsNil() {
+        let statement = makeStatement(description: "З гривневого рахунку ФОП")
+        let result = MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        )
+        #expect(result == nil, "FOP transfers should be skipped")
+    }
+
+    @Test func fopTransferCaseInsensitive() {
+        let statement = makeStatement(description: "на рахунок фоп")
+        let result = MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        )
+        #expect(result == nil, "FOP matching should be case-insensitive")
+    }
+
+    @Test func commentOverridesDescription() throws {
+        let statement = makeStatement(
+            description: "Original merchant",
+            comment: "My custom note"
+        )
+        let result = try #require(MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        ))
+        #expect(result.targetName == "My custom note")
+    }
+
+    @Test func positiveAmountIsIncome() throws {
+        let statement = makeStatement(amount: 100000, operationAmount: 100000)
+        let result = try #require(MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        ))
+        #expect(result.direction == "IN")
+        #expect(result.amount == Decimal(string: "1000"))
+    }
+
+    @Test func externalIdFormat() throws {
+        let statement = makeStatement(id: "abc123")
+        let result = try #require(MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        ))
+        #expect(result.externalId == "mono_abc123")
+    }
+
+    // MARK: - Same currency (no conversion needed)
+
     @Test func sameCurrencyTransactionHasNoBaseCurrency() {
         // UAH purchase on a UAH account — no conversion at all.
         let statement = makeStatement(
