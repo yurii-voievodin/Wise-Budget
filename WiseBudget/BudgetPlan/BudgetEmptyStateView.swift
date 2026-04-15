@@ -21,7 +21,7 @@ struct BudgetEmptyStateView: View {
         let descriptor = FetchDescriptor<BudgetPlan>(predicate: #Predicate {
             $0.year == prevYear && $0.month == prevMonth
         })
-        return (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
+        return ((try? modelContext.fetchCount(descriptor)) ?? 0) > 0
     }
 
     var body: some View {

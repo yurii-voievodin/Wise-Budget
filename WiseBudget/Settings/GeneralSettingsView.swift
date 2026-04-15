@@ -65,10 +65,7 @@ struct GeneralSettingsView: View {
 
     private func deleteAllExpenses() {
         do {
-            let expenses = try modelContext.fetch(FetchDescriptor<Expense>())
-            for expense in expenses {
-                modelContext.delete(expense)
-            }
+            try modelContext.delete(model: Expense.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {
@@ -78,10 +75,7 @@ struct GeneralSettingsView: View {
 
     private func deleteAllIncomes() {
         do {
-            let incomes = try modelContext.fetch(FetchDescriptor<Income>())
-            for income in incomes {
-                modelContext.delete(income)
-            }
+            try modelContext.delete(model: Income.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {

@@ -15,6 +15,7 @@ enum DataSeeder {
             for category in DefaultExpenseCategory.allCases {
                 context.insert(ExpenseCategory(name: category.rawValue, iconName: category.iconName))
             }
+            try context.save()
             logger.info("Prepopulated \(DefaultExpenseCategory.allCases.count) expense categories")
         } catch {
             logger.warning("Failed to prepopulate expense categories: \(error.localizedDescription)")
@@ -30,6 +31,7 @@ enum DataSeeder {
             for category in DefaultIncomeCategory.allCases {
                 context.insert(IncomeCategory(name: category.rawValue, iconName: category.iconName))
             }
+            try context.save()
             logger.info("Prepopulated \(DefaultIncomeCategory.allCases.count) income categories")
         } catch {
             logger.warning("Failed to prepopulate income categories: \(error.localizedDescription)")
@@ -65,6 +67,11 @@ enum DataSeeder {
             logger.warning("Failed to migrate income category icons: \(error.localizedDescription)")
         }
 
+        do {
+            try context.save()
+        } catch {
+            logger.warning("Failed to save icon migration: \(error.localizedDescription)")
+        }
         UserDefaults.standard.set(true, forKey: key)
     }
 
@@ -86,6 +93,7 @@ enum DataSeeder {
                 name: name,
                 iconName: DefaultExpenseCategory.subscription.iconName
             ))
+            try context.save()
             UserDefaults.standard.set(true, forKey: key)
             logger.info("Added Subscription category")
         } catch {

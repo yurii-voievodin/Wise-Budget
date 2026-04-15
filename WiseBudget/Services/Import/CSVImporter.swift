@@ -158,8 +158,13 @@ final class CSVImporter {
         var expenseCategoryMap = Dictionary(uniqueKeysWithValues: existingExpenseCategories.map { ($0.name, $0) })
         var incomeCategoryMap = Dictionary(uniqueKeysWithValues: existingIncomeCategories.map { ($0.name, $0) })
 
-        let existingExpenses = try context.fetch(FetchDescriptor<Expense>())
-        let existingIncomes = try context.fetch(FetchDescriptor<Income>())
+        var expenseDescriptor = FetchDescriptor<Expense>()
+        expenseDescriptor.propertiesToFetch = [\.externalId, \.date, \.currency, \.amount]
+        let existingExpenses = try context.fetch(expenseDescriptor)
+
+        var incomeDescriptor = FetchDescriptor<Income>()
+        incomeDescriptor.propertiesToFetch = [\.externalId, \.date, \.currency, \.amount]
+        let existingIncomes = try context.fetch(incomeDescriptor)
 
         // Primary dedup: external IDs from bank APIs
         var existingExternalIds = Set<String>()
