@@ -76,37 +76,21 @@ struct MonobankCSVImporterTests {
 
     // MARK: - MCC Category Mapping
 
-    @Test func mccMappedToShopping() {
-        let category = MCCCategoryMapping.categoryName(forMCC: 5621)
-        #expect(category == "Shopping")
+    @Test(arguments: [
+        (5621, "Shopping"),
+        (5814, "Cafes"),
+        (7841, "Entertainment"),
+        (4829, "Other"),
+        (9999, "Other"),
+    ])
+    func mccCategoryMapping(mcc: Int, expected: String) {
+        #expect(MCCCategoryMapping.categoryName(forMCC: mcc) == expected)
     }
 
-    @Test func mccMappedToCafes() {
-        let category = MCCCategoryMapping.categoryName(forMCC: 5814)
-        #expect(category == "Cafes")
-    }
-
-    @Test func mccMappedToEntertainment() {
-        let category = MCCCategoryMapping.categoryName(forMCC: 7841)
-        #expect(category == "Entertainment")
-    }
-
-    @Test func mccMappedToOtherForTransfers() {
-        let category = MCCCategoryMapping.categoryName(forMCC: 4829)
-        #expect(category == "Other")
-    }
-
-    @Test func unknownMCCDefaultsToOther() {
-        let category = MCCCategoryMapping.categoryName(forMCC: 9999)
-        #expect(category == "Other")
-    }
-
-    @Test func categoryAppliedDuringParsing() {
+    @Test func categoryAppliedDuringParsing() throws {
         let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
-        let shopping = transactions.first { $0.categoryName == "Shopping" }
-        #expect(shopping != nil)
-        let cafes = transactions.first { $0.categoryName == "Cafes" }
-        #expect(cafes != nil)
+        _ = try #require(transactions.first { $0.categoryName == "Shopping" })
+        _ = try #require(transactions.first { $0.categoryName == "Cafes" })
     }
 
     // MARK: - Amount and Currency Parsing
@@ -141,11 +125,11 @@ struct MonobankCSVImporterTests {
 
     // MARK: - Date Parsing
 
-    @Test func dateParsedCorrectly() {
+    @Test func dateParsedCorrectly() throws {
         let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
-        let first = transactions.first { $0.targetName == "LIQPAY*TOV TREND SET" }
+        let first = try #require(transactions.first { $0.targetName == "LIQPAY*TOV TREND SET" }, "Expected LIQPAY transaction")
         let calendar = Calendar(identifier: .gregorian)
-        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: first!.date)
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: first.date)
         #expect(components.year == 2026)
         #expect(components.month == 3)
         #expect(components.day == 14)
@@ -156,16 +140,15 @@ struct MonobankCSVImporterTests {
 
     // MARK: - Description Stored as Target Name
 
-    @Test func descriptionStoredAsTargetName() {
+    @Test func descriptionStoredAsTargetName() throws {
         let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
-        let youtube = transactions.first { $0.targetName == "YouTube" }
-        #expect(youtube != nil)
+        _ = try #require(transactions.first { $0.targetName == "YouTube" })
     }
 
     @Test func allTransactionsHaveCompletedStatus() {
         let transactions = MonobankCSVImporter.parseCSV(from: sampleCSV)
         for transaction in transactions {
-            #expect(transaction.status == "COMPLETED")
+            #expect(transaction.status == "COMPLETED", "Transaction '\(transaction.targetName)' has unexpected status")
         }
     }
 

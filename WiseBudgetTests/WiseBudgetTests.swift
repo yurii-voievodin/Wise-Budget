@@ -87,32 +87,27 @@ struct WiseBudgetTests {
 
     // MARK: - Category Mapping
 
-    @Test func allCategoryMappingsExist() {
-        let expectedMappings: [String: String] = [
-            "Продукти харчування": "Groceries",
-            "Ресторани": "Cafes",
-            "Рахунки": "Utilities",
-            "Транспорт": "Auto",
-            "Магазини": "Shopping",
-            "Житло": "Home",
-            "Засоби гігієни": "Personal Items",
-            "Зарплата": "Salary",
-            "Заощадження": "Other",
-            "Загальне": "Other",
-        ]
-        for (ukrainian, english) in expectedMappings {
-            #expect(CSVImporter.categoryMapping[ukrainian] == english)
-        }
+    @Test(arguments: [
+        ("Продукти харчування", "Groceries"),
+        ("Ресторани", "Cafes"),
+        ("Рахунки", "Utilities"),
+        ("Транспорт", "Auto"),
+        ("Магазини", "Shopping"),
+        ("Житло", "Home"),
+        ("Засоби гігієни", "Personal Items"),
+        ("Зарплата", "Salary"),
+        ("Заощадження", "Other"),
+        ("Загальне", "Other"),
+    ])
+    func categoryMappingExists(ukrainian: String, english: String) {
+        #expect(CSVImporter.categoryMapping[ukrainian] == english)
     }
 
-    @Test func categoryMappingAppliedDuringParsing() {
+    @Test func categoryMappingAppliedDuringParsing() throws {
         let transactions = CSVImporter.parseCSV(from: sampleCSV)
-        let groceries = transactions.first { $0.categoryName == "Groceries" }
-        #expect(groceries != nil)
-        let cafes = transactions.first { $0.categoryName == "Cafes" }
-        #expect(cafes != nil)
-        let salary = transactions.first { $0.categoryName == "Salary" }
-        #expect(salary != nil)
+        _ = try #require(transactions.first { $0.categoryName == "Groceries" })
+        _ = try #require(transactions.first { $0.categoryName == "Cafes" })
+        _ = try #require(transactions.first { $0.categoryName == "Salary" })
     }
 
     // MARK: - Amount and Currency Parsing
@@ -140,11 +135,11 @@ struct WiseBudgetTests {
 
     // MARK: - Date Parsing
 
-    @Test func dateParsedCorrectly() {
+    @Test func dateParsedCorrectly() throws {
         let transactions = CSVImporter.parseCSV(from: sampleCSV)
-        let first = transactions.first { $0.categoryName == "Groceries" }
+        let first = try #require(transactions.first { $0.categoryName == "Groceries" }, "Expected a Groceries transaction")
         let calendar = Calendar(identifier: .gregorian)
-        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: first!.date)
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: first.date)
         #expect(components.year == 2026)
         #expect(components.month == 3)
         #expect(components.day == 15)
