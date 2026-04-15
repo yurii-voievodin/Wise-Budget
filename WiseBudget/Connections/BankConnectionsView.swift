@@ -36,7 +36,7 @@ struct BankConnectionsView: View {
             Section("Monobank") {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Monobank")
+                        Text("Status")
                             .fontWeight(.medium)
                         if isMonobankConnected {
                             Text("Connected as \(monobankConnectedName)")
@@ -85,7 +85,7 @@ struct BankConnectionsView: View {
             Section("Wise") {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Wise")
+                        Text("Status")
                             .fontWeight(.medium)
                         if isWiseConnected {
                             Text("Connected as \(wiseConnectedName)")

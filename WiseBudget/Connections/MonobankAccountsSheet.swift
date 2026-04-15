@@ -156,3 +156,7 @@ struct MonobankAccountsSheet: View {
         dismiss()
     }
 }
+
+#Preview {
+    MonobankAccountsSheet()
+}

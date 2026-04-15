@@ -33,6 +33,7 @@ struct BudgetSummarySection: View {
                 Spacer()
                 Text("\(totalPlanned, format: .number) \(planCurrency)")
                     .fontWeight(.semibold)
+                    .monospacedDigit()
             }
             .padding(.vertical, 4)
 
@@ -42,6 +43,7 @@ struct BudgetSummarySection: View {
                     Spacer()
                     Text("\(unplannedAmount, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
+                        .monospacedDigit()
                         .foregroundStyle(unplannedAmount < 0 ? .red : .secondary)
                 }
                 .padding(.vertical, 4)
@@ -52,6 +54,7 @@ struct BudgetSummarySection: View {
                 Spacer()
                 Text("\(totalActual, format: .number) \(planCurrency)")
                     .fontWeight(.semibold)
+                    .monospacedDigit()
                     .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
             }
             .padding(.vertical, 4)
@@ -63,6 +66,7 @@ struct BudgetSummarySection: View {
                     Spacer()
                     Text("\(remaining, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
+                        .monospacedDigit()
                         .foregroundStyle(remaining < 0 ? .red : .green)
                 }
                 .padding(.vertical, 4)
@@ -90,4 +94,21 @@ struct BudgetSummarySection: View {
             }
         }
     }
+}
+
+#Preview {
+    @Previewable @State var budgetText = "1000"
+    List {
+        BudgetSummarySection(
+            monthlyBudgetBinding: $budgetText,
+            planCurrency: "USD",
+            totalPlanned: 750,
+            monthlyBudget: 1000,
+            unplannedAmount: 250,
+            totalActual: 620,
+            unconvertibleExpenseCount: 2,
+            onShowForeignExpenses: {}
+        )
+    }
+    .frame(width: 500, height: 400)
 }

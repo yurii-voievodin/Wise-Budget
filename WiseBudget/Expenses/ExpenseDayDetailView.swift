@@ -46,6 +46,7 @@ struct ExpenseDayDetailView: View {
                         Spacer()
                         CurrencyAmountView(item: expense)
                     }
+                    .padding(.vertical, 4)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -68,4 +69,9 @@ struct ExpenseDayDetailView: View {
             }
         }
     }
+}
+
+#Preview {
+    ExpenseDayDetailView(date: Calendar.current.date(from: DateComponents(year: 2026, month: 3, day: 17))!)
+        .modelContainer(PreviewSampleData.container)
 }

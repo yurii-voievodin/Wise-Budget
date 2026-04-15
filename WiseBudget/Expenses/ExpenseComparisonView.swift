@@ -231,3 +231,9 @@ struct ExpenseComparisonView: View {
         Self.amountFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
     }
 }
+
+#Preview {
+    ExpenseComparisonView(filter: MonthFilter(year: 2026, month: 3))
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 500)
+}

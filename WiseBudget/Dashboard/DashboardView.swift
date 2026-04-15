@@ -164,7 +164,7 @@ struct DashboardView: View {
             ForEach(topCategories) { slice in
                 HStack {
                     Image(systemName: slice.iconName)
-                        .frame(width: 20)
+                        .frame(width: 24, alignment: .center)
                         .foregroundStyle(.secondary)
                     Text(slice.name)
                     Spacer()
@@ -230,4 +230,11 @@ struct DashboardView: View {
             .prefix(5)
             .map { (description: $0.description, categoryName: $0.categoryName, categoryIcon: $0.categoryIcon, item: $0.item, isExpense: $0.isExpense) }
     }
+}
+
+#Preview {
+    @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
+    DashboardView(monthFilter: $filter)
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 600)
 }

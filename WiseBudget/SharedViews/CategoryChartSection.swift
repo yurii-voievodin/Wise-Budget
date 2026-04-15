@@ -34,7 +34,7 @@ struct CategoryChartSection: View {
                     HStack {
                         Circle()
                             .fill(colorMap[slice.name] ?? .gray)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 12, height: 12)
                         Label(slice.name, systemImage: slice.iconName)
                         Spacer()
                         let pct = slice.total / grandTotal * 100
@@ -49,4 +49,20 @@ struct CategoryChartSection: View {
             }
         }
     }
+}
+
+#Preview {
+    List {
+        CategoryChartSection(
+            slices: [
+                CategoryChartSlice(name: "Groceries", iconName: "cart", total: 320),
+                CategoryChartSlice(name: "Transport", iconName: "car", total: 150),
+                CategoryChartSlice(name: "Entertainment", iconName: "film", total: 80),
+            ],
+            currency: "USD",
+            emptyText: "No expenses",
+            colorMap: ["Groceries": .green, "Transport": .blue, "Entertainment": .purple]
+        )
+    }
+    .frame(width: 500, height: 500)
 }

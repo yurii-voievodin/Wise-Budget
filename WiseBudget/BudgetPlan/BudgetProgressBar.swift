@@ -23,7 +23,7 @@ struct BudgetProgressBar: View {
             return .green
         case Self.thresholdLow..<Self.thresholdMedium:
             return .yellow
-        case Self.thresholdMedium...Self.thresholdHigh:
+        case Self.thresholdMedium..<Self.thresholdHigh:
             return .orange
         default:
             return .red
@@ -43,4 +43,16 @@ struct BudgetProgressBar: View {
         }
         .frame(height: 8)
     }
+}
+
+#Preview("Under Budget") {
+    VStack(spacing: 20) {
+        BudgetProgressBar(spent: 200, planned: 500)
+        BudgetProgressBar(spent: 400, planned: 500)
+        BudgetProgressBar(spent: 480, planned: 500)
+        BudgetProgressBar(spent: 500, planned: 500)
+        BudgetProgressBar(spent: 700, planned: 500)
+    }
+    .padding()
+    .frame(width: 400)
 }

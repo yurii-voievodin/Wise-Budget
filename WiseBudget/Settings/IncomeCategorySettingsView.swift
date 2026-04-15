@@ -8,3 +8,8 @@ struct IncomeCategorySettingsView: View {
         CategorySettingsContent(categories: categories)
     }
 }
+
+#Preview {
+    IncomeCategorySettingsView()
+        .modelContainer(PreviewSampleData.container)
+}

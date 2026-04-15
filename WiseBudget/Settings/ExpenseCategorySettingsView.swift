@@ -8,3 +8,8 @@ struct ExpenseCategorySettingsView: View {
         CategorySettingsContent(categories: categories)
     }
 }
+
+#Preview {
+    ExpenseCategorySettingsView()
+        .modelContainer(PreviewSampleData.container)
+}

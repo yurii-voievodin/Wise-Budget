@@ -27,6 +27,7 @@ struct BudgetCategoryRow: View {
                 Spacer()
                 Text("\(actual, format: .number)")
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
                 Text("/")
                     .foregroundStyle(.secondary)
                 TextField(

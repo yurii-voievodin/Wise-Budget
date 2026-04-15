@@ -14,7 +14,7 @@ struct ExpenseCalendarDayCellView: View {
                 .font(.caption)
                 .fontWeight(.bold)
                 .foregroundStyle(isToday ? .white : .primary)
-                .frame(width: 22, height: 22)
+                .frame(width: 24, height: 24)
                 .background {
                     if isToday {
                         Circle().fill(.blue)
@@ -54,4 +54,23 @@ struct ExpenseCalendarDayCellView: View {
     static func formattedAmount(_ value: Decimal) -> String {
         amountFormatter.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
     }
+}
+
+#Preview {
+    HStack(spacing: 4) {
+        ExpenseCalendarDayCellView(
+            day: 1, isToday: false, defaultCurrency: "USD",
+            currencyTotals: [:], backgroundColor: .green, backgroundOpacity: 0.06
+        )
+        ExpenseCalendarDayCellView(
+            day: 15, isToday: true, defaultCurrency: "USD",
+            currencyTotals: ["USD": 42], backgroundColor: .yellow, backgroundOpacity: 0.2
+        )
+        ExpenseCalendarDayCellView(
+            day: 28, isToday: false, defaultCurrency: "USD",
+            currencyTotals: ["USD": 250, "EUR": 30], backgroundColor: .red, backgroundOpacity: 0.3
+        )
+    }
+    .padding()
+    .frame(width: 300)
 }

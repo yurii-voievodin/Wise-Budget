@@ -107,7 +107,7 @@ struct WiseConnectSheet: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                SecureField("API token", text: $token)
+                SecureField("Paste your API token here", text: $token)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
             }
@@ -200,4 +200,8 @@ struct WiseConnectSheet: View {
             }
         }
     }
+}
+
+#Preview {
+    WiseConnectSheet { _ in }
 }

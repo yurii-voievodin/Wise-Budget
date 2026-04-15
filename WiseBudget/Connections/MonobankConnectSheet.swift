@@ -112,7 +112,7 @@ struct MonobankConnectSheet: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                SecureField("API token", text: $token)
+                SecureField("Paste your API token here", text: $token)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
             }
@@ -250,6 +250,8 @@ struct MonobankConnectSheet: View {
         return nil
     }
 
+    // MARK: - Connect
+
     private func connectAccount() {
         let trimmedToken = token.trimmingCharacters(in: .whitespaces)
         guard !trimmedToken.isEmpty else { return }
@@ -282,4 +284,8 @@ struct MonobankConnectSheet: View {
             }
         }
     }
+}
+
+#Preview {
+    MonobankConnectSheet { _ in }
 }

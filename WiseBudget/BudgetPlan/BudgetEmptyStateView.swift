@@ -76,3 +76,8 @@ struct BudgetEmptyStateView: View {
         }
     }
 }
+
+#Preview {
+    BudgetEmptyStateView(filter: MonthFilter(year: 2026, month: 4))
+        .modelContainer(PreviewSampleData.container)
+}
