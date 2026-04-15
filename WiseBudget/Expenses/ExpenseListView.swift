@@ -79,5 +79,11 @@ struct ExpenseListView: View {
     }
 }
 
-
-
+#Preview {
+    @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
+    @Previewable @State var selectedSidebarItem: SidebarItem = .expenses
+    @Previewable @State var selectedCategoryName: String? = nil
+    ExpenseListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $selectedCategoryName)
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 700, height: 500)
+}

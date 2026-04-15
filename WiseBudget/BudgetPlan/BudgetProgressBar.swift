@@ -42,6 +42,9 @@ struct BudgetProgressBar: View {
             }
         }
         .frame(height: 8)
+        .accessibilityElement()
+        .accessibilityLabel("Budget progress")
+        .accessibilityValue("\(Int(ratio * 100)) percent spent")
     }
 }
 

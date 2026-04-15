@@ -243,7 +243,7 @@ struct ExpenseCalendarView: View {
         return today.year == filter.year && today.month == filter.month && today.day == day
     }
 
-    private static let heatMapMinOpacity = 0.05
+    private static let heatMapMinOpacity = 0.10
     private static let heatMapOpacityRange = 0.25
     private static let noExpenseOpacity = 0.06
 
@@ -267,4 +267,10 @@ struct ExpenseCalendarView: View {
     private func formattedAmount(_ value: Decimal) -> String {
         ExpenseCalendarDayCellView.formattedAmount(value)
     }
+}
+
+#Preview {
+    ExpenseCalendarView(filter: MonthFilter(year: 2026, month: 3), syncService: BankSyncService())
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 500)
 }

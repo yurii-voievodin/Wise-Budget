@@ -51,3 +51,20 @@ struct BaseCurrencyField: View {
         return f
     }()
 }
+
+#Preview("Base Currency Field") {
+    @Previewable @State var baseCurrencyAmount: Decimal? = nil
+    Form {
+        LabeledContent("Base Amount") {
+            BaseCurrencyField(
+                baseCurrencyAmount: $baseCurrencyAmount,
+                amount: 100,
+                currency: "USD",
+                defaultCurrency: "EUR",
+                date: .now
+            )
+        }
+    }
+    .formStyle(.grouped)
+    .frame(width: 500, height: 200)
+}

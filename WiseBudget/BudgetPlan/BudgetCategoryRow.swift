@@ -18,8 +18,10 @@ struct BudgetCategoryRow: View {
                     } label: {
                         Label(categoryName, systemImage: categoryIcon)
                             .fontWeight(.medium)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityHint("Show expenses for \(categoryName)")
                 } else {
                     Label(categoryName, systemImage: categoryIcon)
                         .fontWeight(.medium)

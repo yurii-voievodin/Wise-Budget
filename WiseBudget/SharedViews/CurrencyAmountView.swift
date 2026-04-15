@@ -25,3 +25,19 @@ struct CurrencyAmountView: View {
         }
     }
 }
+
+private struct PreviewItem: CurrencyConvertible {
+    var amount: Decimal
+    var currency: String
+    var baseCurrencyAmount: Decimal?
+    var baseCurrency: String?
+}
+
+#Preview("Currency Amount") {
+    VStack(alignment: .trailing, spacing: 16) {
+        CurrencyAmountView(item: PreviewItem(amount: 52.30, currency: "EUR", baseCurrencyAmount: nil, baseCurrency: nil))
+        CurrencyAmountView(item: PreviewItem(amount: 800, currency: "USD", baseCurrencyAmount: 740, baseCurrency: "EUR"))
+        CurrencyAmountView(item: PreviewItem(amount: 15, currency: "GBP", baseCurrencyAmount: 17.50, baseCurrency: "EUR"))
+    }
+    .padding()
+}

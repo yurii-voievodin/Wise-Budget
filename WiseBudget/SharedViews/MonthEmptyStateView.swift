@@ -54,3 +54,14 @@ struct MonthEmptyStateView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+#Preview("Empty State - No Bank") {
+    MonthEmptyStateView(
+        title: "No Expenses This Month",
+        systemImage: "creditcard",
+        filter: MonthFilter(year: 2026, month: 4),
+        syncService: BankSyncService()
+    )
+    .modelContainer(for: [Expense.self], inMemory: true)
+    .frame(width: 500, height: 400)
+}

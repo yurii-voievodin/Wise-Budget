@@ -77,7 +77,7 @@ struct MonobankConnectSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 380, height: 480)
+        .frame(minWidth: 380, idealWidth: 420, minHeight: 480, idealHeight: 560)
     }
 
     private var tokenSetupView: some View {

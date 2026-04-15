@@ -190,3 +190,17 @@ struct BudgetPlanQueryListView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedSidebarItem: SidebarItem = .budgetPlan
+    @Previewable @State var monthFilter = MonthFilter(year: 2026, month: 3)
+    @Previewable @State var expenseCategoryFilter: String? = nil
+    BudgetPlanQueryListView(
+        filter: MonthFilter(year: 2026, month: 3),
+        selectedSidebarItem: $selectedSidebarItem,
+        monthFilter: $monthFilter,
+        expenseCategoryFilter: $expenseCategoryFilter
+    )
+    .modelContainer(PreviewSampleData.container)
+    .frame(width: 600, height: 500)
+}

@@ -64,10 +64,14 @@ struct BudgetSummarySection: View {
                 HStack {
                     Text("Remaining")
                     Spacer()
-                    Text("\(remaining, format: .number) \(planCurrency)")
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(remaining < 0 ? .red : .green)
+                    HStack(spacing: 4) {
+                        Image(systemName: remaining >= 0 ? "checkmark.circle" : "exclamationmark.triangle")
+                            .font(.caption)
+                        Text("\(remaining, format: .number) \(planCurrency)")
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                    }
+                    .foregroundStyle(remaining < 0 ? .red : .green)
                 }
                 .padding(.vertical, 4)
             }

@@ -72,7 +72,7 @@ struct WiseConnectSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 380, height: 420)
+        .frame(minWidth: 380, idealWidth: 420, minHeight: 420, idealHeight: 500)
     }
 
     private var tokenSetupView: some View {

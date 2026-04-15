@@ -24,8 +24,11 @@ struct GeneralSettingsView: View {
             }
 
             Section("Data Management") {
-                Button("Delete All Expenses", role: .destructive) {
+                Button(role: .destructive) {
                     showDeleteAllExpensesConfirmation = true
+                } label: {
+                    Label("Delete All Expenses", systemImage: "trash")
+                        .foregroundStyle(.red)
                 }
                 .confirmationDialog(
                     "Delete All Expenses",
@@ -39,8 +42,11 @@ struct GeneralSettingsView: View {
                     Text("This will permanently delete all your expenses. This action cannot be undone.")
                 }
 
-                Button("Delete All Incomes", role: .destructive) {
+                Button(role: .destructive) {
                     showDeleteAllIncomesConfirmation = true
+                } label: {
+                    Label("Delete All Incomes", systemImage: "trash")
+                        .foregroundStyle(.red)
                 }
                 .confirmationDialog(
                     "Delete All Incomes",

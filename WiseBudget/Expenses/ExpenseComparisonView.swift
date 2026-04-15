@@ -234,6 +234,6 @@ struct ExpenseComparisonView: View {
 
 #Preview {
     ExpenseComparisonView(filter: MonthFilter(year: 2026, month: 3))
-        .modelContainer(PreviewSampleData.container)
+        .modelContainer(for: [Expense.self, ExpenseCategory.self], inMemory: true)
         .frame(width: 600, height: 500)
 }
