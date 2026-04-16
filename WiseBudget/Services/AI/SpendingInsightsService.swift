@@ -6,6 +6,7 @@ import SwiftData
 /// human-readable narrative about a `SpendingSummary`. Runs entirely on-device
 /// and caches the result in SwiftData so repeated visits reuse it instantly.
 @Observable
+@MainActor
 final class SpendingInsightsService {
 
     enum Availability: Equatable {
@@ -24,6 +25,9 @@ final class SpendingInsightsService {
     }
 
     private(set) var state: State = .idle
+
+    /// Held so we can release the session when a generation is cancelled.
+    private var activeSession: LanguageModelSession?
 
     var availability: Availability { Self.currentAvailability() }
 
@@ -47,10 +51,13 @@ final class SpendingInsightsService {
     ///   - summary: aggregated totals + top categories for the month.
     ///   - scopeKey: locale-independent month key, e.g. `"2026-03"`.
     ///   - context: SwiftData context used for cache lookup and persistence.
+    ///   - forceRefresh: when `true`, evict any cached row and run the model again.
+    ///     Used by the "Regenerate" button.
     func generate(
         from summary: SpendingSummary,
         scopeKey: String,
-        in context: ModelContext
+        in context: ModelContext,
+        forceRefresh: Bool = false
     ) async {
         guard availability == .available else {
             state = .error("Apple Intelligence is not available.")
@@ -73,7 +80,15 @@ final class SpendingInsightsService {
         let locale = InsightLocale.current()
         let hash = InsightsCache.hash(prompt)
 
-        if let cached = InsightsCache.lookup(
+        if forceRefresh {
+            InsightsCache.invalidate(
+                in: context,
+                kind: .monthSummary,
+                scopeKey: scopeKey,
+                currency: summary.currency,
+                localeIdentifier: locale.identifier
+            )
+        } else if let cached = InsightsCache.lookup(
             in: context,
             kind: .monthSummary,
             scopeKey: scopeKey,
@@ -88,6 +103,8 @@ final class SpendingInsightsService {
         state = .generating("")
 
         let session = LanguageModelSession(instructions: locale.monthlyInstructions)
+        activeSession = session
+        defer { if activeSession === session { activeSession = nil } }
 
         do {
             let stream = session.streamResponse(to: prompt)
@@ -100,7 +117,10 @@ final class SpendingInsightsService {
             try Task.checkCancellation()
             // Don't cache or present empty output (e.g. stream ended with no
             // partials because the task was cancelled between iterations).
-            guard !latest.isEmpty else { return }
+            guard !latest.isEmpty else {
+                state = .idle
+                return
+            }
             InsightsCache.upsert(
                 in: context,
                 kind: .monthSummary,
@@ -112,8 +132,9 @@ final class SpendingInsightsService {
             )
             state = .ready(latest)
         } catch is CancellationError {
-            // Navigated away mid-generation. Leave state alone — the next
-            // task invocation for the new scope will overwrite it.
+            // Navigated away mid-generation. Reset so the card doesn't get
+            // stuck in `.generating` if the user returns to the same scope.
+            state = .idle
             return
         } catch {
             state = .error(error.localizedDescription)

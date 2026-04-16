@@ -7,6 +7,7 @@ import SwiftData
 /// callers decide when to call `generate(...)`. Cached in SwiftData keyed
 /// by range + anchor.
 @Observable
+@MainActor
 final class TrendsInsightsService {
 
     enum State: Equatable {
@@ -17,6 +18,9 @@ final class TrendsInsightsService {
     }
 
     private(set) var state: State = .idle
+
+    /// Held so we can release the session when a generation is cancelled.
+    private var activeSession: LanguageModelSession?
 
     var availability: SpendingInsightsService.Availability {
         // Reuse the exact same availability logic — the underlying system model is shared.
@@ -32,7 +36,8 @@ final class TrendsInsightsService {
         from summary: TrendsSummary,
         kind: CachedInsightKind,
         scopeKey: String,
-        in context: ModelContext
+        in context: ModelContext,
+        forceRefresh: Bool = false
     ) async {
         guard availability == .available else {
             state = .error("Apple Intelligence is not available.")
@@ -55,7 +60,15 @@ final class TrendsInsightsService {
         let locale = InsightLocale.current()
         let hash = InsightsCache.hash(prompt)
 
-        if let cached = InsightsCache.lookup(
+        if forceRefresh {
+            InsightsCache.invalidate(
+                in: context,
+                kind: kind,
+                scopeKey: scopeKey,
+                currency: summary.currency,
+                localeIdentifier: locale.identifier
+            )
+        } else if let cached = InsightsCache.lookup(
             in: context,
             kind: kind,
             scopeKey: scopeKey,
@@ -70,6 +83,8 @@ final class TrendsInsightsService {
         state = .generating("")
 
         let session = LanguageModelSession(instructions: locale.trendsInstructions)
+        activeSession = session
+        defer { if activeSession === session { activeSession = nil } }
 
         do {
             let stream = session.streamResponse(to: prompt)
@@ -80,7 +95,10 @@ final class TrendsInsightsService {
                 state = .generating(latest)
             }
             try Task.checkCancellation()
-            guard !latest.isEmpty else { return }
+            guard !latest.isEmpty else {
+                state = .idle
+                return
+            }
             InsightsCache.upsert(
                 in: context,
                 kind: kind,
@@ -92,6 +110,7 @@ final class TrendsInsightsService {
             )
             state = .ready(latest)
         } catch is CancellationError {
+            state = .idle
             return
         } catch {
             state = .error(error.localizedDescription)

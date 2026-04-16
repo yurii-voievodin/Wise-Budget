@@ -36,6 +36,7 @@ enum InsightsCache {
 
     /// Creates or replaces the cached content for the given scope.
     /// Keeps at most one row per `(kind, scopeKey, currency, localeIdentifier)`.
+    /// Empty content is ignored — callers may cancel mid-stream with no text yet.
     static func upsert(
         in context: ModelContext,
         kind: CachedInsightKind,
@@ -45,6 +46,7 @@ enum InsightsCache {
         dataHash: String,
         content: String
     ) {
+        guard !content.isEmpty else { return }
         if let existing = fetch(
             in: context,
             kind: kind,
@@ -67,6 +69,28 @@ enum InsightsCache {
             context.insert(row)
         }
         try? context.save()
+    }
+
+    /// Deletes the cached row for the given scope, if any. Used by "Regenerate"
+    /// to force the next `generate(...)` call to hit the model instead of
+    /// returning the previously stored content.
+    static func invalidate(
+        in context: ModelContext,
+        kind: CachedInsightKind,
+        scopeKey: String,
+        currency: String,
+        localeIdentifier: String
+    ) {
+        if let existing = fetch(
+            in: context,
+            kind: kind,
+            scopeKey: scopeKey,
+            currency: currency,
+            localeIdentifier: localeIdentifier
+        ) {
+            context.delete(existing)
+            try? context.save()
+        }
     }
 
     private static func fetch(

@@ -76,6 +76,7 @@ final class MonobankSyncService {
         let totalRequests = accountsToSync.count * windowsPerAccount
 
         for account in accountsToSync {
+            try Task.checkCancellation()
             let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
             logger.debug("processing account \(account.id, privacy: .private) (\(currency))")
 
@@ -84,6 +85,7 @@ final class MonobankSyncService {
             logger.debug("date range split into \(windows.count) window(s)")
 
             for (windowStart, windowEnd) in windows {
+                try Task.checkCancellation()
                 logger.debug("fetching statements: \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
 
                 let statements = try await client.fetchStatements(

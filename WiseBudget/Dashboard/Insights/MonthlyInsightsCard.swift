@@ -6,6 +6,7 @@ struct MonthlyInsightsCard: View {
     let scopeKey: String
     @Environment(\.modelContext) private var modelContext
     @State private var service = SpendingInsightsService()
+    @State private var regenerateTask: Task<Void, Never>?
 
     var body: some View {
         Section {
@@ -22,7 +23,15 @@ struct MonthlyInsightsCard: View {
     }
 
     private func regenerate() {
-        Task { await service.generate(from: summary, scopeKey: scopeKey, in: modelContext) }
+        regenerateTask?.cancel()
+        regenerateTask = Task {
+            await service.generate(
+                from: summary,
+                scopeKey: scopeKey,
+                in: modelContext,
+                forceRefresh: true
+            )
+        }
     }
 
     @Sendable
