@@ -91,9 +91,14 @@ final class SpendingInsightsService {
             let stream = session.streamResponse(to: prompt)
             var latest = ""
             for try await partial in stream {
+                try Task.checkCancellation()
                 latest = partial.content
                 state = .generating(latest)
             }
+            try Task.checkCancellation()
+            // Don't cache or present empty output (e.g. stream ended with no
+            // partials because the task was cancelled between iterations).
+            guard !latest.isEmpty else { return }
             InsightsCache.upsert(
                 in: context,
                 kind: .monthSummary,
@@ -104,6 +109,10 @@ final class SpendingInsightsService {
                 content: latest
             )
             state = .ready(latest)
+        } catch is CancellationError {
+            // Navigated away mid-generation. Leave state alone — the next
+            // task invocation for the new scope will overwrite it.
+            return
         } catch {
             state = .error(error.localizedDescription)
         }

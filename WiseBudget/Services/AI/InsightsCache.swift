@@ -7,8 +7,10 @@ import SwiftData
 /// invalidation signal: a row with the same scope but a stale hash is replaced.
 enum InsightsCache {
 
-    /// Returns the cached content only if the current data hash matches.
-    /// Returns `nil` on cache miss or if the stored hash is stale.
+    /// Returns the cached content only if the current data hash matches
+    /// and the stored content is non-empty. Returns `nil` on cache miss,
+    /// stale hash, or empty content (which may have been written by a
+    /// cancelled generation and should be regenerated).
     static func lookup(
         in context: ModelContext,
         kind: CachedInsightKind,
@@ -26,7 +28,10 @@ enum InsightsCache {
         ) else {
             return nil
         }
-        return existing.dataHash == dataHash ? existing.content : nil
+        guard existing.dataHash == dataHash, !existing.content.isEmpty else {
+            return nil
+        }
+        return existing.content
     }
 
     /// Creates or replaces the cached content for the given scope.

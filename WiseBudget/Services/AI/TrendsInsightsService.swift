@@ -76,9 +76,12 @@ final class TrendsInsightsService {
             let stream = session.streamResponse(to: prompt)
             var latest = ""
             for try await partial in stream {
+                try Task.checkCancellation()
                 latest = partial.content
                 state = .generating(latest)
             }
+            try Task.checkCancellation()
+            guard !latest.isEmpty else { return }
             InsightsCache.upsert(
                 in: context,
                 kind: kind,
@@ -89,6 +92,8 @@ final class TrendsInsightsService {
                 content: latest
             )
             state = .ready(latest)
+        } catch is CancellationError {
+            return
         } catch {
             state = .error(error.localizedDescription)
         }
