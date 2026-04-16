@@ -115,6 +115,17 @@ struct DashboardView: View {
         Array(expenseSlices.prefix(5))
     }
 
+    private var spendingSummary: SpendingSummary {
+        SpendingSummary.build(
+            monthFilter: monthFilter,
+            currency: defaultCurrency,
+            totalIncome: NSDecimalNumber(decimal: totalIncome).doubleValue,
+            totalExpenses: NSDecimalNumber(decimal: totalExpenses).doubleValue,
+            transactionCount: expenses.count + incomes.count,
+            expenseSlices: expenseSlices
+        )
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -122,6 +133,7 @@ struct DashboardView: View {
             emptyState
         } else {
             Form {
+                MonthlyInsightsCard(summary: spendingSummary)
                 summarySection
                 dailyAveragesSection
                 if shouldShowBudgetPacing {
