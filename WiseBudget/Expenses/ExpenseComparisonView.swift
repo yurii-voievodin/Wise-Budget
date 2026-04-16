@@ -8,22 +8,15 @@ struct ExpenseComparisonView: View {
 
     let filter: MonthFilter
 
-    enum TimeRange: String, CaseIterable {
+    enum TimeRange: String, CaseIterable, Identifiable {
         case sixMonths = "6 Months"
         case year = "Year"
         case lifetime = "Lifetime"
+
+        var id: Self { self }
     }
 
     @State private var timeRange: TimeRange = .sixMonths
-
-    // MARK: - Data Types
-
-    private struct ChartDataPoint: Identifiable {
-        let id = UUID()
-        let monthKey: MonthKey
-        let categoryName: String
-        let total: Double
-    }
 
     // MARK: - Filtered Months
 
@@ -61,7 +54,7 @@ struct ExpenseComparisonView: View {
 
     // MARK: - Chart Data
 
-    private var chartData: [ChartDataPoint] {
+    private var chartData: [ExpenseComparisonChartDataPoint] {
         let calendar = Calendar.current
         let validMonths = Set(monthRange)
 
@@ -81,10 +74,10 @@ struct ExpenseComparisonView: View {
             grouped[key, default: [:]][cat, default: 0] += amount
         }
 
-        var points: [ChartDataPoint] = []
+        var points: [ExpenseComparisonChartDataPoint] = []
         for (monthKey, categories) in grouped {
             for (cat, total) in categories where total > 0 {
-                points.append(ChartDataPoint(monthKey: monthKey, categoryName: cat, total: total))
+                points.append(ExpenseComparisonChartDataPoint(monthKey: monthKey, categoryName: cat, total: total))
             }
         }
         return points.sorted {
@@ -93,14 +86,6 @@ struct ExpenseComparisonView: View {
             }
             return DefaultExpenseCategory.sortIndex(for: $0.categoryName) < DefaultExpenseCategory.sortIndex(for: $1.categoryName)
         }
-    }
-
-    private var categoryTotals: [(name: String, total: Double)] {
-        var totals: [String: Double] = [:]
-        for point in chartData {
-            totals[point.categoryName, default: 0] += point.total
-        }
-        return totals.map { (name: $0.key, total: $0.value) }.sorted { $0.total > $1.total }
     }
 
     private var monthTotals: [(month: MonthKey, total: Double)] {
@@ -154,7 +139,7 @@ struct ExpenseComparisonView: View {
         Form {
             Section {
                 Picker("Time Range", selection: $timeRange) {
-                    ForEach(TimeRange.allCases, id: \.self) { range in
+                    ForEach(TimeRange.allCases) { range in
                         Text(range.rawValue).tag(range)
                     }
                 }
@@ -175,71 +160,18 @@ struct ExpenseComparisonView: View {
                         scopeKey: trendsScopeKey
                     )
                 }
-                chartSection
-                monthBreakdownSection
+                ExpenseComparisonChartSection(
+                    chartData: chartData,
+                    xDomain: xDomain,
+                    useCompactLabels: useCompactLabels
+                )
+                ExpenseComparisonBreakdownSection(
+                    monthTotals: monthTotals,
+                    currency: defaultCurrency
+                )
             }
         }
         .formStyle(.grouped)
-    }
-
-    // MARK: - Chart
-
-    private var chartSection: some View {
-        Section("Expenses by Category") {
-            Chart(chartData) { point in
-                BarMark(
-                    x: .value("Month", point.monthKey.chartLabel(compact: useCompactLabels)),
-                    y: .value("Amount", point.total)
-                )
-                .foregroundStyle(by: .value("Category", point.categoryName))
-            }
-            .chartForegroundStyleScale(domain: DefaultExpenseCategory.chartColorDomain, range: DefaultExpenseCategory.chartColorRange)
-            .chartXScale(domain: xDomain)
-            .chartXAxis {
-                AxisMarks(values: .automatic) { _ in
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .chartYAxis {
-                AxisMarks { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let v = value.as(Double.self) {
-                            Text(formatAmount(v))
-                        }
-                    }
-                }
-            }
-            .frame(minHeight: 250)
-            .padding(.vertical, 8)
-        }
-    }
-
-    // MARK: - Breakdown
-
-    private var monthBreakdownSection: some View {
-        Section("Monthly Totals") {
-            ForEach(monthTotals, id: \.month) { item in
-                LabeledContent(item.month.fullLabel) {
-                    Text("\(formatAmount(item.total)) \(defaultCurrency)")
-                        .monospacedDigit()
-                }
-            }
-        }
-    }
-
-    // MARK: - Helpers
-
-    private static let amountFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 0
-        return f
-    }()
-
-    private func formatAmount(_ value: Double) -> String {
-        Self.amountFormatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
     }
 }
 

@@ -19,32 +19,20 @@ struct BudgetProgressBar: View {
 
     private var barColor: Color {
         switch ratio {
-        case ..<Self.thresholdLow:
-            return .green
-        case Self.thresholdLow..<Self.thresholdMedium:
-            return .yellow
-        case Self.thresholdMedium..<Self.thresholdHigh:
-            return .orange
-        default:
-            return .red
+        case ..<Self.thresholdLow: .green
+        case Self.thresholdLow..<Self.thresholdMedium: .yellow
+        case Self.thresholdMedium..<Self.thresholdHigh: .orange
+        default: .red
         }
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.secondary.opacity(0.2))
-                    .frame(height: 8)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(barColor)
-                    .frame(width: geo.size.width * progress, height: 8)
-            }
-        }
-        .frame(height: 8)
-        .accessibilityElement()
-        .accessibilityLabel("Budget progress")
-        .accessibilityValue("\(Int(ratio * 100)) percent spent")
+        ProgressView(value: progress)
+            .progressViewStyle(.linear)
+            .tint(barColor)
+            .accessibilityElement()
+            .accessibilityLabel("Budget progress")
+            .accessibilityValue("\(Int(ratio * 100)) percent spent")
     }
 }
 

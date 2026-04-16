@@ -79,7 +79,7 @@ struct BankConnectionsView: View {
 
                 if isMonobankConnected && monobankLastSync > 0 {
                     Label {
-                        Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative) ago")
+                        Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative)")
                     } icon: {
                         Image(systemName: "clock")
                     }
@@ -131,7 +131,7 @@ struct BankConnectionsView: View {
 
                 if isWiseConnected && wiseLastSync > 0 {
                     Label {
-                        Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative) ago")
+                        Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative)")
                     } icon: {
                         Image(systemName: "clock")
                     }

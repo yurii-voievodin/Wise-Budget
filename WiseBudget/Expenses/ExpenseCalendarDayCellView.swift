@@ -12,7 +12,7 @@ struct ExpenseCalendarDayCellView: View {
         VStack(spacing: 2) {
             Text("\(day)")
                 .font(.caption)
-                .fontWeight(.bold)
+                .bold()
                 .foregroundStyle(isToday ? .white : .primary)
                 .frame(width: 24, height: 24)
                 .background {
@@ -29,30 +29,23 @@ struct ExpenseCalendarDayCellView: View {
                 }
                 ForEach(sorted, id: \.key) { currency, amount in
                     Text("\(Self.formattedAmount(amount)) \(currency)")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.5)
+                        .minimumScaleFactor(0.7)
                 }
             }
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: 64)
-        .background(
+        .background {
             RoundedRectangle(cornerRadius: 6)
                 .fill(backgroundColor.opacity(backgroundOpacity))
-        )
+        }
     }
 
-    private static let amountFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter
-    }()
-
     static func formattedAmount(_ value: Decimal) -> String {
-        amountFormatter.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
+        value.formatted(.number.precision(.fractionLength(0)))
     }
 }
 

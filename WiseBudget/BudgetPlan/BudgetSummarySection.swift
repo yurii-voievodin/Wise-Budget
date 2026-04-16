@@ -1,27 +1,35 @@
 import SwiftUI
 
 struct BudgetSummarySection: View {
-    let monthlyBudgetBinding: Binding<String>
+    let monthlyBudget: Decimal
     let planCurrency: String
     let totalPlanned: Decimal
-    let monthlyBudget: Decimal
     let unplannedAmount: Decimal
     let totalActual: Decimal
     let unconvertibleExpenseCount: Int
+    let onMonthlyBudgetChange: (Decimal) -> Void
     let onShowForeignExpenses: () -> Void
+
+    @State private var draftBudget: Decimal?
 
     var body: some View {
         Section {
             HStack {
                 Text("Monthly Budget")
                 Spacer()
-                TextField("0", text: monthlyBudgetBinding)
+                TextField("0", value: $draftBudget, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 120)
                     .multilineTextAlignment(.trailing)
                     .overlay {
                         RoundedRectangle(cornerRadius: 5)
                             .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+                    }
+                    .onChange(of: draftBudget) { _, newValue in
+                        let normalized = max(.zero, newValue ?? .zero)
+                        if normalized != monthlyBudget {
+                            onMonthlyBudgetChange(normalized)
+                        }
                     }
                 Text(planCurrency)
                     .foregroundStyle(.secondary)
@@ -77,9 +85,7 @@ struct BudgetSummarySection: View {
             }
 
             if unconvertibleExpenseCount > 0 {
-                Button {
-                    onShowForeignExpenses()
-                } label: {
+                Button(action: onShowForeignExpenses) {
                     Label(
                         "\(unconvertibleExpenseCount) expense(s) in foreign currency excluded",
                         systemImage: "exclamationmark.triangle"
@@ -90,20 +96,24 @@ struct BudgetSummarySection: View {
                 .buttonStyle(.plain)
             }
         }
+        .task(id: monthlyBudget) {
+            if draftBudget != monthlyBudget {
+                draftBudget = monthlyBudget == .zero ? nil : monthlyBudget
+            }
+        }
     }
 }
 
 #Preview {
-    @Previewable @State var budgetText = "1000"
     List {
         BudgetSummarySection(
-            monthlyBudgetBinding: $budgetText,
+            monthlyBudget: 1000,
             planCurrency: "USD",
             totalPlanned: 750,
-            monthlyBudget: 1000,
             unplannedAmount: 250,
             totalActual: 620,
             unconvertibleExpenseCount: 2,
+            onMonthlyBudgetChange: { _ in },
             onShowForeignExpenses: {}
         )
     }

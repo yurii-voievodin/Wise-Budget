@@ -10,15 +10,18 @@ struct GeneralSettingsView: View {
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
     @State private var errorMessage: String?
-    @State private var showErrorAlert = false
+
+    private static let currencyOptions: [(code: String, label: String)] = Locale.commonISOCurrencyCodes.map { code in
+        let localized = Locale.current.localizedString(forCurrencyCode: code) ?? code
+        return (code, "\(code) – \(localized)")
+    }
 
     var body: some View {
         List {
             Section("General") {
                 Picker("Default Currency", selection: $defaultCurrency) {
-                    ForEach(Locale.commonISOCurrencyCodes, id: \.self) { code in
-                        Text("\(code) – \(Locale.current.localizedString(forCurrencyCode: code) ?? code)")
-                            .tag(code)
+                    ForEach(Self.currencyOptions, id: \.code) { option in
+                        Text(option.label).tag(option.code)
                     }
                 }
             }
@@ -35,9 +38,7 @@ struct GeneralSettingsView: View {
                     isPresented: $showDeleteAllExpensesConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("Delete All Expenses", role: .destructive) {
-                        deleteAllExpenses()
-                    }
+                    Button("Delete All Expenses", role: .destructive, action: deleteAllExpenses)
                 } message: {
                     Text("This will permanently delete all your expenses. This action cannot be undone.")
                 }
@@ -53,20 +54,24 @@ struct GeneralSettingsView: View {
                     isPresented: $showDeleteAllIncomesConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("Delete All Incomes", role: .destructive) {
-                        deleteAllIncomes()
-                    }
+                    Button("Delete All Incomes", role: .destructive, action: deleteAllIncomes)
                 } message: {
                     Text("This will permanently delete all your incomes. This action cannot be undone.")
                 }
             }
         }
-        .alert("Error", isPresented: $showErrorAlert) {
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            ),
+            presenting: errorMessage
+        ) { _ in
             Button("OK") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
+        } message: { message in
+            Text(message)
         }
-        .onChange(of: errorMessage) { showErrorAlert = errorMessage != nil }
     }
 
     private func deleteAllExpenses() {

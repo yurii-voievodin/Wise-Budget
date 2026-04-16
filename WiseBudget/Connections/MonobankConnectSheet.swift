@@ -17,17 +17,23 @@ struct MonobankConnectSheet: View {
 
     var onConnected: (String) -> Void
 
+    private var trimmedToken: String {
+        token.trimmingCharacters(in: .whitespaces)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Connect Monobank")
                 .font(.headline)
 
-            if connectedName != nil {
-                // Step 3: Account selection
-                accountSelectionView
+            if let connectedName {
+                MonobankAccountSelectionView(
+                    connectedName: connectedName,
+                    accounts: accounts,
+                    selectedAccountIds: $selectedAccountIds
+                )
             } else {
-                // Steps 1 & 2: Token setup
-                tokenSetupView
+                MonobankTokenSetupView(token: $token)
             }
 
             if let errorMessage {
@@ -40,17 +46,12 @@ struct MonobankConnectSheet: View {
 
             VStack(spacing: 8) {
                 if connectedName != nil {
-                    Button("Done") {
-                        saveSelectedAccounts()
-                        dismiss()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .frame(maxWidth: .infinity)
-                    .disabled(selectedAccountIds.isEmpty)
+                    Button("Done", action: finishSelection)
+                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
+                        .disabled(selectedAccountIds.isEmpty)
                 } else {
-                    Button {
-                        connectAccount()
-                    } label: {
+                    Button(action: connectAccount) {
                         if isConnecting {
                             ProgressView()
                                 .controlSize(.small)
@@ -61,13 +62,11 @@ struct MonobankConnectSheet: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty || isConnecting)
+                    .disabled(trimmedToken.isEmpty || isConnecting)
 
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
+                    Button("Cancel", action: dismiss.callAsFunction)
+                        .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
                 }
 
                 Text("Token is stored in your Keychain and never leaves your Mac")
@@ -80,123 +79,10 @@ struct MonobankConnectSheet: View {
         .frame(minWidth: 380, idealWidth: 420, minHeight: 480, idealHeight: 560)
     }
 
-    private var tokenSetupView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Step 1
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Step 1", systemImage: "1.circle.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-
-                Text("Open the Monobank API portal and log in with your phone number.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Button("Open api.monobank.ua") {
-                    if let url = URL(string: "https://api.monobank.ua/") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-                .buttonStyle(.link)
-            }
-
-            Divider()
-
-            // Step 2
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Step 2", systemImage: "2.circle.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-
-                Text("Copy your personal token and paste it below.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                SecureField("Paste your API token here", text: $token)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-            }
-        }
+    private func finishSelection() {
+        saveSelectedAccounts()
+        dismiss()
     }
-
-    private var accountSelectionView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Connected as \(connectedName!)", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.callout)
-
-            Divider()
-
-            Text("Select accounts to sync")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            ScrollView {
-                VStack(spacing: 4) {
-                    ForEach(accounts) { account in
-                        accountRow(account)
-                    }
-                }
-            }
-        }
-    }
-
-    private func accountRow(_ account: MonobankAccount) -> some View {
-        let isSelected = selectedAccountIds.contains(account.id)
-        let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
-        let balance = Decimal(account.balance) / 100
-        let maskedPan = account.maskedPan?.first ?? ""
-
-        return Button {
-            if isSelected {
-                selectedAccountIds.remove(account.id)
-            } else {
-                selectedAccountIds.insert(account.id)
-            }
-        } label: {
-            HStack {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? .blue : .secondary)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(accountLabel(account))
-                        .font(.callout)
-                    if !maskedPan.isEmpty {
-                        Text(maskedPan)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                Text("\(balance as NSDecimalNumber, formatter: Self.balanceFormatter) \(currency)")
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
-            .clipShape(.rect(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func accountLabel(_ account: MonobankAccount) -> String {
-        let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
-        if let type = account.type {
-            return "\(type.capitalized) (\(currency))"
-        }
-        return currency
-    }
-
-    private static let balanceFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.minimumFractionDigits = 2
-        f.maximumFractionDigits = 2
-        return f
-    }()
 
     private func saveSelectedAccounts() {
         let ids = selectedAccountIds.sorted().joined(separator: ",")
@@ -253,26 +139,27 @@ struct MonobankConnectSheet: View {
     // MARK: - Connect
 
     private func connectAccount() {
-        let trimmedToken = token.trimmingCharacters(in: .whitespaces)
-        guard !trimmedToken.isEmpty else { return }
+        let token = trimmedToken
+        guard !token.isEmpty else { return }
 
         isConnecting = true
         errorMessage = nil
 
         Task {
             do {
-                let client = MonobankAPIClient(token: trimmedToken)
+                let client = MonobankAPIClient(token: token)
                 let clientInfo = try await client.fetchClientInfo()
 
-                try KeychainHelper.save(token: trimmedToken, service: KeychainHelper.monobankService)
+                try KeychainHelper.save(token: token, service: KeychainHelper.monobankService)
 
-                connectedName = clientInfo.name ?? "Monobank User"
+                let name = clientInfo.name ?? "Monobank User"
+                connectedName = name
                 accounts = clientInfo.accounts
-                selectedAccountIds = Set(clientInfo.accounts.map { $0.id })
+                selectedAccountIds = Set(clientInfo.accounts.map(\.id))
                 isConnecting = false
-                onConnected(connectedName!)
+                onConnected(name)
 
-                logger.info("connected as \(clientInfo.name ?? "unknown", privacy: .private), \(clientInfo.accounts.count) accounts available")
+                logger.info("connected as \(name, privacy: .private), \(clientInfo.accounts.count) accounts available")
             } catch let error as MonobankAPIError {
                 errorMessage = error.localizedDescription
                 isConnecting = false

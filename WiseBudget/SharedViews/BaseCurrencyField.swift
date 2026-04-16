@@ -26,7 +26,7 @@ struct BaseCurrencyField: View {
                 Button {
                     baseCurrencyAmount = suggested
                 } label: {
-                    Text("Use \(suggested as NSDecimalNumber, formatter: Self.rateFormatter) \(defaultCurrency)")
+                    Text("Use \(suggested, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                         .font(.caption)
                 }
                 .buttonStyle(.bordered)
@@ -42,14 +42,6 @@ struct BaseCurrencyField: View {
             suggestedAmount = result
         }
     }
-
-    private static let rateFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 2
-        f.minimumFractionDigits = 2
-        return f
-    }()
 }
 
 #Preview("Base Currency Field") {

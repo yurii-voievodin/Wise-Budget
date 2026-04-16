@@ -6,19 +6,19 @@ struct BudgetCategoryRow: View {
     let actual: Decimal
     let planned: Decimal
     let currency: String
-    @Binding var plannedText: String
+    let onPlannedChange: (Decimal) -> Void
     var onCategoryTap: (() -> Void)?
+
+    @State private var draftPlanned: Decimal?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if let onCategoryTap {
-                    Button {
-                        onCategoryTap()
-                    } label: {
+                    Button(action: onCategoryTap) {
                         Label(categoryName, systemImage: categoryIcon)
                             .fontWeight(.medium)
-                            .contentShape(Rectangle())
+                            .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show expenses for \(categoryName)")
@@ -27,22 +27,25 @@ struct BudgetCategoryRow: View {
                         .fontWeight(.medium)
                 }
                 Spacer()
-                Text("\(actual, format: .number)")
+                Text(actual, format: .number)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
                 Text("/")
                     .foregroundStyle(.secondary)
-                TextField(
-                    "0",
-                    text: $plannedText
-                )
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 80)
-                .multilineTextAlignment(.trailing)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                }
+                TextField("0", value: $draftPlanned, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                    .multilineTextAlignment(.trailing)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+                    }
+                    .onChange(of: draftPlanned) { _, newValue in
+                        let normalized = max(.zero, newValue ?? .zero)
+                        if normalized != planned {
+                            onPlannedChange(normalized)
+                        }
+                    }
                 Text(currency)
                     .foregroundStyle(.secondary)
             }
@@ -50,22 +53,27 @@ struct BudgetCategoryRow: View {
                 HStack {
                     BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
                     if planned > 0 {
-                        let pct = Int(Double(truncating: actual as NSDecimalNumber) / Double(truncating: planned as NSDecimalNumber) * 100)
-                        Text("\(pct)%")
-                            .font(.caption2)
+                        Text(actual / planned, format: .percent.precision(.fractionLength(0)))
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
-                            .frame(width: 36, alignment: .trailing)
+                            .frame(width: 44, alignment: .trailing)
                     }
                 }
             }
         }
         .padding(.vertical, 4)
+        .task(id: planned) {
+            // Sync the draft from the source of truth when a different
+            // category's value changes propagate, or on first appearance.
+            if draftPlanned != planned {
+                draftPlanned = planned == .zero ? nil : planned
+            }
+        }
     }
 }
 
 #Preview {
-    @Previewable @State var plannedText = "500"
     List {
         BudgetCategoryRow(
             categoryName: "Groceries",
@@ -73,7 +81,7 @@ struct BudgetCategoryRow: View {
             actual: 320,
             planned: 500,
             currency: "USD",
-            plannedText: $plannedText
+            onPlannedChange: { _ in }
         )
         BudgetCategoryRow(
             categoryName: "Transport",
@@ -81,7 +89,7 @@ struct BudgetCategoryRow: View {
             actual: 0,
             planned: 200,
             currency: "USD",
-            plannedText: .constant("200")
+            onPlannedChange: { _ in }
         )
         BudgetCategoryRow(
             categoryName: "Entertainment",
@@ -89,7 +97,7 @@ struct BudgetCategoryRow: View {
             actual: 150,
             planned: 100,
             currency: "USD",
-            plannedText: .constant("100")
+            onPlannedChange: { _ in }
         )
     }
     .frame(width: 500, height: 300)

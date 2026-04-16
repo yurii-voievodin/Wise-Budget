@@ -29,7 +29,6 @@ struct DashboardView: View {
             sort: \.date,
             order: .reverse
         )
-
     }
 
     // MARK: - Computed
@@ -111,6 +110,10 @@ struct DashboardView: View {
         .sorted { $0.total > $1.total }
     }
 
+    private var sortedExpenseSlices: [CategoryChartSlice] {
+        expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) }
+    }
+
     private var topCategories: [CategoryChartSlice] {
         Array(expenseSlices.prefix(5))
     }
@@ -130,205 +133,78 @@ struct DashboardView: View {
         MonthScopeKey.make(year: monthFilter.year, month: monthFilter.month)
     }
 
+    private var recentTransactions: [DashboardRecentTransaction] {
+        let expenseItems = expenses.prefix(5).map {
+            DashboardRecentTransaction(
+                descriptionText: $0.descriptionText,
+                categoryName: $0.category?.name,
+                categoryIcon: $0.category?.displayIconName,
+                item: $0,
+                isExpense: true,
+                date: $0.date
+            )
+        }
+        let incomeItems = incomes.prefix(5).map {
+            DashboardRecentTransaction(
+                descriptionText: $0.descriptionText,
+                categoryName: $0.category?.name,
+                categoryIcon: $0.category?.displayIconName,
+                item: $0,
+                isExpense: false,
+                date: $0.date
+            )
+        }
+        return Array(
+            (expenseItems + incomeItems)
+                .sorted { $0.date > $1.date }
+                .prefix(5)
+        )
+    }
+
     // MARK: - Body
 
     var body: some View {
         if expenses.isEmpty && incomes.isEmpty {
-            emptyState
+            DashboardEmptyStateView()
         } else {
             Form {
                 MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
-                summarySection
-                dailyAveragesSection
+                DashboardMonthSummarySection(
+                    totalIncome: totalIncome,
+                    totalExpenses: totalExpenses,
+                    balance: balance,
+                    currency: defaultCurrency
+                )
+                DashboardDailyAveragesSection(
+                    incomeDailyAverage: incomeDailyAverage,
+                    expenseDailyAverage: expenseDailyAverage,
+                    dailyBalance: dailyBalance,
+                    currency: defaultCurrency
+                )
                 if shouldShowBudgetPacing {
-                    budgetPacingSection
+                    DashboardBudgetPacingSection(
+                        daysRemainingInMonth: daysRemainingInMonth,
+                        dailyAllowance: dailyAllowance,
+                        currency: defaultCurrency
+                    )
                 }
                 if !expenseSlices.isEmpty {
-                    expenseChartSection
-                    topCategoriesSection
+                    CategoryChartSection(
+                        slices: sortedExpenseSlices,
+                        currency: defaultCurrency,
+                        emptyText: "No expenses",
+                        colorMap: DefaultExpenseCategory.chartColorMap
+                    )
+                    DashboardTopCategoriesSection(
+                        slices: topCategories,
+                        totalExpenses: totalExpenses,
+                        currency: defaultCurrency
+                    )
                 }
-                recentTransactionsSection
+                DashboardRecentTransactionsSection(transactions: recentTransactions)
             }
             .formStyle(.grouped)
         }
-    }
-
-    // MARK: - Sections
-
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Data This Month", systemImage: "square.grid.2x2")
-                .foregroundStyle(.secondary)
-        } description: {
-            Text("Add expenses or income to see your monthly overview.")
-        }
-    }
-
-    private var summarySection: some View {
-        Section("Month Summary") {
-            HStack {
-                Label("Income", systemImage: "arrow.down.circle.fill")
-                    .foregroundStyle(.green)
-                Spacer()
-                Text("\(totalIncome, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.green)
-            }
-            HStack {
-                Label("Expenses", systemImage: "arrow.up.circle.fill")
-                    .foregroundStyle(.red)
-                Spacer()
-                Text("\(totalExpenses, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.red)
-            }
-            HStack {
-                Label("Balance", systemImage: balance >= .zero ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .fontWeight(.semibold)
-                    .foregroundStyle(balance >= .zero ? .green : .red)
-                Spacer()
-                Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .monospacedDigit()
-                    .foregroundStyle(balance >= .zero ? .green : .red)
-            }
-        }
-    }
-
-    private var dailyAveragesSection: some View {
-        Section("Daily Averages") {
-            HStack {
-                Label("Income", systemImage: "arrow.down.circle")
-                    .foregroundStyle(.green)
-                Spacer()
-                Text("\(incomeDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.green)
-            }
-            HStack {
-                Label("Expenses", systemImage: "arrow.up.circle")
-                    .foregroundStyle(.red)
-                Spacer()
-                Text("\(expenseDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.red)
-            }
-            HStack {
-                Label("Balance", systemImage: dailyBalance >= .zero ? "checkmark.circle" : "exclamationmark.circle")
-                    .fontWeight(.semibold)
-                    .foregroundStyle(dailyBalance >= .zero ? .green : .red)
-                Spacer()
-                Text("\(dailyBalance >= .zero ? "+" : "")\(dailyBalance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(dailyBalance >= .zero ? .green : .red)
-            }
-        }
-    }
-
-    private var budgetPacingSection: some View {
-        Section("Budget Pacing") {
-            HStack {
-                Label("Days Remaining", systemImage: "calendar")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(daysRemainingInMonth)")
-                    .monospacedDigit()
-            }
-            HStack {
-                Label("Daily Allowance", systemImage: "target")
-                    .foregroundStyle(.orange)
-                    .fontWeight(.semibold)
-                Spacer()
-                Text("\(dailyAllowance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .monospacedDigit()
-                    .foregroundStyle(.orange)
-            }
-        }
-    }
-
-    private var expenseChartSection: some View {
-        CategoryChartSection(
-            slices: expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) },
-            currency: defaultCurrency,
-            emptyText: "No expenses",
-            colorMap: DefaultExpenseCategory.chartColorMap
-        )
-    }
-
-    private var topCategoriesSection: some View {
-        Section("Top Spending") {
-            ForEach(topCategories) { slice in
-                HStack {
-                    Image(systemName: slice.iconName)
-                        .frame(width: 24, alignment: .center)
-                        .foregroundStyle(.secondary)
-                    Text(slice.name)
-                    Spacer()
-                    if totalExpenses > 0 {
-                        let pct = slice.total / NSDecimalNumber(decimal: totalExpenses).doubleValue * 100
-                        Text("\(pct, format: .number.precision(.fractionLength(0)))%")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    Text("\(Decimal(slice.total), format: .number) \(defaultCurrency)")
-                        .monospacedDigit()
-                        .fontWeight(.medium)
-                        .frame(minWidth: 80, alignment: .trailing)
-                }
-            }
-        }
-    }
-
-    private var recentTransactionsSection: some View {
-        Section("Recent Transactions") {
-            let recent = recentItems
-            if recent.isEmpty {
-                Text("No transactions this month")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(Array(recent.enumerated()), id: \.offset) { _, item in
-                    HStack {
-                        Image(systemName: item.isExpense ? "arrow.up.circle" : "arrow.down.circle")
-                            .foregroundStyle(item.isExpense ? .red : .green)
-                            .frame(width: 20)
-                        TransactionRowView(
-                            descriptionText: item.description,
-                            categoryName: item.categoryName,
-                            categoryIcon: item.categoryIcon,
-                            extraField: nil,
-                            item: item.item
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private var recentItems: [(description: String?, categoryName: String?, categoryIcon: String?, item: CurrencyConvertible, isExpense: Bool)] {
-        struct Dated {
-            let date: Date
-            let description: String?
-            let categoryName: String?
-            let categoryIcon: String?
-            let item: CurrencyConvertible
-            let isExpense: Bool
-        }
-
-        let expenseItems = expenses.prefix(5).map {
-            Dated(date: $0.date, description: $0.descriptionText, categoryName: $0.category?.name, categoryIcon: $0.category?.displayIconName, item: $0, isExpense: true)
-        }
-        let incomeItems = incomes.prefix(5).map {
-            Dated(date: $0.date, description: $0.descriptionText, categoryName: $0.category?.name, categoryIcon: $0.category?.displayIconName, item: $0, isExpense: false)
-        }
-
-        return (expenseItems + incomeItems)
-            .sorted { $0.date > $1.date }
-            .prefix(5)
-            .map { (description: $0.description, categoryName: $0.categoryName, categoryIcon: $0.categoryIcon, item: $0.item, isExpense: $0.isExpense) }
     }
 }
 

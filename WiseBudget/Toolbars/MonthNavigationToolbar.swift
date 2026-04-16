@@ -14,6 +14,15 @@ struct MonthNavigationToolbar: ToolbarContent {
         return date.formatted(.dateTime.month(.wide).year())
     }
 
+    private var yearRange: ClosedRange<Int> {
+        let currentYear = Calendar.current.component(.year, from: Date.now)
+        return (currentYear - 6)...(currentYear + 4)
+    }
+
+    private var monthSymbols: [String] {
+        Calendar.current.monthSymbols
+    }
+
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
             HStack(spacing: 4) {
@@ -30,40 +39,7 @@ struct MonthNavigationToolbar: ToolbarContent {
                         .font(.headline)
                 }
                 .popover(isPresented: $isDatePickerPresented) {
-                    VStack(spacing: 12) {
-                        HStack {
-                            Picker("Month", selection: $pickerMonth) {
-                                ForEach(1...12, id: \.self) { m in
-                                    Text(Calendar.current.monthSymbols[m - 1]).tag(m)
-                                }
-                            }
-                            .labelsHidden()
-
-                            Picker("Year", selection: $pickerYear) {
-                                ForEach((2020...2030), id: \.self) { y in
-                                    Text(String(y)).tag(y)
-                                }
-                            }
-                            .labelsHidden()
-                        }
-
-                        HStack {
-                            Button("Current Month") {
-                                let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
-                                year = now.year ?? year
-                                month = now.month ?? month
-                                isDatePickerPresented = false
-                            }
-
-                            Button("Go") {
-                                year = pickerYear
-                                month = pickerMonth
-                                isDatePickerPresented = false
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
-                    .padding()
+                    datePickerPopover
                 }
                 Button("Next Month", systemImage: "chevron.right") {
                     moveMonth(by: 1)
@@ -71,6 +47,48 @@ struct MonthNavigationToolbar: ToolbarContent {
                 .labelStyle(.iconOnly)
             }
         }
+    }
+
+    private var datePickerPopover: some View {
+        let symbols = monthSymbols
+        return VStack(spacing: 12) {
+            HStack {
+                Picker("Month", selection: $pickerMonth) {
+                    ForEach(1...12, id: \.self) { m in
+                        Text(symbols[m - 1]).tag(m)
+                    }
+                }
+                .labelsHidden()
+
+                Picker("Year", selection: $pickerYear) {
+                    ForEach(yearRange, id: \.self) { y in
+                        Text(String(y)).tag(y)
+                    }
+                }
+                .labelsHidden()
+            }
+
+            HStack {
+                Button("Current Month", action: goToCurrentMonth)
+
+                Button("Go", action: applyPickedDate)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding()
+    }
+
+    private func goToCurrentMonth() {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
+        year = now.year ?? year
+        month = now.month ?? month
+        isDatePickerPresented = false
+    }
+
+    private func applyPickedDate() {
+        year = pickerYear
+        month = pickerMonth
+        isDatePickerPresented = false
     }
 
     private func moveMonth(by delta: Int) {

@@ -26,7 +26,13 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     var body: some View {
         Group {
             if !hasAnyItems && !hasBankToken {
-                emptyStateView
+                TransactionEmptyStateView(
+                    title: emptyTitle,
+                    systemImage: emptyIcon,
+                    addLabel: addLabel,
+                    onAdd: onAdd,
+                    onNavigateToBank: onNavigateToBank
+                )
             } else if groups.isEmpty {
                 MonthEmptyStateView(
                     title: monthEmptyTitle,
@@ -72,27 +78,6 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                             .font(.subheadline)
                         }
                     }
-                }
-            }
-        }
-    }
-
-    private var emptyStateView: some View {
-        ContentUnavailableView {
-            Label(emptyTitle, systemImage: emptyIcon)
-        } description: {
-            Text("Add your first entry, import from a CSV file,\nor connect a bank account to get started.")
-        } actions: {
-            HStack(spacing: 12) {
-                Button {
-                    onAdd()
-                } label: {
-                    Label(addLabel, systemImage: "plus")
-                }
-                Button {
-                    onNavigateToBank()
-                } label: {
-                    Label("Connect Bank", systemImage: "link")
                 }
             }
         }

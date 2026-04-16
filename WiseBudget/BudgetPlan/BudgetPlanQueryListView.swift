@@ -14,8 +14,6 @@ struct BudgetPlanQueryListView: View {
     @Binding var expenseCategoryFilter: String?
     let filter: MonthFilter
 
-    @State private var resetAction: (() -> Void)?
-
     init(filter: MonthFilter, selectedSidebarItem: Binding<SidebarItem>, monthFilter: Binding<MonthFilter>, expenseCategoryFilter: Binding<String?>) {
         self.filter = filter
         self._selectedSidebarItem = selectedSidebarItem
@@ -68,6 +66,10 @@ struct BudgetPlanQueryListView: View {
         planItemsByCategory[category.persistentModelID]
     }
 
+    private func plannedAmount(for category: ExpenseCategory) -> Decimal {
+        planItem(for: category)?.plannedAmount ?? .zero
+    }
+
     private func ensurePlanExists() -> BudgetPlan {
         if let plan = currentPlan { return plan }
         let plan = BudgetPlan(year: filter.year, month: filter.month, currency: defaultCurrency)
@@ -79,23 +81,19 @@ struct BudgetPlanQueryListView: View {
         return plan
     }
 
-    private func plannedBinding(for category: ExpenseCategory) -> Binding<String> {
-        Binding(
-            get: {
-                let amount = planItem(for: category)?.plannedAmount ?? Decimal.zero
-                return amount == Decimal.zero ? "" : "\(amount)"
-            },
-            set: { newValue in
-                let value = max(Decimal.zero, Decimal(string: newValue) ?? Decimal.zero)
-                let plan = ensurePlanExists()
-                if let item = planItemsByCategory[category.persistentModelID] {
-                    item.plannedAmount = value
-                } else {
-                    let item = BudgetPlanItem(plannedAmount: value, plan: plan, category: category)
-                    modelContext.insert(item)
-                }
-            }
-        )
+    private func updatePlannedAmount(for category: ExpenseCategory, to value: Decimal) {
+        let plan = ensurePlanExists()
+        if let item = planItemsByCategory[category.persistentModelID] {
+            item.plannedAmount = value
+        } else {
+            let item = BudgetPlanItem(plannedAmount: value, plan: plan, category: category)
+            modelContext.insert(item)
+        }
+    }
+
+    private func updateMonthlyBudget(to value: Decimal) {
+        let plan = ensurePlanExists()
+        plan.monthlyBudget = value
     }
 
     private var totalPlanned: Decimal {
@@ -107,7 +105,7 @@ struct BudgetPlanQueryListView: View {
     }
 
     private var unconvertibleExpenseCount: Int {
-        expenses.filter { $0.convertedAmount(to: planCurrency) == nil }.count
+        expenses.count(where: { $0.convertedAmount(to: planCurrency) == nil })
     }
 
     private var planCurrency: String {
@@ -122,72 +120,42 @@ struct BudgetPlanQueryListView: View {
         monthlyBudget - totalPlanned
     }
 
-    private var monthlyBudgetBinding: Binding<String> {
-        Binding(
-            get: {
-                let amount = currentPlan?.monthlyBudget ?? Decimal.zero
-                return amount == Decimal.zero ? "" : "\(amount)"
-            },
-            set: { newValue in
-                let value = max(Decimal.zero, Decimal(string: newValue) ?? Decimal.zero)
-                let plan = ensurePlanExists()
-                plan.monthlyBudget = value
-            }
-        )
-    }
-
     var body: some View {
-        if currentPlan == nil {
-            BudgetEmptyStateView(filter: filter)
-        } else {
-            budgetList
-        }
-    }
-
-    private var budgetList: some View {
-        List {
-            BudgetSummarySection(
-                monthlyBudgetBinding: monthlyBudgetBinding,
+        if let plan = currentPlan {
+            BudgetPlanListView(
+                categories: categories,
+                plan: plan,
                 planCurrency: planCurrency,
                 totalPlanned: totalPlanned,
+                totalActual: totalActual,
                 monthlyBudget: monthlyBudget,
                 unplannedAmount: unplannedAmount,
-                totalActual: totalActual,
                 unconvertibleExpenseCount: unconvertibleExpenseCount,
-                onShowForeignExpenses: {
-                    monthFilter.foreignOnly = true
-                    selectedSidebarItem = .expenses
-                }
+                actualSpending: actualSpending,
+                plannedAmount: plannedAmount,
+                onPlannedChange: updatePlannedAmount,
+                onMonthlyBudgetChange: updateMonthlyBudget,
+                onShowForeignExpenses: showForeignExpenses,
+                onCategoryTap: showExpensesForCategory,
+                onResetPlan: { resetPlan(plan) }
             )
-
-            Section("Categories") {
-                ForEach(categories) { category in
-                    let actual = actualSpending(for: category)
-
-                    BudgetCategoryRow(
-                        categoryName: category.name,
-                        categoryIcon: category.displayIconName,
-                        actual: actual,
-                        planned: planItem(for: category)?.plannedAmount ?? Decimal.zero,
-                        currency: planCurrency,
-                        plannedText: plannedBinding(for: category),
-                        onCategoryTap: {
-                            expenseCategoryFilter = category.name
-                            selectedSidebarItem = .expenses
-                        }
-                    )
-                }
-            }
+        } else {
+            BudgetEmptyStateView(filter: filter)
         }
-        .focusedSceneValue(\.resetBudgetPlan, resetAction)
-        .onAppear { updateResetAction() }
     }
 
-    private func updateResetAction() {
-        guard let plan = currentPlan else { resetAction = nil; return }
-        resetAction = {
-            modelContext.delete(plan)
-        }
+    private func showForeignExpenses() {
+        monthFilter.foreignOnly = true
+        selectedSidebarItem = .expenses
+    }
+
+    private func showExpensesForCategory(_ category: ExpenseCategory) {
+        expenseCategoryFilter = category.name
+        selectedSidebarItem = .expenses
+    }
+
+    private func resetPlan(_ plan: BudgetPlan) {
+        modelContext.delete(plan)
     }
 }
 
