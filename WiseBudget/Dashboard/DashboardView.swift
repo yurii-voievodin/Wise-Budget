@@ -64,6 +64,42 @@ struct DashboardView: View {
         incomeDailyAverage - expenseDailyAverage
     }
 
+    private var isCurrentMonth: Bool {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
+        return monthFilter.year == now.year && monthFilter.month == now.month
+    }
+
+    private var daysElapsedInMonth: Int {
+        guard isCurrentMonth else { return 0 }
+        return Calendar.current.component(.day, from: Date.now)
+    }
+
+    private var daysRemainingInMonth: Int {
+        guard isCurrentMonth else { return 0 }
+        return max(daysInMonth - daysElapsedInMonth + 1, 0)
+    }
+
+    private var remainingBudget: Decimal {
+        totalIncome - totalExpenses
+    }
+
+    private var dailyAllowance: Decimal {
+        guard daysRemainingInMonth > 0 else { return .zero }
+        return remainingBudget / Decimal(daysRemainingInMonth)
+    }
+
+    private var currentSpendPace: Decimal {
+        guard daysElapsedInMonth > 0 else { return .zero }
+        return totalExpenses / Decimal(daysElapsedInMonth)
+    }
+
+    private var shouldShowBudgetPacing: Bool {
+        isCurrentMonth
+            && remainingBudget > .zero
+            && daysRemainingInMonth > 0
+            && currentSpendPace > dailyAllowance
+    }
+
     private var expenseSlices: [CategoryChartSlice] {
         let grouped = Dictionary(grouping: expenses) { $0.category?.name ?? "Uncategorized" }
         return grouped.map { name, items in
@@ -88,6 +124,9 @@ struct DashboardView: View {
             Form {
                 summarySection
                 dailyAveragesSection
+                if shouldShowBudgetPacing {
+                    budgetPacingSection
+                }
                 if !expenseSlices.isEmpty {
                     expenseChartSection
                     topCategoriesSection
@@ -168,6 +207,29 @@ struct DashboardView: View {
                     .fontWeight(.semibold)
                     .monospacedDigit()
                     .foregroundStyle(dailyBalance >= .zero ? .green : .red)
+            }
+        }
+    }
+
+    private var budgetPacingSection: some View {
+        Section("Budget Pacing") {
+            HStack {
+                Label("Days Remaining", systemImage: "calendar")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(daysRemainingInMonth)")
+                    .monospacedDigit()
+            }
+            HStack {
+                Label("Daily Allowance", systemImage: "target")
+                    .foregroundStyle(.orange)
+                    .fontWeight(.semibold)
+                Spacer()
+                Text("\(dailyAllowance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .monospacedDigit()
+                    .foregroundStyle(.orange)
             }
         }
     }
@@ -259,4 +321,11 @@ struct DashboardView: View {
     DashboardView(monthFilter: $filter)
         .modelContainer(PreviewSampleData.container)
         .frame(width: 600, height: 600)
+}
+
+#Preview("Budget Pacing") {
+    @Previewable @State var filter = MonthFilter.currentMonth()
+    DashboardView(monthFilter: $filter)
+        .modelContainer(PreviewSampleData.overspendingPaceContainer)
+        .frame(width: 600, height: 700)
 }

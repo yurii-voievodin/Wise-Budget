@@ -71,4 +71,50 @@ struct PreviewSampleData {
 
         return container
     }
+
+    /// Container seeded for the current month where the user is spending
+    /// at an unsustainable pace but still has room to course-correct.
+    /// Designed to trigger `DashboardView`'s Budget Pacing section.
+    static var overspendingPaceContainer: ModelContainer {
+        let container = try! ModelContainer(
+            for: Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self,
+            BudgetPlan.self, BudgetPlanItem.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+
+        let groceries = ExpenseCategory(name: "Groceries")
+        let transport = ExpenseCategory(name: "Transport")
+        let entertainment = ExpenseCategory(name: "Entertainment")
+        let salary = IncomeCategory(name: "Salary")
+        for cat in [groceries, transport, entertainment] { context.insert(cat) }
+        context.insert(salary)
+
+        let calendar = Calendar.current
+        let now = Date.now
+        let month = calendar.dateComponents([.year, .month], from: now)
+        let startOfMonth = calendar.date(
+            from: DateComponents(year: month.year, month: month.month, day: 1)
+        )!
+        let daysElapsed = calendar.component(.day, from: now)
+        let currency = UserDefaults.standard.string(forKey: "defaultCurrency")
+            ?? Locale.current.currency?.identifier ?? "USD"
+
+        context.insert(Income(
+            amount: 3000, currency: currency, date: startOfMonth,
+            category: salary, descriptionText: "Monthly salary"
+        ))
+
+        let perDay: Decimal = 125
+        let cats = [groceries, transport, entertainment]
+        for day in 1...max(daysElapsed, 1) {
+            let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth)!
+            context.insert(Expense(
+                amount: perDay, currency: currency, date: date,
+                category: cats[day % cats.count]
+            ))
+        }
+
+        return container
+    }
 }
