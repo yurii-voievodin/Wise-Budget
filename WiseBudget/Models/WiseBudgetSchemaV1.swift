@@ -11,6 +11,7 @@ enum WiseBudgetSchemaV1: VersionedSchema {
             IncomeCategory.self,
             BudgetPlan.self,
             BudgetPlanItem.self,
+            CachedInsight.self,
         ]
     }
 }

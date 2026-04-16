@@ -1,8 +1,10 @@
 import Foundation
 import FoundationModels
+import SwiftData
 
-/// Wraps a Foundation Models `LanguageModelSession` to produce a short, human-readable
-/// narrative about a `SpendingSummary`. Runs entirely on-device.
+/// Wraps a Foundation Models `LanguageModelSession` to produce a short,
+/// human-readable narrative about a `SpendingSummary`. Runs entirely on-device
+/// and caches the result in SwiftData so repeated visits reuse it instantly.
 @Observable
 final class SpendingInsightsService {
 
@@ -16,7 +18,7 @@ final class SpendingInsightsService {
 
     enum State: Equatable {
         case idle
-        case generating(String)     // partial streamed text
+        case generating(String)
         case ready(String)
         case error(String)
     }
@@ -38,15 +40,16 @@ final class SpendingInsightsService {
         }
     }
 
-    private static let instructions = """
-    You are a concise personal-finance analyst. You will receive a JSON summary \
-    of one month of the user's expenses and incomes. Respond with 3 to 5 short \
-    bullet points covering: the biggest spending categories, anything that looks \
-    unusual, and one concrete suggestion. Use the currency provided in the JSON. \
-    Do not invent numbers. Keep the whole response under 120 words.
-    """
-
-    func generate(from summary: SpendingSummary) async {
+    /// Generates or reuses a cached insight for the given month summary.
+    /// - Parameters:
+    ///   - summary: aggregated totals + top categories for the month.
+    ///   - scopeKey: locale-independent month key, e.g. `"2026-03"`.
+    ///   - context: SwiftData context used for cache lookup and persistence.
+    func generate(
+        from summary: SpendingSummary,
+        scopeKey: String,
+        in context: ModelContext
+    ) async {
         guard availability == .available else {
             state = .error("Apple Intelligence is not available.")
             return
@@ -65,9 +68,24 @@ final class SpendingInsightsService {
             return
         }
 
+        let locale = InsightLocale.current()
+        let hash = InsightsCache.hash(prompt)
+
+        if let cached = InsightsCache.lookup(
+            in: context,
+            kind: .monthSummary,
+            scopeKey: scopeKey,
+            currency: summary.currency,
+            localeIdentifier: locale.identifier,
+            dataHash: hash
+        ) {
+            state = .ready(cached)
+            return
+        }
+
         state = .generating("")
 
-        let session = LanguageModelSession(instructions: Self.instructions)
+        let session = LanguageModelSession(instructions: locale.monthlyInstructions)
 
         do {
             let stream = session.streamResponse(to: prompt)
@@ -76,6 +94,15 @@ final class SpendingInsightsService {
                 latest = partial.content
                 state = .generating(latest)
             }
+            InsightsCache.upsert(
+                in: context,
+                kind: .monthSummary,
+                scopeKey: scopeKey,
+                currency: summary.currency,
+                localeIdentifier: locale.identifier,
+                dataHash: hash,
+                content: latest
+            )
             state = .ready(latest)
         } catch {
             state = .error(error.localizedDescription)

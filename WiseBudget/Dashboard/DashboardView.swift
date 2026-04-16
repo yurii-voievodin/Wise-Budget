@@ -126,6 +126,10 @@ struct DashboardView: View {
         )
     }
 
+    private var insightsScopeKey: String {
+        MonthScopeKey.make(year: monthFilter.year, month: monthFilter.month)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -133,7 +137,7 @@ struct DashboardView: View {
             emptyState
         } else {
             Form {
-                MonthlyInsightsCard(summary: spendingSummary)
+                MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
                 summarySection
                 dailyAveragesSection
                 if shouldShowBudgetPacing {

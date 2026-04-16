@@ -18,37 +18,6 @@ struct ExpenseComparisonView: View {
 
     // MARK: - Data Types
 
-    private struct MonthKey: Hashable, Comparable {
-        let year: Int
-        let month: Int
-
-        var shortLabel: String {
-            let df = DateFormatter()
-            df.dateFormat = "MMM"
-            let comps = DateComponents(year: year, month: month, day: 1)
-            let date = Calendar.current.date(from: comps) ?? Date.now
-            return df.string(from: date)
-        }
-
-        var fullLabel: String {
-            let df = DateFormatter()
-            df.dateFormat = "MMM yyyy"
-            let comps = DateComponents(year: year, month: month, day: 1)
-            let date = Calendar.current.date(from: comps) ?? Date.now
-            return df.string(from: date)
-        }
-
-        func chartLabel(compact: Bool) -> String {
-            compact ? shortLabel : fullLabel
-        }
-
-        var sortValue: Int { year * 12 + month }
-
-        static func < (lhs: MonthKey, rhs: MonthKey) -> Bool {
-            lhs.sortValue < rhs.sortValue
-        }
-    }
-
     private struct ChartDataPoint: Identifiable {
         let id = UUID()
         let monthKey: MonthKey
@@ -144,6 +113,41 @@ struct ExpenseComparisonView: View {
         }
     }
 
+    // MARK: - Trends Insights
+
+    private var trendsRangeLabel: String {
+        switch timeRange {
+        case .sixMonths: "Last 6 months"
+        case .year: "\(filter.year)"
+        case .lifetime: "Lifetime"
+        }
+    }
+
+    private var trendsKind: CachedInsightKind? {
+        switch timeRange {
+        case .sixMonths: .trends6m
+        case .year: .trendsYear
+        case .lifetime: nil
+        }
+    }
+
+    private var trendsScopeKey: String {
+        switch timeRange {
+        case .sixMonths: MonthScopeKey.make(year: filter.year, month: filter.month)
+        case .year: "\(filter.year)"
+        case .lifetime: "lifetime"
+        }
+    }
+
+    private var trendsSummary: TrendsSummary {
+        TrendsSummary.build(
+            rangeLabel: trendsRangeLabel,
+            currency: defaultCurrency,
+            months: monthRange,
+            expenses: allExpenses
+        )
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -164,6 +168,13 @@ struct ExpenseComparisonView: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
+                if let kind = trendsKind {
+                    TrendsInsightsCard(
+                        summary: trendsSummary,
+                        kind: kind,
+                        scopeKey: trendsScopeKey
+                    )
+                }
                 chartSection
                 monthBreakdownSection
             }
