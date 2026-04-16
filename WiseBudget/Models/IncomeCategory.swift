@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class IncomeCategory {
+final nonisolated class IncomeCategory {
     var name: String
     var iconName: String?
 

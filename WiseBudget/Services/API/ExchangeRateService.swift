@@ -4,7 +4,6 @@ import OSLog
 private let logger = Logger(subsystem: "com.wisebudget", category: "ExchangeRate")
 
 @Observable
-@MainActor
 final class ExchangeRateService {
     private static let cacheTTL: TimeInterval = 24 * 60 * 60 // 24 hours
 

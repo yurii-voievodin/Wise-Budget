@@ -7,7 +7,7 @@ import Foundation
 /// To add new rules: append a `(keyword, category)` tuple to the appropriate section.
 /// Keywords are matched case-insensitively via `contains`.
 /// Rules are evaluated top-to-bottom — put more specific keywords before generic ones.
-enum MerchantCategoryMapping {
+nonisolated enum MerchantCategoryMapping {
 
     /// Returns a category name for the given merchant name, or nil if no rule matches.
     static func category(for merchantName: String) -> String? {

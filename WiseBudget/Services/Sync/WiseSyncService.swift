@@ -151,7 +151,7 @@ final class WiseSyncService {
     /// Parses a formatted amount string like "10.00 EUR", "-25.50 GBP", "1,234.56 USD",
     /// or "<positive>+ 3,754.76 EUR</positive>".
     /// Returns (amount as Decimal, currency code) or nil if parsing fails.
-    static func parseFormattedAmount(_ formatted: String) -> (Decimal, String)? {
+    nonisolated static func parseFormattedAmount(_ formatted: String) -> (Decimal, String)? {
         // Strip XML/HTML tags and trim
         let stripped = stripHTML(formatted).trimmingCharacters(in: .whitespaces)
         guard !stripped.isEmpty else { return nil }
@@ -193,12 +193,12 @@ final class WiseSyncService {
     }
 
     /// Strips HTML tags from a string (e.g. "<strong>Glovo</strong>" → "Glovo").
-    private static func stripHTML(_ string: String) -> String {
+    nonisolated private static func stripHTML(_ string: String) -> String {
         string.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     }
 
     /// Maps Wise activity type to app category (fallback when merchant name matching fails).
-    static func categoryForActivityType(_ type: String) -> String {
+    nonisolated static func categoryForActivityType(_ type: String) -> String {
         switch type {
         case "CARD_TRANSACTION", "CARD_PAYMENT":
             return DefaultExpenseCategory.shopping.rawValue

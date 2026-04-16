@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class BudgetPlanItem {
+final nonisolated class BudgetPlanItem {
     var plannedAmount: Decimal
     var plan: BudgetPlan?
     @Relationship(deleteRule: .nullify) var category: ExpenseCategory?

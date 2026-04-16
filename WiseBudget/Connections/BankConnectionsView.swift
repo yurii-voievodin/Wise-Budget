@@ -184,7 +184,7 @@ struct BankConnectionsView: View {
     private func syncMonobank() {
         guard !isSyncing else { return }
         isSyncing = true
-        Task { @MainActor in
+        Task {
             defer { isSyncing = false }
             do {
                 let fromTs: Double
@@ -224,7 +224,7 @@ struct BankConnectionsView: View {
     private func syncWise() {
         guard !isWiseSyncing else { return }
         isWiseSyncing = true
-        Task { @MainActor in
+        Task {
             defer { isWiseSyncing = false }
             do {
                 let wiseFromTs: Double

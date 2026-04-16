@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class BudgetPlan {
+final nonisolated class BudgetPlan {
     var year: Int
     var month: Int
     var currency: String?

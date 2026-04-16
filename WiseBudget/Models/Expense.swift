@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Expense: CurrencyConvertible {
+final nonisolated class Expense: CurrencyConvertible {
     var amount: Decimal
     var currency: String
     var date: Date

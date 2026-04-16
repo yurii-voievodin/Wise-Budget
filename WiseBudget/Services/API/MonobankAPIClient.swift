@@ -21,7 +21,7 @@ struct MonobankAccount: Codable, Identifiable {
     let iban: String?
 }
 
-struct MonobankStatement: Codable, Identifiable {
+nonisolated struct MonobankStatement: Codable, Identifiable {
     let id: String
     let time: Int
     let description: String
@@ -180,7 +180,7 @@ final class MonobankAPIClient {
 
     // MARK: - Currency Code Mapping (ISO 4217 numeric → string)
 
-    static let currencyCodeMap: [Int: String] = [
+    nonisolated static let currencyCodeMap: [Int: String] = [
         980: "UAH",
         840: "USD",
         978: "EUR",
@@ -213,7 +213,7 @@ final class MonobankAPIClient {
         356: "INR",
     ]
 
-    static func currencyString(for code: Int) -> String {
+    nonisolated static func currencyString(for code: Int) -> String {
         currencyCodeMap[code] ?? "UAH"
     }
 }

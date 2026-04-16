@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankSync")
+nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankSync")
 
 final class MonobankSyncService {
 
@@ -137,7 +137,7 @@ final class MonobankSyncService {
     }
 
     /// Converts a Monobank API statement into a CSVTransaction for import.
-    static func convertStatement(_ statement: MonobankStatement, accountCurrency: String, ownIbans: Set<String>, defaultCurrency: String) -> CSVTransaction? {
+    nonisolated static func convertStatement(_ statement: MonobankStatement, accountCurrency: String, ownIbans: Set<String>, defaultCurrency: String) -> CSVTransaction? {
         // TODO: Monobank marks recent transactions as hold=true for days before settling.
         // Previously we skipped them, but that caused all recent transactions to be missing.
         // If duplicate imports become an issue, re-enable: guard !statement.hold else { return nil }

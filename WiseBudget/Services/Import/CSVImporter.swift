@@ -1,14 +1,14 @@
 import Foundation
 import SwiftData
 
-struct ImportResult {
+nonisolated struct ImportResult {
     var expensesImported: Int = 0
     var incomesImported: Int = 0
     var skipped: Int = 0
     var duplicatesSkipped: Int = 0
 }
 
-struct CSVTransaction {
+nonisolated struct CSVTransaction {
     let direction: String
     let status: String
     let date: Date

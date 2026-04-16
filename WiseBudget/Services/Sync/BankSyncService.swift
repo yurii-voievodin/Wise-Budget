@@ -4,7 +4,6 @@ import Observation
 import UserNotifications
 
 @Observable
-@MainActor
 final class BankSyncService {
     private(set) var isSyncing = false
     private(set) var syncResultMessage: String?

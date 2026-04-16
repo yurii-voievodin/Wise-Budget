@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class ExpenseCategory {
+final nonisolated class ExpenseCategory {
     var name: String
     var iconName: String?
 

@@ -1,6 +1,6 @@
 import Foundation
 
-struct MonthFilter: Hashable {
+nonisolated struct MonthFilter: Hashable {
     var year: Int
     var month: Int
     var foreignOnly: Bool = false

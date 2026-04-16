@@ -1,6 +1,6 @@
 import Foundation
 
-protocol CurrencyConvertible {
+nonisolated protocol CurrencyConvertible {
     var amount: Decimal { get }
     var currency: String { get }
     var baseCurrencyAmount: Decimal? { get }
