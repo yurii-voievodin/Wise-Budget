@@ -20,8 +20,7 @@ final class TrendsInsightsService {
 
     var availability: SpendingInsightsService.Availability {
         // Reuse the exact same availability logic — the underlying system model is shared.
-        let dummy = SpendingInsightsService()
-        return dummy.availability
+        SpendingInsightsService.currentAvailability()
     }
 
     /// Resets the state to `.idle`. Called when the range switches.

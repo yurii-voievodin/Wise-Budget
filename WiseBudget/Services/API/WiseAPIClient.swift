@@ -141,8 +141,10 @@ final class WiseAPIClient {
     func fetchAllActivities(profileId: Int, since: Date, until: Date) async throws -> [WiseActivity] {
         var allActivities: [WiseActivity] = []
         var nextCursor: String? = nil
+        var seenCursors: Set<String> = []
 
         while true {
+            try Task.checkCancellation()
             let response = try await fetchActivities(
                 profileId: profileId,
                 since: since,
@@ -153,6 +155,11 @@ final class WiseAPIClient {
 
             guard let cursor = response.cursor else {
                 break // No more pages
+            }
+            // Guard against a misbehaving server that returns the same cursor twice.
+            guard seenCursors.insert(cursor).inserted else {
+                logger.warning("duplicate cursor received, stopping pagination")
+                break
             }
             nextCursor = cursor
         }

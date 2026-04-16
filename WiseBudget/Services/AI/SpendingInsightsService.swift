@@ -25,7 +25,9 @@ final class SpendingInsightsService {
 
     private(set) var state: State = .idle
 
-    var availability: Availability {
+    var availability: Availability { Self.currentAvailability() }
+
+    static func currentAvailability() -> Availability {
         switch SystemLanguageModel.default.availability {
         case .available:
             return .available

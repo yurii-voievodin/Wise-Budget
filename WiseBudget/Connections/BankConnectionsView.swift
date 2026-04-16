@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UserNotifications
 
 struct BankConnectionsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -186,30 +185,17 @@ struct BankConnectionsView: View {
         isSyncing = true
         Task {
             defer { isSyncing = false }
+            let message: String
             do {
-                let fromTs: Double
-                if monobankLastSync > 0 {
-                    fromTs = monobankLastSync
-                } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
-                    fromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
-                }
-                let result = try await MonobankSyncService.sync(
-                    context: modelContext,
-                    fromTimestamp: fromTs,
-                    toTimestamp: Date.now.timeIntervalSince1970
-                )
-                monobankLastSync = Date.now.timeIntervalSince1970
-                if result.expensesImported == 0 && result.incomesImported == 0 {
-                    syncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                } else {
-                    syncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                }
-                postNotification(title: "Monobank Sync", message: syncResultMessage)
+                let result = try await BankSyncService.syncMonobankIncremental(context: modelContext)
+                message = BankSyncService.formatResultMessage(result)
+            } catch is CancellationError {
+                return
             } catch {
-                syncResultMessage = error.localizedDescription
-                postNotification(title: "Monobank Sync", message: syncResultMessage)
+                message = error.localizedDescription
             }
+            syncResultMessage = message
+            await BankSyncService.postNotification(title: "Monobank Sync", message: message)
         }
     }
 
@@ -226,30 +212,17 @@ struct BankConnectionsView: View {
         isWiseSyncing = true
         Task {
             defer { isWiseSyncing = false }
+            let message: String
             do {
-                let wiseFromTs: Double
-                if wiseLastSync > 0 {
-                    wiseFromTs = wiseLastSync
-                } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
-                    wiseFromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
-                }
-                let result = try await WiseSyncService.sync(
-                    context: modelContext,
-                    fromTimestamp: wiseFromTs,
-                    toTimestamp: Date.now.timeIntervalSince1970
-                )
-                wiseLastSync = Date.now.timeIntervalSince1970
-                if result.expensesImported == 0 && result.incomesImported == 0 {
-                    wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                } else {
-                    wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                }
-                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
+                let result = try await BankSyncService.syncWiseIncremental(context: modelContext)
+                message = BankSyncService.formatResultMessage(result)
+            } catch is CancellationError {
+                return
             } catch {
-                wiseSyncResultMessage = error.localizedDescription
-                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
+                message = error.localizedDescription
             }
+            wiseSyncResultMessage = message
+            await BankSyncService.postNotification(title: "Wise Sync", message: message)
         }
     }
 
@@ -257,20 +230,6 @@ struct BankConnectionsView: View {
         try? KeychainHelper.deleteToken(service: KeychainHelper.wiseService)
         wiseConnectedName = ""
         wiseLastSync = 0
-    }
-
-    private func postNotification(title: String, message: String?) {
-        guard let message else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = message
-        content.sound = .default
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-        UNUserNotificationCenter.current().add(request)
     }
 }
 

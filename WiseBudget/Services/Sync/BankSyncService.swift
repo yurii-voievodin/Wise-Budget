@@ -9,6 +9,7 @@ final class BankSyncService {
     private(set) var syncResultMessage: String?
 
     private var lastSyncDate: Date?
+    private var currentSyncTask: Task<Void, Never>?
 
     /// Whether any bank token (Monobank or Wise) is stored in the Keychain.
     var hasBankToken: Bool {
@@ -27,10 +28,11 @@ final class BankSyncService {
         guard !isSyncing else { return }
         isSyncing = true
 
-        Task {
+        currentSyncTask = Task { [weak self] in
             defer {
-                isSyncing = false
-                lastSyncDate = Date.now
+                self?.isSyncing = false
+                self?.lastSyncDate = Date.now
+                self?.currentSyncTask = nil
             }
 
             var totalExpenses = 0
@@ -52,6 +54,8 @@ final class BankSyncService {
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
                     UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "monobankLastSync")
+                } catch is CancellationError {
+                    return
                 } catch {
                     errors.append("Monobank: \(error.localizedDescription)")
                 }
@@ -68,20 +72,92 @@ final class BankSyncService {
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
                     UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "wiseLastSync")
+                } catch is CancellationError {
+                    return
                 } catch {
                     errors.append("Wise: \(error.localizedDescription)")
                 }
             }
 
+            let message: String
             if !errors.isEmpty {
-                syncResultMessage = errors.joined(separator: "\n")
+                message = errors.joined(separator: "\n")
             } else if totalExpenses == 0 && totalIncomes == 0 {
-                syncResultMessage = "Already up to date. \(totalDuplicates) duplicates skipped."
+                message = "Already up to date. \(totalDuplicates) duplicates skipped."
             } else {
-                syncResultMessage = "\(totalExpenses) expenses, \(totalIncomes) incomes imported. \(totalDuplicates) duplicates skipped."
+                message = "\(totalExpenses) expenses, \(totalIncomes) incomes imported. \(totalDuplicates) duplicates skipped."
             }
-            postSyncNotification()
+            self?.syncResultMessage = message
+            await Self.postSyncNotification(message: message)
         }
+    }
+
+    /// Cancels any in-flight sync. Safe to call when no sync is running.
+    func cancel() {
+        currentSyncTask?.cancel()
+    }
+
+    /// Syncs Monobank only, from the last successful sync (or start of the current month) up to now.
+    /// Returns the import result or throws if the sync fails.
+    @discardableResult
+    static func syncMonobankIncremental(context: ModelContext) async throws -> ImportResult {
+        let lastSync = UserDefaults.standard.double(forKey: "monobankLastSync")
+        let fromTs: Double
+        if lastSync > 0 {
+            fromTs = lastSync
+        } else {
+            let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
+            fromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
+        }
+        let result = try await MonobankSyncService.sync(
+            context: context,
+            fromTimestamp: fromTs,
+            toTimestamp: Date.now.timeIntervalSince1970
+        )
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "monobankLastSync")
+        return result
+    }
+
+    /// Syncs Wise only, from the last successful sync (or start of the current month) up to now.
+    /// Returns the import result or throws if the sync fails.
+    @discardableResult
+    static func syncWiseIncremental(context: ModelContext) async throws -> ImportResult {
+        let lastSync = UserDefaults.standard.double(forKey: "wiseLastSync")
+        let fromTs: Double
+        if lastSync > 0 {
+            fromTs = lastSync
+        } else {
+            let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
+            fromTs = (Calendar.current.date(from: comps) ?? Date.now).timeIntervalSince1970
+        }
+        let result = try await WiseSyncService.sync(
+            context: context,
+            fromTimestamp: fromTs,
+            toTimestamp: Date.now.timeIntervalSince1970
+        )
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "wiseLastSync")
+        return result
+    }
+
+    /// Posts a local notification summarizing a single-bank sync. Shared formatting.
+    static func formatResultMessage(_ result: ImportResult) -> String {
+        if result.expensesImported == 0 && result.incomesImported == 0 {
+            return "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
+        }
+        return "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
+    }
+
+    static func postNotification(title: String, message: String) async {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = message
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
+        try? await UNUserNotificationCenter.current().add(request)
     }
 
     /// Request notification authorization. Call once at app launch.
@@ -89,8 +165,7 @@ final class BankSyncService {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
-    private func postSyncNotification() {
-        guard let message = syncResultMessage else { return }
+    private static func postSyncNotification(message: String) async {
         let content = UNMutableNotificationContent()
         content.title = "Bank Sync"
         content.body = message
@@ -100,6 +175,6 @@ final class BankSyncService {
             content: content,
             trigger: nil
         )
-        UNUserNotificationCenter.current().add(request)
+        try? await UNUserNotificationCenter.current().add(request)
     }
 }
