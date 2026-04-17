@@ -26,7 +26,6 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
         NavigationStack {
             Form {
                 TextField("Amount", value: $amount, format: .number)
-                    .frame(width: 200)
                 Picker("Category", selection: $selectedCategory) {
                     Text("None").tag(C?.none)
                     ForEach(categories) { category in

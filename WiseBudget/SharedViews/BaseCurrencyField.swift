@@ -11,6 +11,10 @@ struct BaseCurrencyField: View {
     @State private var isFetchingRate = false
     @State private var rateService = ExchangeRateService()
 
+    private var rateTrigger: String {
+        "\(amount?.description ?? "nil")|\(currency)|\(date.timeIntervalSince1970)"
+    }
+
     var body: some View {
         HStack {
             TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
@@ -22,35 +26,37 @@ struct BaseCurrencyField: View {
                 Button {
                     baseCurrencyAmount = suggested
                 } label: {
-                    Text("Use \(suggested as NSDecimalNumber, formatter: Self.rateFormatter) \(defaultCurrency)")
+                    Text("Use \(suggested, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
                         .font(.caption)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
         }
-        .onChange(of: amount) { fetchSuggestedRate() }
-        .onChange(of: currency) { fetchSuggestedRate() }
-        .onChange(of: date) { fetchSuggestedRate() }
-        .task { fetchSuggestedRate() }
-    }
-
-    private func fetchSuggestedRate() {
-        suggestedAmount = nil
-        guard let amount, amount > .zero else { return }
-        isFetchingRate = true
-        Task {
+        .task(id: rateTrigger) {
+            suggestedAmount = nil
+            guard let amount, amount > .zero else { return }
+            isFetchingRate = true
             let result = await rateService.suggestedConversion(amount: amount, from: currency, to: defaultCurrency, on: date)
             isFetchingRate = false
             suggestedAmount = result
         }
     }
+}
 
-    private static let rateFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.maximumFractionDigits = 2
-        f.minimumFractionDigits = 2
-        return f
-    }()
+#Preview("Base Currency Field") {
+    @Previewable @State var baseCurrencyAmount: Decimal? = nil
+    Form {
+        LabeledContent("Base Amount") {
+            BaseCurrencyField(
+                baseCurrencyAmount: $baseCurrencyAmount,
+                amount: 100,
+                currency: "USD",
+                defaultCurrency: "EUR",
+                date: .now
+            )
+        }
+    }
+    .formStyle(.grouped)
+    .frame(width: 500, height: 200)
 }

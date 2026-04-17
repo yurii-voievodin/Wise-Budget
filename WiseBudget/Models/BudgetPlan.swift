@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class BudgetPlan {
+final nonisolated class BudgetPlan {
     var year: Int
     var month: Int
     var currency: String?
@@ -20,12 +20,12 @@ final class BudgetPlan {
 
     /// The first day of this plan's month
     var startOfMonth: Date {
-        Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date()
+        Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date.now
     }
 
     /// The first day of the next month (exclusive upper bound)
     var startOfNextMonth: Date {
-        Calendar.current.date(byAdding: .month, value: 1, to: startOfMonth) ?? Date()
+        Calendar.current.date(byAdding: .month, value: 1, to: startOfMonth) ?? Date.now
     }
 
     /// Display label like "March 2026"

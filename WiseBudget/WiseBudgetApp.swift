@@ -1,23 +1,19 @@
 import SwiftUI
 import SwiftData
-import AppKit
 import UniformTypeIdentifiers
 
 @main
 struct WiseBudgetApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Expense.self,
-            Income.self,
-            ExpenseCategory.self,
-            IncomeCategory.self,
-            BudgetPlan.self,
-            BudgetPlanItem.self,
-        ])
+        let schema = Schema(versionedSchema: WiseBudgetSchemaV1.self)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                migrationPlan: WiseBudgetMigrationPlan.self,
+                configurations: [modelConfiguration]
+            )
         } catch {
             // If the store is corrupted, fall back to in-memory so the app can still launch
             let fallback = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
@@ -48,7 +44,7 @@ struct WiseBudgetApp: App {
                     DataSeeder.prepopulateIncomeCategories(in: context)
                     DataSeeder.migrateCategoryIcons(in: context)
                     DataSeeder.prepopulateSubscriptionCategory(in: context)
-                    BankSyncService.requestNotificationPermission()
+                    Task { await BankSyncService.requestNotificationPermission() }
                     disableFullScreen()
                 }
                 .alert("Delete Budget Plan", isPresented: $showResetPlanConfirmation) {

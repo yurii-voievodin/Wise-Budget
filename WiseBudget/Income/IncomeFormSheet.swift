@@ -6,7 +6,7 @@ struct IncomeFormSheet: View {
 
     @State private var amount: Decimal?
     @State private var currency: String
-    @State private var date = Date()
+    @State private var date = Date.now
     @State private var selectedCategory: IncomeCategory?
     @State private var descriptionText: String = ""
     @State private var source: String = ""

@@ -62,6 +62,7 @@ struct IncomeQueryListView: View {
             categoryName: { $0.category?.name },
             categoryIcon: { $0.category?.displayIconName },
             extraField: { $0.source },
+            amountTintColor: .green,
             onSelect: { incomeToEdit = $0 },
             onAdd: { isAddingIncome = true },
             onNavigateToBank: { selectedSidebarItem = .bankConnections }
@@ -74,4 +75,20 @@ struct IncomeQueryListView: View {
         let descriptor = FetchDescriptor<Income>()
         hasAnyIncomes = (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
+}
+
+#Preview {
+    @Previewable @State var incomeToEdit: Income? = nil
+    @Previewable @State var isAddingIncome = false
+    @Previewable @State var selectedSidebarItem: SidebarItem = .income
+    IncomeQueryListView(
+        filter: MonthFilter(year: 2026, month: 3),
+        selectedCategoryName: nil,
+        incomeToEdit: $incomeToEdit,
+        isAddingIncome: $isAddingIncome,
+        selectedSidebarItem: $selectedSidebarItem,
+        syncService: BankSyncService()
+    )
+    .modelContainer(PreviewSampleData.container)
+    .frame(width: 600, height: 400)
 }

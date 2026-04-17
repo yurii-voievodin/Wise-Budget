@@ -16,13 +16,13 @@ struct CSVExportImportTests {
         return try ModelContainer(for: schema, configurations: [config])
     }
 
-    private func makeDate(year: Int, month: Int, day: Int) -> Date {
+    private func makeDate(year: Int, month: Int, day: Int) throws -> Date {
         var components = DateComponents()
         components.year = year
         components.month = month
         components.day = day
         let calendar = Calendar(identifier: .gregorian)
-        return calendar.date(from: components)!
+        return try #require(calendar.date(from: components))
     }
 
     // MARK: - CSVExporter Tests
@@ -44,7 +44,7 @@ struct CSVExportImportTests {
         let expense = Expense(
             amount: 15.98,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 3, day: 15),
+            date: try makeDate(year: 2026, month: 3, day: 15),
             category: category,
             descriptionText: "Kaufland",
             destination: nil
@@ -73,7 +73,7 @@ struct CSVExportImportTests {
         let income = Income(
             amount: Decimal(string: "3754.76")!,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 2, day: 27),
+            date: try makeDate(year: 2026, month: 2, day: 27),
             category: category,
             descriptionText: "March salary"
         )
@@ -101,7 +101,7 @@ struct CSVExportImportTests {
         let expense = Expense(
             amount: Decimal(string: "19.08")!,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 2, day: 26),
+            date: try makeDate(year: 2026, month: 2, day: 26),
             category: category,
             baseCurrencyAmount: Decimal(string: "80.59")!,
             baseCurrency: "PLN"
@@ -122,8 +122,8 @@ struct CSVExportImportTests {
         let category = ExpenseCategory(name: "Test")
         context.insert(category)
 
-        let older = Expense(amount: 10, currency: "USD", date: makeDate(year: 2026, month: 1, day: 1), category: category)
-        let newer = Expense(amount: 20, currency: "USD", date: makeDate(year: 2026, month: 3, day: 1), category: category)
+        let older = Expense(amount: 10, currency: "USD", date: try makeDate(year: 2026, month: 1, day: 1), category: category)
+        let newer = Expense(amount: 20, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 1), category: category)
         context.insert(older)
         context.insert(newer)
 
@@ -154,8 +154,8 @@ struct CSVExportImportTests {
         context.insert(expCat)
         context.insert(incCat)
 
-        context.insert(Expense(amount: 10, currency: "USD", date: makeDate(year: 2026, month: 3, day: 1), category: expCat))
-        context.insert(Income(amount: 5000, currency: "USD", date: makeDate(year: 2026, month: 3, day: 1), category: incCat))
+        context.insert(Expense(amount: 10, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 1), category: expCat))
+        context.insert(Income(amount: 5000, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 1), category: incCat))
 
         let csv = try CSVExporter.exportCSV(from: context)
         let lines = csv.components(separatedBy: "\n")
@@ -293,8 +293,10 @@ struct CSVExportImportTests {
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())
         let incomes = try context.fetch(FetchDescriptor<Income>())
-        #expect(expenses.first?.category?.name == "NewExpCat")
-        #expect(incomes.first?.category?.name == "NewIncCat")
+        let firstExpense = try #require(expenses.first)
+        let firstIncome = try #require(incomes.first)
+        #expect(firstExpense.category?.name == "NewExpCat")
+        #expect(firstIncome.category?.name == "NewIncCat")
     }
 
     @Test func importReusesExistingCategories() throws {
@@ -330,7 +332,7 @@ struct CSVExportImportTests {
         let original = Expense(
             amount: 15.98,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 3, day: 15),
+            date: try makeDate(year: 2026, month: 3, day: 15),
             category: category,
             descriptionText: "Kaufland",
             destination: "Berlin"
@@ -368,7 +370,7 @@ struct CSVExportImportTests {
         let original = Income(
             amount: Decimal(string: "3754.76")!,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 2, day: 27),
+            date: try makeDate(year: 2026, month: 2, day: 27),
             category: category,
             descriptionText: "March salary"
         )
@@ -404,7 +406,7 @@ struct CSVExportImportTests {
         let original = Expense(
             amount: Decimal(string: "19.08")!,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 2, day: 26),
+            date: try makeDate(year: 2026, month: 2, day: 26),
             category: category,
             baseCurrencyAmount: Decimal(string: "80.59")!,
             baseCurrency: "PLN"
@@ -437,11 +439,11 @@ struct CSVExportImportTests {
         context.insert(salary)
 
         let expenses = [
-            Expense(amount: 15.98, currency: "EUR", date: makeDate(year: 2026, month: 3, day: 15), category: groceries, descriptionText: "Kaufland"),
-            Expense(amount: 12.84, currency: "EUR", date: makeDate(year: 2026, month: 3, day: 14), category: cafes, descriptionText: "Glovo"),
+            Expense(amount: 15.98, currency: "EUR", date: try makeDate(year: 2026, month: 3, day: 15), category: groceries, descriptionText: "Kaufland"),
+            Expense(amount: 12.84, currency: "EUR", date: try makeDate(year: 2026, month: 3, day: 14), category: cafes, descriptionText: "Glovo"),
         ]
         let incomes = [
-            Income(amount: 3754.76, currency: "EUR", date: makeDate(year: 2026, month: 2, day: 27), category: salary, descriptionText: "Salary"),
+            Income(amount: 3754.76, currency: "EUR", date: try makeDate(year: 2026, month: 2, day: 27), category: salary, descriptionText: "Salary"),
         ]
         for e in expenses { context.insert(e) }
         for i in incomes { context.insert(i) }
@@ -473,7 +475,7 @@ struct CSVExportImportTests {
         let original = Income(
             amount: 3754.76,
             currency: "EUR",
-            date: makeDate(year: 2026, month: 2, day: 27),
+            date: try makeDate(year: 2026, month: 2, day: 27),
             category: category,
             descriptionText: "Deel, Inc."
         )

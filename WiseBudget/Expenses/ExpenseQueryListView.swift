@@ -75,3 +75,19 @@ struct ExpenseQueryListView: View {
         hasAnyExpenses = (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
     }
 }
+
+#Preview {
+    @Previewable @State var expenseToEdit: Expense? = nil
+    @Previewable @State var isAddingExpense = false
+    @Previewable @State var selectedSidebarItem: SidebarItem = .expenses
+    ExpenseQueryListView(
+        filter: MonthFilter(year: 2026, month: 3),
+        selectedCategoryName: nil,
+        expenseToEdit: $expenseToEdit,
+        isAddingExpense: $isAddingExpense,
+        selectedSidebarItem: $selectedSidebarItem,
+        syncService: BankSyncService()
+    )
+    .modelContainer(PreviewSampleData.container)
+    .frame(width: 600, height: 400)
+}

@@ -11,63 +11,72 @@ struct GeneralSettingsView: View {
     @State private var showDeleteAllIncomesConfirmation = false
     @State private var errorMessage: String?
 
+    private static let currencyOptions: [(code: String, label: String)] = Locale.commonISOCurrencyCodes.map { code in
+        let localized = Locale.current.localizedString(forCurrencyCode: code) ?? code
+        return (code, "\(code) – \(localized)")
+    }
+
     var body: some View {
         List {
             Section("General") {
                 Picker("Default Currency", selection: $defaultCurrency) {
-                    ForEach(Locale.commonISOCurrencyCodes, id: \.self) { code in
-                        Text("\(code) – \(Locale.current.localizedString(forCurrencyCode: code) ?? code)")
-                            .tag(code)
+                    ForEach(Self.currencyOptions, id: \.code) { option in
+                        Text(option.label).tag(option.code)
                     }
                 }
             }
 
             Section("Data Management") {
-                Button("Delete All Expenses", role: .destructive) {
+                Button(role: .destructive) {
                     showDeleteAllExpensesConfirmation = true
+                } label: {
+                    Label("Delete All Expenses", systemImage: "trash")
+                        .foregroundStyle(.red)
                 }
                 .confirmationDialog(
                     "Delete All Expenses",
                     isPresented: $showDeleteAllExpensesConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("Delete All Expenses", role: .destructive) {
-                        deleteAllExpenses()
-                    }
+                    Button("Delete All Expenses", role: .destructive, action: deleteAllExpenses)
                 } message: {
                     Text("This will permanently delete all your expenses. This action cannot be undone.")
                 }
 
-                Button("Delete All Incomes", role: .destructive) {
+                Button(role: .destructive) {
                     showDeleteAllIncomesConfirmation = true
+                } label: {
+                    Label("Delete All Incomes", systemImage: "trash")
+                        .foregroundStyle(.red)
                 }
                 .confirmationDialog(
                     "Delete All Incomes",
                     isPresented: $showDeleteAllIncomesConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("Delete All Incomes", role: .destructive) {
-                        deleteAllIncomes()
-                    }
+                    Button("Delete All Incomes", role: .destructive, action: deleteAllIncomes)
                 } message: {
                     Text("This will permanently delete all your incomes. This action cannot be undone.")
                 }
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            ),
+            presenting: errorMessage
+        ) { _ in
             Button("OK") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
+        } message: { message in
+            Text(message)
         }
-
     }
 
     private func deleteAllExpenses() {
         do {
-            let expenses = try modelContext.fetch(FetchDescriptor<Expense>())
-            for expense in expenses {
-                modelContext.delete(expense)
-            }
+            try modelContext.delete(model: Expense.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {
@@ -77,10 +86,7 @@ struct GeneralSettingsView: View {
 
     private func deleteAllIncomes() {
         do {
-            let incomes = try modelContext.fetch(FetchDescriptor<Income>())
-            for income in incomes {
-                modelContext.delete(income)
-            }
+            try modelContext.delete(model: Income.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {

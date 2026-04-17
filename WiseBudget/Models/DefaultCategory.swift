@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-enum DefaultExpenseCategory: String, CaseIterable {
+nonisolated enum DefaultExpenseCategory: String, CaseIterable {
     case auto = "Auto"
     case cafes = "Cafes"
     case entertainment = "Entertainment"
@@ -74,7 +74,7 @@ enum DefaultExpenseCategory: String, CaseIterable {
     }
 }
 
-enum DefaultIncomeCategory: String, CaseIterable {
+nonisolated enum DefaultIncomeCategory: String, CaseIterable {
     case freelance = "Freelance"
     case gifts = "Gifts"
     case investments = "Investments"

@@ -1,18 +1,11 @@
 import SwiftUI
 import SwiftData
 
-private struct IdentifiableDate: Identifiable {
-    let date: Date
-    var id: Date { date }
-}
-
 struct ExpenseCalendarView: View {
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
 
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
-
-    @State private var selectedDate: IdentifiableDate?
 
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService
@@ -46,13 +39,6 @@ struct ExpenseCalendarView: View {
         calendar.range(of: .day, in: .month, for: filter.startOfMonth)?.count ?? 30
     }
 
-    /// Weekday of the 1st day (0 = Sunday .. 6 = Saturday when using Gregorian firstWeekday=1)
-    private var firstWeekdayOffset: Int {
-        let weekday = calendar.component(.weekday, from: filter.startOfMonth)
-        // Adjust so Monday=0 when firstWeekday is 1 (Sunday)
-        return (weekday + 5) % 7 // Mon=0, Tue=1 ... Sun=6
-    }
-
     /// Classifies an expense: if its currency or baseCurrency matches defaultCurrency,
     /// returns the amount in defaultCurrency; otherwise returns (originalCurrency, originalAmount).
     private func classifyExpense(_ expense: Expense) -> (currency: String, amount: Decimal) {
@@ -65,7 +51,6 @@ struct ExpenseCalendarView: View {
         }
     }
 
-    /// Daily totals grouped by currency, with convertible expenses folded into defaultCurrency.
     private var dailyTotalsByCurrency: [Int: [String: Decimal]] {
         var totals: [Int: [String: Decimal]] = [:]
         for expense in expenses {
@@ -76,7 +61,6 @@ struct ExpenseCalendarView: View {
         return totals
     }
 
-    /// Flat daily totals converted to default currency (for heat map intensity)
     private var dailyTotals: [Int: Decimal] {
         var totals: [Int: Decimal] = [:]
         for expense in expenses {
@@ -106,13 +90,8 @@ struct ExpenseCalendarView: View {
         return totals
     }
 
-    private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
-
-    /// Reordered weekday symbols starting from Monday
-    private var orderedWeekdaySymbols: [String] {
-        // shortWeekdaySymbols: [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
-        let symbols = weekdaySymbols
-        return Array(symbols[1...]) + [symbols[0]]
+    private var daysWithExpenses: Set<Int> {
+        Set(dailyTotals.keys)
     }
 
     // MARK: - Body
@@ -128,142 +107,29 @@ struct ExpenseCalendarView: View {
         } else {
             ScrollView {
                 VStack(spacing: 16) {
-                    totalHeader
-                    calendarGrid
-                        .padding(.horizontal)
+                    ExpenseCalendarTotalHeader(
+                        totals: monthTotalsByCurrency,
+                        defaultCurrency: defaultCurrency
+                    )
+                    ExpenseCalendarGrid(
+                        filter: filter,
+                        defaultCurrency: defaultCurrency,
+                        dailyTotalsByCurrency: dailyTotalsByCurrency,
+                        dailyTotals: dailyTotals,
+                        maxDailyTotal: maxDailyTotal,
+                        averageDailyIncome: averageDailyIncome,
+                        daysWithExpenses: daysWithExpenses
+                    )
+                    .padding(.horizontal)
                 }
                 .padding(.vertical)
             }
         }
     }
+}
 
-    // MARK: - Subviews
-
-    private var totalHeader: some View {
-        let totals = monthTotalsByCurrency
-        let sortedTotals = totals.sorted { a, b in
-            if a.key == defaultCurrency { return true }
-            if b.key == defaultCurrency { return false }
-            return a.key < b.key
-        }
-
-        return VStack(spacing: 4) {
-            Text("Month Total")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            ForEach(sortedTotals, id: \.key) { currency, total in
-                Text("\(formattedAmount(total)) \(currency)")
-                    .font(currency == defaultCurrency ? .title2 : .headline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(currency == defaultCurrency ? .primary : .secondary)
-            }
-        }
-    }
-
-    /// Each cell in the calendar grid, with a stable unique ID.
-    private enum CalendarCell: Hashable, Identifiable {
-        case header(Int)    // index 0–6
-        case empty(Int)     // offset index
-        case day(Int)       // day number
-
-        var id: Self { self }
-    }
-
-    private var calendarCells: [CalendarCell] {
-        var cells: [CalendarCell] = []
-        for i in 0..<7 { cells.append(.header(i)) }
-        for i in 0..<firstWeekdayOffset { cells.append(.empty(i)) }
-        for d in 1...daysInMonth { cells.append(.day(d)) }
-        return cells
-    }
-
-    private var calendarGrid: some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-        let avgIncome = averageDailyIncome
-        return LazyVGrid(columns: columns, spacing: 4) {
-            ForEach(calendarCells) { cell in
-                switch cell {
-                case .header(let index):
-                    Text(orderedWeekdaySymbols[index])
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                case .empty:
-                    Color.clear
-                        .frame(height: 64)
-                case .day(let day):
-                    let isSelected = selectedDate.map { calendar.component(.day, from: $0.date) == day } ?? false
-                    dayCellView(day: day, averageDailyIncome: avgIncome)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if expensesForDay(day).isEmpty {
-                                selectedDate = nil
-                            } else {
-                                let date = calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date()
-                                selectedDate = IdentifiableDate(date: date)
-                            }
-                        }
-                        .overlay {
-                            if isSelected {
-                                Color.clear
-                                    .popover(item: $selectedDate) { item in
-                                        ExpenseDayDetailView(date: item.date)
-                                    }
-                            }
-                        }
-                }
-            }
-        }
-    }
-
-    private func dayCellView(day: Int, averageDailyIncome: Decimal) -> some View {
-        let total = dailyTotals[day]
-        let (bgColor, bgOpacity) = colorForDay(total: total, averageDailyIncome: averageDailyIncome)
-
-        return ExpenseCalendarDayCellView(
-            day: day,
-            isToday: isToday(day: day),
-            defaultCurrency: defaultCurrency,
-            currencyTotals: dailyTotalsByCurrency[day] ?? [:],
-            backgroundColor: bgColor,
-            backgroundOpacity: bgOpacity
-        )
-    }
-
-    private func expensesForDay(_ day: Int) -> [Expense] {
-        expenses.filter { calendar.component(.day, from: $0.date) == day }
-    }
-
-    // MARK: - Helpers
-
-    private func isToday(day: Int) -> Bool {
-        let today = calendar.dateComponents([.year, .month, .day], from: Date())
-        return today.year == filter.year && today.month == filter.month && today.day == day
-    }
-
-    private static let heatMapMinOpacity = 0.05
-    private static let heatMapOpacityRange = 0.25
-    private static let noExpenseOpacity = 0.06
-
-    private func colorForDay(total: Decimal?, averageDailyIncome: Decimal) -> (Color, Double) {
-        guard let total, total > 0 else {
-            return (.green, Self.noExpenseOpacity)
-        }
-
-        if averageDailyIncome > 0 && total <= averageDailyIncome {
-            let ratio = NSDecimalNumber(decimal: total / averageDailyIncome).doubleValue
-            let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
-            return (.yellow, opacity)
-        }
-
-        guard maxDailyTotal > 0 else { return (.red, Self.heatMapMinOpacity) }
-        let ratio = NSDecimalNumber(decimal: total / maxDailyTotal).doubleValue
-        let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
-        return (.red, opacity)
-    }
-
-    private func formattedAmount(_ value: Decimal) -> String {
-        ExpenseCalendarDayCellView.formattedAmount(value)
-    }
+#Preview {
+    ExpenseCalendarView(filter: MonthFilter(year: 2026, month: 3), syncService: BankSyncService())
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 500)
 }

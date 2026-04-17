@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankSync")
+nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankSync")
 
 final class MonobankSyncService {
 
@@ -60,6 +60,9 @@ final class MonobankSyncService {
         // Collect all user IBANs to detect own-account transfers
         let ownIbans = Set(allCachedAccounts.compactMap { $0.iban })
 
+        let defaultCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
+            ?? Locale.current.currency?.identifier ?? "USD"
+
         let fromDate = Date(timeIntervalSince1970: fromTimestamp)
         let toDate = Date(timeIntervalSince1970: toTimestamp)
         logger.debug("sync from: \(dateFormatter.string(from: fromDate))")
@@ -73,6 +76,7 @@ final class MonobankSyncService {
         let totalRequests = accountsToSync.count * windowsPerAccount
 
         for account in accountsToSync {
+            try Task.checkCancellation()
             let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
             logger.debug("processing account \(account.id, privacy: .private) (\(currency))")
 
@@ -81,6 +85,7 @@ final class MonobankSyncService {
             logger.debug("date range split into \(windows.count) window(s)")
 
             for (windowStart, windowEnd) in windows {
+                try Task.checkCancellation()
                 logger.debug("fetching statements: \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
 
                 let statements = try await client.fetchStatements(
@@ -90,7 +95,7 @@ final class MonobankSyncService {
                 )
 
                 let transactions = statements.compactMap { statement -> CSVTransaction? in
-                    convertStatement(statement, accountCurrency: currency, ownIbans: ownIbans)
+                    convertStatement(statement, accountCurrency: currency, ownIbans: ownIbans, defaultCurrency: defaultCurrency)
                 }
                 allTransactions.append(contentsOf: transactions)
                 logger.debug("fetched \(statements.count) statements, \(transactions.count) converted")
@@ -99,7 +104,7 @@ final class MonobankSyncService {
                 // Respect rate limits between consecutive API calls
                 if requestCount < totalRequests {
                     logger.debug("rate limit delay (\(rateLimitDelay)s)...")
-                    try await Task.sleep(nanoseconds: UInt64(rateLimitDelay * 1_000_000_000))
+                    try await Task.sleep(for: .seconds(rateLimitDelay))
                 }
             }
         }
@@ -134,9 +139,10 @@ final class MonobankSyncService {
     }
 
     /// Converts a Monobank API statement into a CSVTransaction for import.
-    private static func convertStatement(_ statement: MonobankStatement, accountCurrency: String, ownIbans: Set<String>) -> CSVTransaction? {
-        // Skip held (pending) transactions
-        guard !statement.hold else { return nil }
+    nonisolated static func convertStatement(_ statement: MonobankStatement, accountCurrency: String, ownIbans: Set<String>, defaultCurrency: String) -> CSVTransaction? {
+        // TODO: Monobank marks recent transactions as hold=true for days before settling.
+        // Previously we skipped them, but that caused all recent transactions to be missing.
+        // If duplicate imports become an issue, re-enable: guard !statement.hold else { return nil }
 
         // Skip own-account transfers
         if let counterIban = statement.counterIban, ownIbans.contains(counterIban) {
@@ -177,10 +183,19 @@ final class MonobankSyncService {
             baseCurrencyAmount = nil
             baseCurrency = nil
         } else {
-            // Foreign currency transaction
+            // Foreign currency transaction — store the merchant amount in its original currency.
             amount = abs(operationAmount)
-            baseCurrencyAmount = abs(cardAmount)
-            baseCurrency = accountCurrency
+            if accountCurrency == defaultCurrency {
+                // Account currency matches the user's default currency (e.g. UAH account + UAH default),
+                // so the bank's converted amount is useful — store it as baseCurrencyAmount.
+                baseCurrencyAmount = abs(cardAmount)
+                baseCurrency = accountCurrency
+            } else {
+                // Account currency differs from the user's default currency (e.g. UAH account + USD default),
+                // so the bank's UAH amount is not useful. Skip it and let the app convert on display.
+                baseCurrencyAmount = nil
+                baseCurrency = nil
+            }
         }
 
         let categoryName = MCCCategoryMapping.categoryName(forMCC: statement.mcc)

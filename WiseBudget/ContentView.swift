@@ -9,7 +9,7 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
-                Section {
+                Section("Overview") {
                     ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .comparison], id: \.self) { item in
                         Label(item.rawValue, systemImage: item.systemImage)
                             .tag(item)

@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UserNotifications
 
 struct BankConnectionsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -35,17 +34,18 @@ struct BankConnectionsView: View {
         List {
             Section("Monobank") {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Monobank")
-                            .fontWeight(.medium)
-                        if isMonobankConnected {
-                            Text("Connected as \(monobankConnectedName)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Not connected")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(isMonobankConnected ? .green : Color.secondary.opacity(0.3))
+                            .frame(width: 10, height: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isMonobankConnected ? "Connected" : "Not connected")
+                                .fontWeight(.medium)
+                            if isMonobankConnected {
+                                Text(monobankConnectedName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -72,29 +72,36 @@ struct BankConnectionsView: View {
                         Button("Connect") {
                             showConnectSheet = true
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
                 }
 
                 if isMonobankConnected && monobankLastSync > 0 {
-                    Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative) ago")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Label {
+                        Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative)")
+                    } icon: {
+                        Image(systemName: "clock")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 }
             }
 
             Section("Wise") {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Wise")
-                            .fontWeight(.medium)
-                        if isWiseConnected {
-                            Text("Connected as \(wiseConnectedName)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Not connected")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(isWiseConnected ? .green : Color.secondary.opacity(0.3))
+                            .frame(width: 10, height: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isWiseConnected ? "Connected" : "Not connected")
+                                .fontWeight(.medium)
+                            if isWiseConnected {
+                                Text(wiseConnectedName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -117,13 +124,19 @@ struct BankConnectionsView: View {
                         Button("Connect") {
                             showWiseConnectSheet = true
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
                 }
 
                 if isWiseConnected && wiseLastSync > 0 {
-                    Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative) ago")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Label {
+                        Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative)")
+                    } icon: {
+                        Image(systemName: "clock")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 }
             }
         }
@@ -170,32 +183,19 @@ struct BankConnectionsView: View {
     private func syncMonobank() {
         guard !isSyncing else { return }
         isSyncing = true
-        Task { @MainActor in
+        Task {
             defer { isSyncing = false }
+            let message: String
             do {
-                let fromTs: Double
-                if monobankLastSync > 0 {
-                    fromTs = monobankLastSync
-                } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
-                    fromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
-                }
-                let result = try await MonobankSyncService.sync(
-                    context: modelContext,
-                    fromTimestamp: fromTs,
-                    toTimestamp: Date().timeIntervalSince1970
-                )
-                monobankLastSync = Date().timeIntervalSince1970
-                if result.expensesImported == 0 && result.incomesImported == 0 {
-                    syncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                } else {
-                    syncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                }
-                postNotification(title: "Monobank Sync", message: syncResultMessage)
+                let result = try await BankSyncService.syncMonobankIncremental(context: modelContext)
+                message = BankSyncService.formatResultMessage(result)
+            } catch is CancellationError {
+                return
             } catch {
-                syncResultMessage = error.localizedDescription
-                postNotification(title: "Monobank Sync", message: syncResultMessage)
+                message = error.localizedDescription
             }
+            syncResultMessage = message
+            await BankSyncService.postNotification(title: "Monobank Sync", message: message)
         }
     }
 
@@ -210,32 +210,19 @@ struct BankConnectionsView: View {
     private func syncWise() {
         guard !isWiseSyncing else { return }
         isWiseSyncing = true
-        Task { @MainActor in
+        Task {
             defer { isWiseSyncing = false }
+            let message: String
             do {
-                let wiseFromTs: Double
-                if wiseLastSync > 0 {
-                    wiseFromTs = wiseLastSync
-                } else {
-                    let comps = Calendar.current.dateComponents([.year, .month], from: Date())
-                    wiseFromTs = (Calendar.current.date(from: comps) ?? Date()).timeIntervalSince1970
-                }
-                let result = try await WiseSyncService.sync(
-                    context: modelContext,
-                    fromTimestamp: wiseFromTs,
-                    toTimestamp: Date().timeIntervalSince1970
-                )
-                wiseLastSync = Date().timeIntervalSince1970
-                if result.expensesImported == 0 && result.incomesImported == 0 {
-                    wiseSyncResultMessage = "Already up to date. \(result.duplicatesSkipped) duplicates skipped."
-                } else {
-                    wiseSyncResultMessage = "\(result.expensesImported) expenses, \(result.incomesImported) incomes imported. \(result.duplicatesSkipped) duplicates skipped."
-                }
-                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
+                let result = try await BankSyncService.syncWiseIncremental(context: modelContext)
+                message = BankSyncService.formatResultMessage(result)
+            } catch is CancellationError {
+                return
             } catch {
-                wiseSyncResultMessage = error.localizedDescription
-                postNotification(title: "Wise Sync", message: wiseSyncResultMessage)
+                message = error.localizedDescription
             }
+            wiseSyncResultMessage = message
+            await BankSyncService.postNotification(title: "Wise Sync", message: message)
         }
     }
 
@@ -243,20 +230,6 @@ struct BankConnectionsView: View {
         try? KeychainHelper.deleteToken(service: KeychainHelper.wiseService)
         wiseConnectedName = ""
         wiseLastSync = 0
-    }
-
-    private func postNotification(title: String, message: String?) {
-        guard let message else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = message
-        content.sound = .default
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-        UNUserNotificationCenter.current().add(request)
     }
 }
 

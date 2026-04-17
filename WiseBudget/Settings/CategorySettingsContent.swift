@@ -14,10 +14,11 @@ struct CategorySettingsContent<C: CategoryModel>: View {
                 @Bindable var category = category
                 HStack {
                     Image(systemName: category.displayIconName)
-                        .frame(width: 20)
+                        .frame(width: 24)
                         .foregroundStyle(.secondary)
                     TextField("Category name", text: $category.name)
                 }
+                .frame(minHeight: 28)
             }
             .onDelete { offsets in
                 for index in offsets {

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class IncomeCategory {
+final nonisolated class IncomeCategory {
     var name: String
     var iconName: String?
 
@@ -10,7 +10,10 @@ final class IncomeCategory {
     var incomes: [Income] = []
 
     var displayIconName: String {
-        iconName ?? "folder"
+        if let iconName, iconName != "folder" {
+            return iconName
+        }
+        return DefaultIncomeCategory(rawValue: name)?.iconName ?? iconName ?? "folder"
     }
 
     init(name: String, iconName: String = "folder") {

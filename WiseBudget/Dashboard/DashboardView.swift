@@ -5,8 +5,6 @@ import Charts
 struct DashboardView: View {
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
-    @Query private var budgetPlans: [BudgetPlan]
-
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var monthFilter: MonthFilter
@@ -16,9 +14,6 @@ struct DashboardView: View {
 
         let startDate = monthFilter.wrappedValue.startOfMonth
         let endDate = monthFilter.wrappedValue.startOfNextMonth
-        let filterYear = monthFilter.wrappedValue.year
-        let filterMonth = monthFilter.wrappedValue.month
-
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
                 expense.date >= startDate && expense.date < endDate
@@ -33,12 +28,6 @@ struct DashboardView: View {
             },
             sort: \.date,
             order: .reverse
-        )
-
-        self._budgetPlans = Query(
-            filter: #Predicate<BudgetPlan> { plan in
-                plan.year == filterYear && plan.month == filterMonth
-            }
         )
     }
 
@@ -74,12 +63,40 @@ struct DashboardView: View {
         incomeDailyAverage - expenseDailyAverage
     }
 
-    private var currentPlan: BudgetPlan? {
-        budgetPlans.first
+    private var isCurrentMonth: Bool {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
+        return monthFilter.year == now.year && monthFilter.month == now.month
     }
 
-    private var totalPlanned: Decimal {
-        currentPlan?.items.reduce(Decimal.zero) { $0 + $1.plannedAmount } ?? .zero
+    private var daysElapsedInMonth: Int {
+        guard isCurrentMonth else { return 0 }
+        return Calendar.current.component(.day, from: Date.now)
+    }
+
+    private var daysRemainingInMonth: Int {
+        guard isCurrentMonth else { return 0 }
+        return max(daysInMonth - daysElapsedInMonth + 1, 0)
+    }
+
+    private var remainingBudget: Decimal {
+        totalIncome - totalExpenses
+    }
+
+    private var dailyAllowance: Decimal {
+        guard daysRemainingInMonth > 0 else { return .zero }
+        return remainingBudget / Decimal(daysRemainingInMonth)
+    }
+
+    private var currentSpendPace: Decimal {
+        guard daysElapsedInMonth > 0 else { return .zero }
+        return totalExpenses / Decimal(daysElapsedInMonth)
+    }
+
+    private var shouldShowBudgetPacing: Bool {
+        isCurrentMonth
+            && remainingBudget > .zero
+            && daysRemainingInMonth > 0
+            && currentSpendPace > dailyAllowance
     }
 
     private var expenseSlices: [CategoryChartSlice] {
@@ -93,181 +110,114 @@ struct DashboardView: View {
         .sorted { $0.total > $1.total }
     }
 
+    private var sortedExpenseSlices: [CategoryChartSlice] {
+        expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) }
+    }
+
     private var topCategories: [CategoryChartSlice] {
         Array(expenseSlices.prefix(5))
+    }
+
+    private var spendingSummary: SpendingSummary {
+        SpendingSummary.build(
+            monthFilter: monthFilter,
+            currency: defaultCurrency,
+            totalIncome: NSDecimalNumber(decimal: totalIncome).doubleValue,
+            totalExpenses: NSDecimalNumber(decimal: totalExpenses).doubleValue,
+            transactionCount: expenses.count + incomes.count,
+            expenseSlices: expenseSlices
+        )
+    }
+
+    private var insightsScopeKey: String {
+        MonthScopeKey.make(year: monthFilter.year, month: monthFilter.month)
+    }
+
+    private var recentTransactions: [DashboardRecentTransaction] {
+        let expenseItems = expenses.prefix(5).map {
+            DashboardRecentTransaction(
+                descriptionText: $0.descriptionText,
+                categoryName: $0.category?.name,
+                categoryIcon: $0.category?.displayIconName,
+                item: $0,
+                isExpense: true,
+                date: $0.date
+            )
+        }
+        let incomeItems = incomes.prefix(5).map {
+            DashboardRecentTransaction(
+                descriptionText: $0.descriptionText,
+                categoryName: $0.category?.name,
+                categoryIcon: $0.category?.displayIconName,
+                item: $0,
+                isExpense: false,
+                date: $0.date
+            )
+        }
+        return Array(
+            (expenseItems + incomeItems)
+                .sorted { $0.date > $1.date }
+                .prefix(5)
+        )
     }
 
     // MARK: - Body
 
     var body: some View {
         if expenses.isEmpty && incomes.isEmpty {
-            emptyState
+            DashboardEmptyStateView()
         } else {
             Form {
-                summarySection
-                dailyAveragesSection
-                if !expenseSlices.isEmpty {
-                    expenseChartSection
-                    topCategoriesSection
+                MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
+                DashboardMonthSummarySection(
+                    totalIncome: totalIncome,
+                    totalExpenses: totalExpenses,
+                    balance: balance,
+                    currency: defaultCurrency
+                )
+                DashboardDailyAveragesSection(
+                    incomeDailyAverage: incomeDailyAverage,
+                    expenseDailyAverage: expenseDailyAverage,
+                    dailyBalance: dailyBalance,
+                    currency: defaultCurrency
+                )
+                if shouldShowBudgetPacing {
+                    DashboardBudgetPacingSection(
+                        daysRemainingInMonth: daysRemainingInMonth,
+                        dailyAllowance: dailyAllowance,
+                        currency: defaultCurrency
+                    )
                 }
-                recentTransactionsSection
+                if !expenseSlices.isEmpty {
+                    CategoryChartSection(
+                        slices: sortedExpenseSlices,
+                        currency: defaultCurrency,
+                        emptyText: "No expenses",
+                        colorMap: DefaultExpenseCategory.chartColorMap
+                    )
+                    DashboardTopCategoriesSection(
+                        slices: topCategories,
+                        totalExpenses: totalExpenses,
+                        currency: defaultCurrency
+                    )
+                }
+                DashboardRecentTransactionsSection(transactions: recentTransactions)
             }
             .formStyle(.grouped)
         }
     }
+}
 
-    // MARK: - Sections
+#Preview {
+    @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
+    DashboardView(monthFilter: $filter)
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 600)
+}
 
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "square.grid.2x2")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("No Data This Month")
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text("Add expenses or income to see your monthly overview.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var summarySection: some View {
-        Section("Month Summary") {
-            LabeledContent("Income") {
-                Text("\(totalIncome, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.green)
-            }
-            LabeledContent("Expenses") {
-                Text("\(totalExpenses, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.red)
-            }
-            LabeledContent("Balance") {
-                Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(balance >= .zero ? .green : .red)
-            }
-            if let plan = currentPlan, totalPlanned > 0 {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Budget")
-                        Spacer()
-                        Text("\(totalExpenses, format: .number) / \(totalPlanned, format: .number) \(plan.currency ?? "")")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    }
-                    BudgetProgressBar(spent: totalExpenses, planned: totalPlanned)
-                }
-                .padding(.vertical, 4)
-            }
-        }
-    }
-
-    private var dailyAveragesSection: some View {
-        Section("Daily Averages") {
-            LabeledContent("Income") {
-                Text("\(incomeDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.green)
-            }
-            LabeledContent("Expenses") {
-                Text("\(expenseDailyAverage, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .monospacedDigit()
-                    .foregroundStyle(.red)
-            }
-            LabeledContent("Balance") {
-                Text("\(dailyBalance >= .zero ? "+" : "")\(dailyBalance, format: .number.precision(.fractionLength(2))) \(defaultCurrency)")
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(dailyBalance >= .zero ? .green : .red)
-            }
-        }
-    }
-
-    private var expenseChartSection: some View {
-        CategoryChartSection(
-            slices: expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) },
-            currency: defaultCurrency,
-            emptyText: "No expenses",
-            colorMap: DefaultExpenseCategory.chartColorMap
-        )
-    }
-
-    private var topCategoriesSection: some View {
-        Section("Top Spending") {
-            ForEach(topCategories) { slice in
-                HStack {
-                    Image(systemName: slice.iconName)
-                        .frame(width: 20)
-                        .foregroundStyle(.secondary)
-                    Text(slice.name)
-                    Spacer()
-                    if totalExpenses > 0 {
-                        Text(String(format: "%.0f%%", slice.total / NSDecimalNumber(decimal: totalExpenses).doubleValue * 100))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    Text("\(Decimal(slice.total), format: .number) \(defaultCurrency)")
-                        .monospacedDigit()
-                        .fontWeight(.medium)
-                        .frame(minWidth: 80, alignment: .trailing)
-                }
-            }
-        }
-    }
-
-    private var recentTransactionsSection: some View {
-        Section("Recent Transactions") {
-            let recent = recentItems
-            if recent.isEmpty {
-                Text("No transactions this month")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(Array(recent.enumerated()), id: \.offset) { _, item in
-                    HStack {
-                        Image(systemName: item.isExpense ? "arrow.up.circle" : "arrow.down.circle")
-                            .foregroundStyle(item.isExpense ? .red : .green)
-                            .frame(width: 20)
-                        TransactionRowView(
-                            descriptionText: item.description,
-                            categoryName: item.categoryName,
-                            categoryIcon: item.categoryIcon,
-                            extraField: nil,
-                            item: item.item
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private var recentItems: [(description: String?, categoryName: String?, categoryIcon: String?, item: CurrencyConvertible, isExpense: Bool)] {
-        struct Dated {
-            let date: Date
-            let description: String?
-            let categoryName: String?
-            let categoryIcon: String?
-            let item: CurrencyConvertible
-            let isExpense: Bool
-        }
-
-        let expenseItems = expenses.prefix(5).map {
-            Dated(date: $0.date, description: $0.descriptionText, categoryName: $0.category?.name, categoryIcon: $0.category?.displayIconName, item: $0, isExpense: true)
-        }
-        let incomeItems = incomes.prefix(5).map {
-            Dated(date: $0.date, description: $0.descriptionText, categoryName: $0.category?.name, categoryIcon: $0.category?.displayIconName, item: $0, isExpense: false)
-        }
-
-        return (expenseItems + incomeItems)
-            .sorted { $0.date > $1.date }
-            .prefix(5)
-            .map { (description: $0.description, categoryName: $0.categoryName, categoryIcon: $0.categoryIcon, item: $0.item, isExpense: $0.isExpense) }
-    }
+#Preview("Budget Pacing") {
+    @Previewable @State var filter = MonthFilter.currentMonth()
+    DashboardView(monthFilter: $filter)
+        .modelContainer(PreviewSampleData.overspendingPaceContainer)
+        .frame(width: 600, height: 700)
 }

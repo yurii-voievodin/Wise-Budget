@@ -4,6 +4,7 @@ import OSLog
 private let logger = Logger(subsystem: "com.wisebudget", category: "ExchangeRate")
 
 @Observable
+@MainActor
 final class ExchangeRateService {
     private static let cacheTTL: TimeInterval = 24 * 60 * 60 // 24 hours
 
@@ -13,6 +14,7 @@ final class ExchangeRateService {
     }
 
     private var cache: [String: CacheEntry] = [:]
+    private var inflight: [String: Task<Decimal?, Never>] = [:]
 
     /// Returns the converted amount in the target currency, or nil if unavailable.
     func suggestedConversion(amount: Decimal, from source: String, to target: String, on date: Date) async -> Decimal? {
@@ -23,21 +25,33 @@ final class ExchangeRateService {
         }
 
         let cacheKey = "\(source)_\(target)_\(Self.dayString(from: date))"
-        if let entry = cache[cacheKey], Date().timeIntervalSince(entry.fetchedAt) < Self.cacheTTL {
+        if let entry = cache[cacheKey], Date.now.timeIntervalSince(entry.fetchedAt) < Self.cacheTTL {
             return Self.rounded(amount * entry.rate)
         }
 
-        do {
-            let client = WiseAPIClient(token: token)
-            let wiseRate = try await client.fetchRate(source: source, target: target, time: date)
-            let rate = Decimal(wiseRate.rate)
-            cache[cacheKey] = CacheEntry(rate: rate, fetchedAt: Date())
-            logger.debug("Fetched rate \(source)->\(target): \(wiseRate.rate)")
-            return Self.rounded(amount * rate)
-        } catch {
-            logger.error("Failed to fetch rate: \(error.localizedDescription)")
-            return nil
-        }
+        // Coalesce concurrent fetches for the same currency pair + day so we
+        // don't hit the Wise API twice when multiple callers miss the cache.
+        let task = inflight[cacheKey] ?? {
+            let new = Task<Decimal?, Never> { [weak self] in
+                defer { self?.inflight[cacheKey] = nil }
+                do {
+                    let client = WiseAPIClient(token: token)
+                    let wiseRate = try await client.fetchRate(source: source, target: target, time: date)
+                    let rate = Decimal(wiseRate.rate)
+                    self?.cache[cacheKey] = CacheEntry(rate: rate, fetchedAt: Date.now)
+                    logger.debug("Fetched rate \(source)->\(target): \(wiseRate.rate)")
+                    return rate
+                } catch {
+                    logger.error("Failed to fetch rate: \(error.localizedDescription)")
+                    return nil
+                }
+            }
+            inflight[cacheKey] = new
+            return new
+        }()
+
+        guard let rate = await task.value else { return nil }
+        return Self.rounded(amount * rate)
     }
 
     private static func rounded(_ value: Decimal) -> Decimal {

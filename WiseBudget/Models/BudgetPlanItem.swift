@@ -2,10 +2,10 @@ import Foundation
 import SwiftData
 
 @Model
-final class BudgetPlanItem {
+final nonisolated class BudgetPlanItem {
     var plannedAmount: Decimal
     var plan: BudgetPlan?
-    var category: ExpenseCategory?
+    @Relationship(deleteRule: .nullify) var category: ExpenseCategory?
 
     init(plannedAmount: Decimal, plan: BudgetPlan? = nil, category: ExpenseCategory? = nil) {
         self.plannedAmount = plannedAmount

@@ -80,3 +80,11 @@ struct IncomeListView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
+    @Previewable @State var selectedSidebarItem: SidebarItem = .income
+    IncomeListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem)
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 700, height: 500)
+}

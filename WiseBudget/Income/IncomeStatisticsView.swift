@@ -128,3 +128,9 @@ struct IncomeStatisticsView: View {
         }
     }
 }
+
+#Preview {
+    IncomeStatisticsView(filter: MonthFilter(year: 2026, month: 3), syncService: BankSyncService())
+        .modelContainer(PreviewSampleData.container)
+        .frame(width: 600, height: 500)
+}

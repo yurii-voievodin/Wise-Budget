@@ -1,13 +1,6 @@
 import SwiftUI
 import Charts
 
-struct CategoryChartSlice: Identifiable {
-    let id = UUID()
-    let name: String
-    let iconName: String
-    let total: Double
-}
-
 struct CategoryChartSection: View {
     let slices: [CategoryChartSlice]
     let currency: String
@@ -34,6 +27,23 @@ struct CategoryChartSection: View {
                 }
                 .chartForegroundStyleScale(domain: slices.map(\.name), range: slices.map { colorMap[$0.name] ?? .gray })
                 .chartLegend(.hidden)
+                .chartBackground { proxy in
+                    GeometryReader { geo in
+                        if let frame = proxy.plotFrame {
+                            let rect = geo[frame]
+                            VStack(spacing: 2) {
+                                Text("\(Decimal(grandTotal), format: .number)")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .monospacedDigit()
+                                Text(currency)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .position(x: rect.midX, y: rect.midY)
+                        }
+                    }
+                }
                 .frame(height: 150)
                 .padding(.vertical, 8)
 
@@ -41,10 +51,11 @@ struct CategoryChartSection: View {
                     HStack {
                         Circle()
                             .fill(colorMap[slice.name] ?? .gray)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 12, height: 12)
                         Label(slice.name, systemImage: slice.iconName)
                         Spacer()
-                        Text(String(format: "%.1f%%", slice.total / grandTotal * 100))
+                        let pct = slice.total / grandTotal * 100
+                        Text("\(pct, format: .number.precision(.fractionLength(1)))%")
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                         Text("\(Decimal(slice.total), format: .number) \(currency)")
@@ -55,4 +66,20 @@ struct CategoryChartSection: View {
             }
         }
     }
+}
+
+#Preview {
+    List {
+        CategoryChartSection(
+            slices: [
+                CategoryChartSlice(name: "Groceries", iconName: "cart", total: 320),
+                CategoryChartSlice(name: "Transport", iconName: "car", total: 150),
+                CategoryChartSlice(name: "Entertainment", iconName: "film", total: 80),
+            ],
+            currency: "USD",
+            emptyText: "No expenses",
+            colorMap: ["Groceries": .green, "Transport": .blue, "Entertainment": .purple]
+        )
+    }
+    .frame(width: 500, height: 500)
 }

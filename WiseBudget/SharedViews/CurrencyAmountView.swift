@@ -1,38 +1,10 @@
 import SwiftUI
 
-protocol CurrencyConvertible {
-    var amount: Decimal { get }
-    var currency: String { get }
-    var baseCurrencyAmount: Decimal? { get }
-    var baseCurrency: String? { get }
-}
-
-extension CurrencyConvertible {
-    /// Returns the amount converted to the target currency, or nil if conversion is not possible.
-    func convertedAmount(to targetCurrency: String) -> Decimal? {
-        if currency == targetCurrency {
-            return amount
-        }
-        if let baseAmount = baseCurrencyAmount,
-           baseCurrency == targetCurrency {
-            return baseAmount
-        }
-        return nil
-    }
-}
-
-extension Array where Element: CurrencyConvertible {
-    func filterForeignCurrency(defaultCurrency: String) -> [Element] {
-        filter { item in
-            item.currency != defaultCurrency
-        }
-    }
-}
-
 struct CurrencyAmountView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let item: CurrencyConvertible
+    var tintColor: Color?
 
     var body: some View {
         VStack(alignment: .trailing) {
@@ -44,6 +16,7 @@ struct CurrencyAmountView: View {
                 }
                 Text("\(item.amount, format: .number) \(item.currency)")
                     .font(.headline)
+                    .foregroundStyle(tintColor ?? .primary)
             }
             if let baseAmount = item.baseCurrencyAmount,
                let baseCur = item.baseCurrency {
@@ -53,4 +26,20 @@ struct CurrencyAmountView: View {
             }
         }
     }
+}
+
+private struct PreviewItem: CurrencyConvertible {
+    var amount: Decimal
+    var currency: String
+    var baseCurrencyAmount: Decimal?
+    var baseCurrency: String?
+}
+
+#Preview("Currency Amount") {
+    VStack(alignment: .trailing, spacing: 16) {
+        CurrencyAmountView(item: PreviewItem(amount: 52.30, currency: "EUR", baseCurrencyAmount: nil, baseCurrency: nil))
+        CurrencyAmountView(item: PreviewItem(amount: 800, currency: "USD", baseCurrencyAmount: 740, baseCurrency: "EUR"))
+        CurrencyAmountView(item: PreviewItem(amount: 15, currency: "GBP", baseCurrencyAmount: 17.50, baseCurrency: "EUR"))
+    }
+    .padding()
 }

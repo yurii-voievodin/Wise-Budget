@@ -2,7 +2,7 @@ import Foundation
 
 /// Maps MCC (Merchant Category Code) codes to app expense category names.
 /// Used by both Monobank CSV import and Monobank sync service.
-enum MCCCategoryMapping {
+nonisolated enum MCCCategoryMapping {
 
     static func categoryName(forMCC mcc: Int) -> String {
         (mapping[mcc] ?? .other).rawValue
