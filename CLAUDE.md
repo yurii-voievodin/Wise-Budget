@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Planning Documents
+
+Before suggesting new features or architectural changes, read:
+
+- `docs/planning/FEATURES.md` — accepted candidate features in priority order.
+- `docs/planning/ARCHITECTURE.md` — accepted architecture / code-health proposals.
+- `docs/planning/DECISIONS.md` — rejected / deferred ideas. **Do not re-propose items listed here unless the user explicitly asks to reconsider.**
+
+When a new idea comes up, either extend `FEATURES.md` / `ARCHITECTURE.md` or add a `DECISIONS.md` entry — never silently drop it.
+
 ## Build & Test Commands
 
 ```bash
