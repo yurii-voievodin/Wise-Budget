@@ -32,10 +32,12 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
                         Label(category.name, systemImage: category.displayIconName).tag(C?.some(category))
                     }
                 }
-                Picker("Currency", selection: $currency) {
-                    ForEach(Locale.commonISOCurrencyCodes, id: \.self) { code in
-                        Text("\(code) – \(Locale.current.localizedString(forCurrencyCode: code) ?? code)")
-                            .tag(code)
+                NavigationLink {
+                    CurrencyPickerScreen(currency: $currency)
+                } label: {
+                    LabeledContent("Currency") {
+                        Text("\(currency) – \(Locale.current.localizedString(forCurrencyCode: currency) ?? currency)")
+                            .foregroundStyle(.secondary)
                     }
                 }
                 if isForeignCurrency {
