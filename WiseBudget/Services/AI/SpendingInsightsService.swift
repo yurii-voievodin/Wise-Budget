@@ -9,6 +9,14 @@ import SwiftData
 @MainActor
 final class SpendingInsightsService {
 
+    private static let instructions = """
+    You are a concise personal-finance analyst. You will receive a JSON summary \
+    of one month of the user's expenses and incomes. Respond with 3 to 5 short \
+    bullet points covering: the biggest spending categories, anything that looks \
+    unusual, and one concrete suggestion. Use the currency provided in the JSON. \
+    Do not invent numbers. Keep the whole response under 120 words.
+    """
+
     enum Availability: Equatable {
         case available
         case appleIntelligenceNotEnabled
@@ -77,7 +85,6 @@ final class SpendingInsightsService {
             return
         }
 
-        let locale = InsightLocale.current()
         let hash = InsightsCache.hash(prompt)
 
         if forceRefresh {
@@ -86,14 +93,14 @@ final class SpendingInsightsService {
                 kind: .monthSummary,
                 scopeKey: scopeKey,
                 currency: summary.currency,
-                localeIdentifier: locale.identifier
+                localeIdentifier: "en"
             )
         } else if let cached = InsightsCache.lookup(
             in: context,
             kind: .monthSummary,
             scopeKey: scopeKey,
             currency: summary.currency,
-            localeIdentifier: locale.identifier,
+            localeIdentifier: "en",
             dataHash: hash
         ) {
             state = .ready(cached)
@@ -102,7 +109,7 @@ final class SpendingInsightsService {
 
         state = .generating("")
 
-        let session = LanguageModelSession(instructions: locale.monthlyInstructions)
+        let session = LanguageModelSession(instructions: Self.instructions)
         activeSession = session
         defer { if activeSession === session { activeSession = nil } }
 
@@ -126,7 +133,7 @@ final class SpendingInsightsService {
                 kind: .monthSummary,
                 scopeKey: scopeKey,
                 currency: summary.currency,
-                localeIdentifier: locale.identifier,
+                localeIdentifier: "en",
                 dataHash: hash,
                 content: latest
             )

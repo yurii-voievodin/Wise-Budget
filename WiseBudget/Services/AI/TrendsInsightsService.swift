@@ -10,6 +10,15 @@ import SwiftData
 @MainActor
 final class TrendsInsightsService {
 
+    private static let instructions = """
+    You are a concise personal-finance analyst. You will receive a JSON summary \
+    of spending over several months, broken down by category. Respond in Markdown \
+    bullets and cover: 2 to 3 categories with the biggest month-over-month \
+    growth, 2 to 3 categories with the biggest drops, any unusual month, and end \
+    with one concrete, actionable suggestion. Use the currency provided in the \
+    JSON. Do not invent numbers. Keep the whole response under 150 words.
+    """
+
     enum State: Equatable {
         case idle
         case generating(String)
@@ -57,7 +66,6 @@ final class TrendsInsightsService {
             return
         }
 
-        let locale = InsightLocale.current()
         let hash = InsightsCache.hash(prompt)
 
         if forceRefresh {
@@ -66,14 +74,14 @@ final class TrendsInsightsService {
                 kind: kind,
                 scopeKey: scopeKey,
                 currency: summary.currency,
-                localeIdentifier: locale.identifier
+                localeIdentifier: "en"
             )
         } else if let cached = InsightsCache.lookup(
             in: context,
             kind: kind,
             scopeKey: scopeKey,
             currency: summary.currency,
-            localeIdentifier: locale.identifier,
+            localeIdentifier: "en",
             dataHash: hash
         ) {
             state = .ready(cached)
@@ -82,7 +90,7 @@ final class TrendsInsightsService {
 
         state = .generating("")
 
-        let session = LanguageModelSession(instructions: locale.trendsInstructions)
+        let session = LanguageModelSession(instructions: Self.instructions)
         activeSession = session
         defer { if activeSession === session { activeSession = nil } }
 
@@ -104,7 +112,7 @@ final class TrendsInsightsService {
                 kind: kind,
                 scopeKey: scopeKey,
                 currency: summary.currency,
-                localeIdentifier: locale.identifier,
+                localeIdentifier: "en",
                 dataHash: hash,
                 content: latest
             )
@@ -129,14 +137,13 @@ final class TrendsInsightsService {
             state = .idle
             return
         }
-        let locale = InsightLocale.current()
         let hash = InsightsCache.hash(prompt)
         if let cached = InsightsCache.lookup(
             in: context,
             kind: kind,
             scopeKey: scopeKey,
             currency: summary.currency,
-            localeIdentifier: locale.identifier,
+            localeIdentifier: "en",
             dataHash: hash
         ) {
             state = .ready(cached)
