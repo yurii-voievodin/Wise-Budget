@@ -95,3 +95,11 @@ Log of ideas that were explicitly **Rejected** or **Deferred**, with rationale. 
 ### PKO Bank Polski Integration — Deferred
 **Rationale:** Only exposes a PSD2 API. Production access is restricted to certified TPPs (KNF authorisation + eIDAS QWAC/QSealC + insurance), unachievable for a personal app. A sandbox-only PoC would produce a feature no real user could use.
 **Revisit when:** PKO publishes a non-PSD2 personal API, or we integrate via a TPP aggregator (Enable Banking / GoCardless / Nordigen) as an accepted architectural shift.
+
+---
+
+## 2026-04-21 — Ukrainian Insight Prompts
+
+### Ukrainian Foundation Models Prompts — Deferred
+**Rationale:** Apple Intelligence does not support Ukrainian, so the locale resolver always fell back to English and the Ukrainian prompts were permanently dead code. Removed the Ukrainian branch, the `InsightLocale` abstraction, and its tests; both insight services now inline the English instructions directly.
+**Revisit when:** Apple Intelligence adds Ukrainian language support — hopefully in macOS 27.

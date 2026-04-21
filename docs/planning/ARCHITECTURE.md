@@ -4,10 +4,6 @@ Accepted architecture and code-health proposals. Priority items sit at the top; 
 
 ---
 
-## Priority — Fix the Tap-to-Edit Delay
-
-When tapping a transaction row to open the edit form there's a noticeable delay. Investigate the root cause: is it `@Query` invalidating, sheet presentation cost, form content initialization, or expensive view body work? Profile with Instruments (Time Profiler + SwiftUI), identify the hotspot, and fix. Do this before a wider performance audit — a narrow, user-visible regression beats a general sweep.
-
 ## Priority — Full Swift 6 Strict Concurrency
 
 Recent commits already hardened concurrency; turn on complete strict concurrency checking project-wide and resolve remaining warnings. Catches data races at compile time and keeps the codebase future-proof.
