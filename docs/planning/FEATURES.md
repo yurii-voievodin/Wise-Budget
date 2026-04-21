@@ -1,22 +1,18 @@
 # Features
 
-Accepted candidate features. Priority 1–4 are the next wave; items below the priority block are accepted but not yet scheduled.
+Accepted candidate features in priority order. Items above the separator are the next wave; items below are accepted but not yet scheduled.
 
 ---
 
-## Priority 1 — Additional Bank Integrations (PrivatBank + PKO Poland)
+## Widgets & Lock Screen
 
-Add two new sync services following the established `WiseSyncService` / `MonobankSyncService` pattern: one API client + one sync service + one auth flow per bank. PrivatBank (api.privatbank.ua) and PKO Bank Polski (Poland). Each produces `CSVTransaction` structs, reuses `CSVImporter` for dedup and categorization, and stores tokens in Keychain. This is the next top priority because bank sync is the app's core flow.
+macOS 26 widgets showing current month spend vs. budget, top category, and a small trends spark. Reuses Dashboard data.
 
-## Priority 2 — Widgets & Lock Screen
-
-macOS 26 widgets showing current month spend vs. budget, top category, and a small trends spark. Reuses Dashboard data. Comes immediately after the new bank integrations so widgets show a complete picture.
-
-## Priority 3 — App Intents
+## App Intents
 
 Donate `App Intents` for "Log expense", "What did I spend on groceries this week?", "Show budget status". Surfaces WiseBudget in Spotlight and on-device AI queries. (Shortcuts app surfacing is out of scope for now — see DECISIONS.)
 
-## Priority 4 — Accessibility Audit Pass
+## Accessibility Audit Pass
 
 Run the `swiftui-pro` skill's accessibility references across the whole Views layer — confirm Dynamic Type scales, icon-only buttons have labels, Reduce Motion is respected, and color is never the sole differentiator. Wanted as soon as possible.
 

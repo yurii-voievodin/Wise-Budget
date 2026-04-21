@@ -83,3 +83,15 @@ Log of ideas that were explicitly **Rejected** or **Deferred**, with rationale. 
 ### Performance Sweep of Large Transaction Lists — Deferred
 **Rationale:** The narrow tap-to-edit delay fix is the priority instead.
 **Revisit when:** Users report slowdown with large datasets.
+
+---
+
+## 2026-04-21 — Additional Bank Integrations (Investigation)
+
+### PrivatBank Integration — Deferred
+**Rationale:** No public personal-account statement API. P24 (merchant_id + password) and AutoClient are restricted to merchants / ФОП / corporate clients. Token-auth personal access comparable to Monobank/Wise does not exist.
+**Revisit when:** PrivatBank publishes a personal API with user-obtainable auth (token or similar).
+
+### PKO Bank Polski Integration — Deferred
+**Rationale:** Only exposes a PSD2 API. Production access is restricted to certified TPPs (KNF authorisation + eIDAS QWAC/QSealC + insurance), unachievable for a personal app. A sandbox-only PoC would produce a feature no real user could use.
+**Revisit when:** PKO publishes a non-PSD2 personal API, or we integrate via a TPP aggregator (Enable Banking / GoCardless / Nordigen) as an accepted architectural shift.
