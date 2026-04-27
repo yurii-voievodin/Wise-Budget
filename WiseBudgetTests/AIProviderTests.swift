@@ -30,9 +30,7 @@ struct AIProviderTests {
         let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
         #expect(components.host == "gemini.google.com")
         #expect(components.path == "/app")
-
-        let items = try #require(components.queryItems)
-        #expect(items.contains(URLQueryItem(name: "q", value: "hello world")))
+        #expect(components.queryItems == nil)
     }
 
     @Test func openerURLPercentEncodesPrompt() throws {
