@@ -160,7 +160,7 @@ struct SpendingSummaryTests {
         #expect(summary.month.lowercased().contains("march") || summary.month.lowercased().contains("mar"))
     }
 
-    @Test func jsonEncodingProducesStableKeys() throws {
+    @Test func promptEncodingIncludesKeyFields() {
         let summary = SpendingSummary(
             month: "March 2026",
             currency: "EUR",
@@ -174,16 +174,16 @@ struct SpendingSummaryTests {
             ]
         )
 
-        let json = try summary.encodedAsJSON()
+        let prompt = summary.encodedAsPrompt()
 
-        #expect(json.contains("\"balance\":1450"))
-        #expect(json.contains("\"currency\":\"EUR\""))
-        #expect(json.contains("\"totalExpenses\":550"))
-        #expect(json.contains("\"totalIncome\":2000"))
-        #expect(json.contains("\"transactionCount\":4"))
-        #expect(json.contains("\"month\":\"March 2026\""))
-        #expect(json.contains("\"topCategories\""))
-        #expect(json.contains("\"Rent\""))
+        #expect(prompt.contains("Month: March 2026 (EUR)"))
+        #expect(prompt.contains("Income: 2000.00"))
+        #expect(prompt.contains("Expenses: 550.00"))
+        #expect(prompt.contains("Balance: 1450.00"))
+        #expect(prompt.contains("Transactions: 4"))
+        #expect(prompt.contains("Top categories:"))
+        #expect(prompt.contains("- Rent: 400.00 (73%)"))
+        #expect(prompt.contains("- Groceries: 150.00 (27%)"))
     }
 
     @Test func percentagesSumApproximatelyToHundred() throws {

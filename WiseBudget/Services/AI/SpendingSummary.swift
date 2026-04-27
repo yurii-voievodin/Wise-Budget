@@ -1,8 +1,9 @@
 import Foundation
 
 /// Compact, LLM-friendly snapshot of one month of spending.
-/// Built on the Dashboard and serialized to JSON for the Foundation Models prompt.
-/// Kept deliberately small (< 2 KB) — only aggregates, no per-transaction data.
+/// Built on the Dashboard and rendered as a compact plain-text block for the
+/// Foundation Models prompt. Plain text instead of JSON saves input tokens
+/// (no braces, quotes, or repeated keys), which directly cuts time-to-first-token.
 struct SpendingSummary: Codable, Sendable {
     struct CategoryTotal: Codable, Sendable {
         let name: String
@@ -18,11 +19,28 @@ struct SpendingSummary: Codable, Sendable {
     let transactionCount: Int
     let topCategories: [CategoryTotal]
 
-    func encodedAsJSON() throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(self)
-        return String(decoding: data, as: UTF8.self)
+    func encodedAsPrompt() -> String {
+        var lines: [String] = []
+        lines.append("Month: \(month) (\(currency))")
+        lines.append("Income: \(Self.formatAmount(totalIncome))")
+        lines.append("Expenses: \(Self.formatAmount(totalExpenses))")
+        lines.append("Balance: \(Self.formatAmount(balance))")
+        lines.append("Transactions: \(transactionCount)")
+        if !topCategories.isEmpty {
+            lines.append("Top categories:")
+            for cat in topCategories {
+                lines.append("- \(cat.name): \(Self.formatAmount(cat.amount)) (\(Self.formatPercent(cat.percentOfExpenses))%)")
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func formatAmount(_ value: Double) -> String {
+        String(format: "%.2f", value)
+    }
+
+    private static func formatPercent(_ value: Double) -> String {
+        String(format: "%.0f", value)
     }
 
     var isEmpty: Bool {

@@ -21,6 +21,7 @@ struct TrendsInsightsCard: View {
             TrendsSectionHeader()
         }
         .task(id: scopeKey, loadCached)
+        .onAppear { service.prewarm() }
     }
 
     private func generate() {

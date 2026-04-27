@@ -20,6 +20,7 @@ struct MonthlyInsightsCard: View {
             InsightsSectionHeader()
         }
         .task(id: scopeKey, autoGenerate)
+        .onAppear { service.prewarm() }
     }
 
     private func regenerate() {

@@ -1,6 +1,9 @@
 import Foundation
 import FoundationModels
+import OSLog
 import SwiftData
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsights")
 
 /// Wraps a Foundation Models `LanguageModelSession` to produce a short,
 /// human-readable narrative about a `SpendingSummary`. Runs entirely on-device
@@ -10,12 +13,21 @@ import SwiftData
 final class SpendingInsightsService {
 
     private static let instructions = """
-    You are a concise personal-finance analyst. You will receive a JSON summary \
-    of one month of the user's expenses and incomes. Respond with 3 to 5 short \
-    bullet points covering: the biggest spending categories, anything that looks \
-    unusual, and one concrete suggestion. Use the currency provided in the JSON. \
-    Do not invent numbers. Keep the whole response under 120 words.
+    You are a concise personal-finance analyst. The user message lists one \
+    month of expenses and incomes. Respond with 3 to 5 short bullet points \
+    covering: the biggest spending categories, anything unusual, and one \
+    concrete suggestion. Use the currency stated in the message. Do not \
+    invent numbers. Keep the whole response under 120 words.
     """
+
+    /// `.greedy` sampling is deterministic (improves cache hit rate against
+    /// `InsightsCache`) and slightly faster than nucleus sampling.
+    /// `maximumResponseTokens` caps worst-case latency: at ~30 tok/s on
+    /// modern devices, 220 tokens covers the 120-word ceiling with headroom.
+    private static let generationOptions = GenerationOptions(
+        sampling: .greedy,
+        maximumResponseTokens: 220
+    )
 
     /// Below this transaction count there isn't enough signal for the model to
     /// produce a useful narrative — the UI shows a static hint instead and the
@@ -42,7 +54,22 @@ final class SpendingInsightsService {
     /// Held so we can release the session when a generation is cancelled.
     private var activeSession: LanguageModelSession?
 
+    /// Long-lived session used purely to call `prewarm()` and keep the
+    /// on-device model loaded in memory between generations.
+    private var warmupSession: LanguageModelSession?
+
     var availability: Availability { Self.currentAvailability() }
+
+    /// Loads the on-device model into memory ahead of the first `generate(...)`
+    /// call. Apple reports up to ~40% reduction in time-to-first-token. Safe
+    /// to call repeatedly; subsequent calls are cheap no-ops.
+    func prewarm() {
+        guard availability == .available else { return }
+        if warmupSession == nil {
+            warmupSession = LanguageModelSession(instructions: Self.instructions)
+        }
+        warmupSession?.prewarm()
+    }
 
     static func currentAvailability() -> Availability {
         switch SystemLanguageModel.default.availability {
@@ -87,14 +114,7 @@ final class SpendingInsightsService {
             return
         }
 
-        let prompt: String
-        do {
-            prompt = try summary.encodedAsJSON()
-        } catch {
-            state = .error("Failed to prepare summary: \(error.localizedDescription)")
-            return
-        }
-
+        let prompt = summary.encodedAsPrompt()
         let hash = InsightsCache.hash(prompt)
 
         if forceRefresh {
@@ -113,10 +133,12 @@ final class SpendingInsightsService {
             localeIdentifier: "en",
             dataHash: hash
         ) {
+            logger.debug("Cache hit for scope=\(scopeKey, privacy: .public)")
             state = .ready(cached)
             return
         }
 
+        logger.debug("Sending prompt (scope=\(scopeKey, privacy: .public), \(prompt.count) chars):\n\(prompt, privacy: .public)")
         state = .generating("")
 
         let session = LanguageModelSession(instructions: Self.instructions)
@@ -124,7 +146,7 @@ final class SpendingInsightsService {
         defer { if activeSession === session { activeSession = nil } }
 
         do {
-            let stream = session.streamResponse(to: prompt)
+            let stream = session.streamResponse(to: prompt, options: Self.generationOptions)
             var latest = ""
             for try await partial in stream {
                 try Task.checkCancellation()
@@ -147,6 +169,7 @@ final class SpendingInsightsService {
                 dataHash: hash,
                 content: latest
             )
+            logger.debug("Received response (\(latest.count) chars):\n\(latest, privacy: .public)")
             state = .ready(latest)
         } catch is CancellationError {
             // Navigated away mid-generation. Reset so the card doesn't get
@@ -154,6 +177,7 @@ final class SpendingInsightsService {
             state = .idle
             return
         } catch {
+            logger.error("Generation failed: \(error.localizedDescription, privacy: .public)")
             state = .error(error.localizedDescription)
         }
     }

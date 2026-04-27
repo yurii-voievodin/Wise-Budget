@@ -17,11 +17,19 @@ struct TrendsSummary: Codable, Sendable {
         months.allSatisfy { $0.total == 0 }
     }
 
-    func encodedAsJSON() throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(self)
-        return String(decoding: data, as: UTF8.self)
+    /// Compact plain-text rendering for the Foundation Models prompt.
+    /// Avoids JSON punctuation tokens to reduce input-token count and latency.
+    func encodedAsPrompt() -> String {
+        var lines: [String] = []
+        lines.append("Range: \(rangeLabel) (\(currency))")
+        for month in months {
+            lines.append("\(month.label): total \(String(format: "%.2f", month.total))")
+            let sorted = month.byCategory.sorted { $0.value > $1.value }
+            for (name, amount) in sorted {
+                lines.append("  - \(name): \(String(format: "%.2f", amount))")
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 }
 

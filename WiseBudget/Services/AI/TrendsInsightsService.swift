@@ -1,6 +1,9 @@
 import Foundation
 import FoundationModels
+import OSLog
 import SwiftData
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "TrendsInsights")
 
 /// Generates trend narratives (growth / drops / unusual months) from a
 /// `TrendsSummary`. Unlike the monthly service this is manually invoked —
@@ -11,13 +14,19 @@ import SwiftData
 final class TrendsInsightsService {
 
     private static let instructions = """
-    You are a concise personal-finance analyst. You will receive a JSON summary \
-    of spending over several months, broken down by category. Respond in Markdown \
-    bullets and cover: 2 to 3 categories with the biggest month-over-month \
-    growth, 2 to 3 categories with the biggest drops, any unusual month, and end \
-    with one concrete, actionable suggestion. Use the currency provided in the \
-    JSON. Do not invent numbers. Keep the whole response under 150 words.
+    You are a concise personal-finance analyst. The user message lists \
+    spending over several months, broken down by category. Respond in \
+    Markdown bullets covering: 2 to 3 categories with the biggest \
+    month-over-month growth, 2 to 3 categories with the biggest drops, any \
+    unusual month, and one concrete, actionable suggestion. Use the currency \
+    stated in the message. Do not invent numbers. Keep the whole response \
+    under 150 words.
     """
+
+    private static let generationOptions = GenerationOptions(
+        sampling: .greedy,
+        maximumResponseTokens: 280
+    )
 
     enum State: Equatable {
         case idle
@@ -31,9 +40,23 @@ final class TrendsInsightsService {
     /// Held so we can release the session when a generation is cancelled.
     private var activeSession: LanguageModelSession?
 
+    /// Long-lived session used purely to call `prewarm()` and keep the
+    /// on-device model loaded in memory between generations.
+    private var warmupSession: LanguageModelSession?
+
     var availability: SpendingInsightsService.Availability {
         // Reuse the exact same availability logic — the underlying system model is shared.
         SpendingInsightsService.currentAvailability()
+    }
+
+    /// Loads the on-device model into memory ahead of the first `generate(...)`
+    /// call. Safe to call repeatedly.
+    func prewarm() {
+        guard availability == .available else { return }
+        if warmupSession == nil {
+            warmupSession = LanguageModelSession(instructions: Self.instructions)
+        }
+        warmupSession?.prewarm()
     }
 
     /// Resets the state to `.idle`. Called when the range switches.
@@ -58,14 +81,7 @@ final class TrendsInsightsService {
             return
         }
 
-        let prompt: String
-        do {
-            prompt = try summary.encodedAsJSON()
-        } catch {
-            state = .error("Failed to prepare trends payload: \(error.localizedDescription)")
-            return
-        }
-
+        let prompt = summary.encodedAsPrompt()
         let hash = InsightsCache.hash(prompt)
 
         if forceRefresh {
@@ -84,10 +100,12 @@ final class TrendsInsightsService {
             localeIdentifier: "en",
             dataHash: hash
         ) {
+            logger.debug("Cache hit for scope=\(scopeKey, privacy: .public)")
             state = .ready(cached)
             return
         }
 
+        logger.debug("Sending prompt (scope=\(scopeKey, privacy: .public), \(prompt.count) chars):\n\(prompt, privacy: .public)")
         state = .generating("")
 
         let session = LanguageModelSession(instructions: Self.instructions)
@@ -95,7 +113,7 @@ final class TrendsInsightsService {
         defer { if activeSession === session { activeSession = nil } }
 
         do {
-            let stream = session.streamResponse(to: prompt)
+            let stream = session.streamResponse(to: prompt, options: Self.generationOptions)
             var latest = ""
             for try await partial in stream {
                 try Task.checkCancellation()
@@ -116,11 +134,13 @@ final class TrendsInsightsService {
                 dataHash: hash,
                 content: latest
             )
+            logger.debug("Received response (\(latest.count) chars):\n\(latest, privacy: .public)")
             state = .ready(latest)
         } catch is CancellationError {
             state = .idle
             return
         } catch {
+            logger.error("Generation failed: \(error.localizedDescription, privacy: .public)")
             state = .error(error.localizedDescription)
         }
     }
@@ -133,10 +153,7 @@ final class TrendsInsightsService {
         scopeKey: String,
         in context: ModelContext
     ) {
-        guard let prompt = try? summary.encodedAsJSON() else {
-            state = .idle
-            return
-        }
+        let prompt = summary.encodedAsPrompt()
         let hash = InsightsCache.hash(prompt)
         if let cached = InsightsCache.lookup(
             in: context,
