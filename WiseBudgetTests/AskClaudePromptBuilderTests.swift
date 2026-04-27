@@ -51,6 +51,48 @@ struct AskClaudePromptBuilderTests {
         #expect(!payload.contains("Prior month"))
     }
 
+    @Test func buildAsksForInsightsRecommendationsAndChart() throws {
+        let payload = AskClaudePromptBuilder.build(
+            monthFilter: MonthFilter(year: 2026, month: 4),
+            currentMonthExpenses: [],
+            baseCurrency: "USD"
+        )
+
+        // Coach role + the three numbered asks (insights / recommendations / chart).
+        #expect(payload.contains("personal-finance coach"))
+        #expect(payload.lowercased().contains("recurring"))
+        #expect(payload.contains("2–3 concrete, specific recommendations"))
+        #expect(payload.contains("chart of spending by category"))
+        // Mentions at least one inline-visualization tool by name so the
+        // model knows it's allowed to render a chart.
+        #expect(payload.contains("Claude artifact") || payload.contains("ChatGPT code interpreter") || payload.contains("Gemini canvas"))
+    }
+
+    @Test func buildOmitsDateColumn() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let groceries = ExpenseCategory(name: "Groceries")
+        context.insert(groceries)
+        let expense = Expense(
+            amount: Decimal(string: "42.10")!,
+            currency: "USD",
+            date: try makeDate(year: 2026, month: 4, day: 2),
+            category: groceries,
+            descriptionText: "ATB"
+        )
+        context.insert(expense)
+
+        let payload = AskClaudePromptBuilder.build(
+            monthFilter: MonthFilter(year: 2026, month: 4),
+            currentMonthExpenses: [expense],
+            baseCurrency: "USD"
+        )
+
+        #expect(!payload.contains("| Date"))
+        #expect(!payload.contains("2026-04-02"))
+    }
+
     @Test func buildRendersTransactionRow() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -72,7 +114,7 @@ struct AskClaudePromptBuilderTests {
             baseCurrency: "USD"
         )
 
-        #expect(payload.contains("| 2026-04-02 | Groceries | 42.10 USD | — | ATB |"))
+        #expect(payload.contains("| Groceries | 42.10 USD | — | ATB |"))
     }
 
     @Test func buildShowsOriginalAmountWhenForeignCurrency() throws {
@@ -102,39 +144,39 @@ struct AskClaudePromptBuilderTests {
         #expect(payload.contains("1,580.00 UAH"))
     }
 
-    @Test func buildSortsTransactionsByDate() throws {
+    @Test func buildSortsTransactionsByBaseAmountDescending() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
         let groceries = ExpenseCategory(name: "Groceries")
         context.insert(groceries)
 
-        let later = Expense(
-            amount: 20,
-            currency: "USD",
-            date: try makeDate(year: 2026, month: 4, day: 20),
-            category: groceries,
-            descriptionText: "Later"
-        )
-        let earlier = Expense(
+        let small = Expense(
             amount: 10,
             currency: "USD",
             date: try makeDate(year: 2026, month: 4, day: 5),
             category: groceries,
-            descriptionText: "Earlier"
+            descriptionText: "Small"
         )
-        context.insert(later)
-        context.insert(earlier)
+        let large = Expense(
+            amount: 200,
+            currency: "USD",
+            date: try makeDate(year: 2026, month: 4, day: 20),
+            category: groceries,
+            descriptionText: "Large"
+        )
+        context.insert(small)
+        context.insert(large)
 
         let payload = AskClaudePromptBuilder.build(
             monthFilter: MonthFilter(year: 2026, month: 4),
-            currentMonthExpenses: [later, earlier],
+            currentMonthExpenses: [small, large],
             baseCurrency: "USD"
         )
 
-        let earlierRange = try #require(payload.range(of: "Earlier"))
-        let laterRange = try #require(payload.range(of: "Later"))
-        #expect(earlierRange.lowerBound < laterRange.lowerBound)
+        let largeRange = try #require(payload.range(of: "Large"))
+        let smallRange = try #require(payload.range(of: "Small"))
+        #expect(largeRange.lowerBound < smallRange.lowerBound)
     }
 
     @Test func buildHandlesEmptyCurrentMonth() throws {
