@@ -48,4 +48,38 @@ struct AIProviderTests {
     @Test func allCasesContainsAllThreeProviders() {
         #expect(Set(AIProvider.allCases) == Set([.claude, .chatgpt, .gemini]))
     }
+
+    @Test func onlyClaudeAndGeminiUseEmbeddedWebView() {
+        #expect(AIProvider.claude.usesEmbeddedWebView)
+        #expect(AIProvider.gemini.usesEmbeddedWebView)
+        #expect(!AIProvider.chatgpt.usesEmbeddedWebView)
+    }
+
+    @Test func embeddedURLsHaveNoQueryItems() throws {
+        for provider in AIProvider.allCases {
+            let components = try #require(URLComponents(url: provider.embeddedURL, resolvingAgainstBaseURL: false))
+            #expect(components.queryItems == nil)
+        }
+        #expect(AIProvider.claude.embeddedURL.absoluteString == "https://claude.ai/new")
+        #expect(AIProvider.gemini.embeddedURL.absoluteString == "https://gemini.google.com/app")
+    }
+
+    @Test func autoPasteScriptReferencesPayloadArgumentAndReturnsBool() {
+        // Body should reference `payload` (the named argument passed via
+        // WebPage.callJavaScript(_:arguments:)) and return true/false so
+        // the Swift caller can detect a missed selector and fall back to
+        // the clipboard.
+        let body = AIProvider.claude.autoPasteScriptBody
+        #expect(body.contains("payload"))
+        #expect(body.contains("return true"))
+        #expect(body.contains("return false"))
+    }
+
+    @Test func autoPasteScriptEmbedsExpectedSelectors() {
+        #expect(AIProvider.claude.autoPasteScriptBody.contains("ProseMirror"))
+
+        let geminiBody = AIProvider.gemini.autoPasteScriptBody
+        #expect(geminiBody.contains("rich-textarea"))
+        #expect(geminiBody.contains("ql-editor"))
+    }
 }

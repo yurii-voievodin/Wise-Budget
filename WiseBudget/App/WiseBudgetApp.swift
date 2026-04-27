@@ -86,6 +86,15 @@ struct WiseBudgetApp: App {
         .defaultSize(width: 900, height: 600)
         .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
+
+        WindowGroup(id: "ai-chat", for: AIChatRequest.self) { $request in
+            if let request {
+                AIChatWindowContent(request: request)
+                    .frame(minWidth: 600, minHeight: 500)
+            }
+        }
+        .defaultSize(width: 900, height: 720)
+
         Settings {
             SettingsView()
                 .modelContainer(sharedModelContainer)

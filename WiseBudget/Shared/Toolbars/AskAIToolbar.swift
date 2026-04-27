@@ -10,6 +10,7 @@ import TipKit
 @MainActor
 struct AskAIToolbar: ToolbarContent {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("defaultAIProvider") private var defaultProvider: AIProvider = .claude
 
@@ -69,7 +70,14 @@ struct AskAIToolbar: ToolbarContent {
             baseCurrency: defaultCurrency,
             responseLanguageName: AskClaudePromptBuilder.systemResponseLanguageName()
         )
-        AIHandoffService.handoff(payload: payload, provider: provider)
+
+        if provider.usesEmbeddedWebView {
+            let combined = AIHandoffService.openerPrompt + "\n\n" + payload
+            openWindow(id: "ai-chat", value: AIChatRequest(provider: provider, payload: combined))
+        } else {
+            AIHandoffService.handoff(payload: payload, provider: provider)
+        }
+
         defaultProvider = provider
         Self.tip.invalidate(reason: .actionPerformed)
         onCopied(provider)

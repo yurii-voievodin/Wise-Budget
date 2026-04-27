@@ -5,7 +5,7 @@ import Foundation
 /// Each case knows how to build an opener URL that prefills the chat
 /// composer with a generic, data-free prompt. The actual transaction data
 /// always travels via the clipboard — see `AIHandoffService`.
-enum AIProvider: String, CaseIterable, Identifiable, Sendable {
+enum AIProvider: String, CaseIterable, Identifiable, Sendable, Codable, Hashable {
     case claude
     case chatgpt
     case gemini
@@ -28,6 +28,25 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Whether the provider opens inside the app in an embedded web view
+    /// instead of being handed off to the default browser.
+    var usesEmbeddedWebView: Bool {
+        switch self {
+        case .claude, .gemini: return true
+        case .chatgpt:         return false
+        }
+    }
+
+    /// Entry point loaded by the embedded web view. No `?q=` parameter —
+    /// the prompt is injected into the composer via JavaScript instead.
+    var embeddedURL: URL {
+        switch self {
+        case .claude:  return URL(string: "https://claude.ai/new")!
+        case .chatgpt: return URL(string: "https://chatgpt.com/")!
+        case .gemini:  return URL(string: "https://gemini.google.com/app")!
+        }
+    }
+
     func openerURL(prompt: String) -> URL {
         switch self {
         case .claude:
@@ -46,5 +65,39 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
         case .gemini:
             return URL(string: "https://gemini.google.com/app")!
         }
+    }
+
+    /// JavaScript function body that fills the provider's composer with the
+    /// `payload` argument (passed via `WebPage.callJavaScript(_:arguments:)`)
+    /// and returns `true` on success / `false` if the composer wasn't found
+    /// inside the retry window. The body uses `await` because
+    /// `WebPage.callJavaScript` runs it as an async function.
+    var autoPasteScriptBody: String {
+        let selector: String
+        switch self {
+        case .claude:
+            selector = #"div.ProseMirror[contenteditable=\"true\"]"#
+        case .gemini:
+            selector = #"rich-textarea div.ql-editor[contenteditable=\"true\"]"#
+        case .chatgpt:
+            selector = #"#prompt-textarea[contenteditable=\"true\"]"#
+        }
+
+        return """
+        const selector = "\(selector)";
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+            const el = document.querySelector(selector);
+            if (el) {
+                el.focus();
+                el.textContent = payload;
+                el.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertFromPaste', data: payload }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return false;
+        """
     }
 }
