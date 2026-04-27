@@ -48,9 +48,28 @@ final class CSVExporter {
         return lines.joined(separator: "\n")
     }
 
-    static func exportCSV(from context: ModelContext) throws -> String {
-        let expenses = try context.fetch(FetchDescriptor<Expense>())
-        let incomes = try context.fetch(FetchDescriptor<Income>())
+    static func exportCSV(from context: ModelContext, dateRange: DateInterval? = nil) throws -> String {
+        let expenseDescriptor: FetchDescriptor<Expense>
+        let incomeDescriptor: FetchDescriptor<Income>
+
+        if let range = dateRange {
+            let start = range.start
+            let end = range.end
+            expenseDescriptor = FetchDescriptor<Expense>(
+                predicate: #Predicate { $0.date >= start && $0.date < end },
+                sortBy: [SortDescriptor(\.date)]
+            )
+            incomeDescriptor = FetchDescriptor<Income>(
+                predicate: #Predicate { $0.date >= start && $0.date < end },
+                sortBy: [SortDescriptor(\.date)]
+            )
+        } else {
+            expenseDescriptor = FetchDescriptor<Expense>(sortBy: [SortDescriptor(\.date)])
+            incomeDescriptor = FetchDescriptor<Income>(sortBy: [SortDescriptor(\.date)])
+        }
+
+        let expenses = try context.fetch(expenseDescriptor)
+        let incomes = try context.fetch(incomeDescriptor)
         return exportCSV(expenses: expenses, incomes: incomes)
     }
 

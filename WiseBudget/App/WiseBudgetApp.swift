@@ -90,6 +90,9 @@ struct WiseBudgetApp: App {
                 Button("Export Data to CSV...") {
                     exportDataCSV()
                 }
+                Button("Export Current Month to CSV...") {
+                    exportCurrentMonthCSV()
+                }
                 Divider()
                 Button("Import Data from CSV...") {
                     importAppDataCSV()
@@ -121,6 +124,34 @@ struct WiseBudgetApp: App {
 
         do {
             let csvString = try CSVExporter.exportCSV(from: sharedModelContainer.mainContext)
+            try csvString.write(to: url, atomically: true, encoding: .utf8)
+            exportError = nil
+            showingExportAlert = true
+        } catch {
+            exportError = error.localizedDescription
+            showingExportAlert = true
+        }
+    }
+
+    private func exportCurrentMonthCSV() {
+        guard let monthInterval = Calendar.current.dateInterval(of: .month, for: .now) else { return }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let monthLabel = formatter.string(from: monthInterval.start)
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.nameFieldStringValue = "WiseBudget-\(monthLabel).csv"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let csvString = try CSVExporter.exportCSV(
+                from: sharedModelContainer.mainContext,
+                dateRange: monthInterval
+            )
             try csvString.write(to: url, atomically: true, encoding: .utf8)
             exportError = nil
             showingExportAlert = true

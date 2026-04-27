@@ -145,6 +145,29 @@ struct CSVExportImportTests {
         #expect(escaped == "\"She said \"\"hello\"\"\"")
     }
 
+    @Test func exportFiltersByDateRange() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let category = ExpenseCategory(name: "Food")
+        context.insert(category)
+
+        context.insert(Expense(amount: 10, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 15), category: category))
+        context.insert(Expense(amount: 20, currency: "USD", date: try makeDate(year: 2026, month: 2, day: 28), category: category))
+        context.insert(Expense(amount: 30, currency: "USD", date: try makeDate(year: 2026, month: 4, day: 1), category: category))
+
+        let monthStart = try makeDate(year: 2026, month: 3, day: 1)
+        let monthEnd = try makeDate(year: 2026, month: 4, day: 1)
+        let interval = DateInterval(start: monthStart, end: monthEnd)
+
+        let csv = try CSVExporter.exportCSV(from: context, dateRange: interval)
+        let lines = csv.components(separatedBy: "\n")
+        #expect(lines.count == 2) // header + 1 in-range expense
+
+        let fields = CSVImporter.parseCSVLine(lines[1])
+        #expect(fields[2] == "10")
+    }
+
     @Test func exportFromContext() throws {
         let container = try makeContainer()
         let context = container.mainContext
