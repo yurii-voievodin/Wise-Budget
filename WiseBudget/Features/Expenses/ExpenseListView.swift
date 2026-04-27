@@ -6,12 +6,12 @@ struct ExpenseListView: View {
     @Binding var filter: MonthFilter
     @Binding var selectedSidebarItem: SidebarItem
     @Binding var selectedCategoryName: String?
+    @Binding var selectedTab: ExpenseTab
 
     @Query(sort: \ExpenseCategory.name) private var expenseCategories: [ExpenseCategory]
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
-    @State private var selectedTab: ExpenseTab = .calendar
     @State private var syncService = BankSyncService()
 
     enum ExpenseTab: Hashable {
@@ -83,7 +83,8 @@ struct ExpenseListView: View {
     @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
     @Previewable @State var selectedSidebarItem: SidebarItem = .expenses
     @Previewable @State var selectedCategoryName: String? = nil
-    ExpenseListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $selectedCategoryName)
+    @Previewable @State var selectedTab: ExpenseListView.ExpenseTab = .calendar
+    ExpenseListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $selectedCategoryName, selectedTab: $selectedTab)
         .modelContainer(PreviewSampleData.container)
         .frame(width: 700, height: 500)
 }

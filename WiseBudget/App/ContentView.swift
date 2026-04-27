@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var selectedSidebarItem: SidebarItem = .dashboard
     @State private var monthFilter: MonthFilter = .currentMonth()
     @State private var expenseCategoryFilter: String?
+    @State private var expenseListTab: ExpenseListView.ExpenseTab = .calendar
 
     var body: some View {
         NavigationSplitView {
@@ -24,15 +25,19 @@ struct ContentView: View {
         } detail: {
             switch selectedSidebarItem {
             case .dashboard:
-                DashboardView(monthFilter: $monthFilter)
-                    .id(monthFilter)
-                    .toolbar {
-                        MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
-                    }
+                DashboardView(monthFilter: $monthFilter) { categoryName in
+                    expenseCategoryFilter = categoryName
+                    expenseListTab = .expenses
+                    selectedSidebarItem = .expenses
+                }
+                .id(monthFilter)
+                .toolbar {
+                    MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
+                }
             case .budgetPlan:
                 BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, monthFilter: $monthFilter, expenseCategoryFilter: $expenseCategoryFilter)
             case .expenses:
-                ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $expenseCategoryFilter)
+                ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $expenseCategoryFilter, selectedTab: $expenseListTab)
             case .income:
                 IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem)
             case .comparison:
@@ -50,6 +55,7 @@ struct ContentView: View {
             }
             if oldValue == .expenses {
                 expenseCategoryFilter = nil
+                expenseListTab = .calendar
             }
         }
     }

@@ -8,9 +8,14 @@ struct DashboardView: View {
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var monthFilter: MonthFilter
+    var onSelectCategory: (String) -> Void
 
-    init(monthFilter: Binding<MonthFilter>) {
+    @State private var expenseToEdit: Expense?
+    @State private var incomeToEdit: Income?
+
+    init(monthFilter: Binding<MonthFilter>, onSelectCategory: @escaping (String) -> Void = { _ in }) {
         self._monthFilter = monthFilter
+        self.onSelectCategory = onSelectCategory
 
         let startDate = monthFilter.wrappedValue.startOfMonth
         let endDate = monthFilter.wrappedValue.startOfNextMonth
@@ -198,12 +203,47 @@ struct DashboardView: View {
                     DashboardTopCategoriesSection(
                         slices: topCategories,
                         totalExpenses: totalExpenses,
-                        currency: defaultCurrency
+                        currency: defaultCurrency,
+                        onSelect: onSelectCategory
                     )
                 }
-                DashboardRecentTransactionsSection(transactions: recentTransactions)
+                DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
+                    if let expense = transaction.item as? Expense {
+                        expenseToEdit = expense
+                    } else if let income = transaction.item as? Income {
+                        incomeToEdit = income
+                    }
+                }
             }
             .formStyle(.grouped)
+            .sheet(item: $expenseToEdit) { expense in
+                ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
+                    withAnimation {
+                        expense.amount = amount
+                        expense.currency = currency
+                        expense.date = date
+                        expense.category = category
+                        expense.descriptionText = descriptionText
+                        expense.destination = destination
+                        expense.baseCurrencyAmount = baseCurrencyAmount
+                        expense.baseCurrency = baseCurrency
+                    }
+                }
+            }
+            .sheet(item: $incomeToEdit) { income in
+                IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
+                    withAnimation {
+                        income.amount = amount
+                        income.currency = currency
+                        income.date = date
+                        income.category = category
+                        income.descriptionText = descriptionText
+                        income.source = source
+                        income.baseCurrencyAmount = baseCurrencyAmount
+                        income.baseCurrency = baseCurrency
+                    }
+                }
+            }
         }
     }
 }

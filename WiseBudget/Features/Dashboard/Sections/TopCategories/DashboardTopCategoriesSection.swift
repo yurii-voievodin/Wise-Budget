@@ -4,15 +4,22 @@ struct DashboardTopCategoriesSection: View {
     let slices: [CategoryChartSlice]
     let totalExpenses: Decimal
     let currency: String
+    let onSelect: (String) -> Void
 
     var body: some View {
         Section("Top Spending") {
             ForEach(slices) { slice in
-                DashboardTopCategoryRow(
-                    slice: slice,
-                    totalExpenses: totalExpenses,
-                    currency: currency
-                )
+                Button {
+                    onSelect(slice.name)
+                } label: {
+                    DashboardTopCategoryRow(
+                        slice: slice,
+                        totalExpenses: totalExpenses,
+                        currency: currency
+                    )
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

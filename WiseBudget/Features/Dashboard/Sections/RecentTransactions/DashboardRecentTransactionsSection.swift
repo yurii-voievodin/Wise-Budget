@@ -12,6 +12,7 @@ struct DashboardRecentTransaction: Identifiable {
 
 struct DashboardRecentTransactionsSection: View {
     let transactions: [DashboardRecentTransaction]
+    let onTap: (DashboardRecentTransaction) -> Void
 
     var body: some View {
         Section("Recent Transactions") {
@@ -20,18 +21,25 @@ struct DashboardRecentTransactionsSection: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(transactions) { transaction in
-                    HStack {
-                        Image(systemName: transaction.isExpense ? "arrow.up.circle" : "arrow.down.circle")
-                            .foregroundStyle(transaction.isExpense ? .red : .green)
-                            .frame(width: 20)
-                        TransactionRowView(
-                            descriptionText: transaction.descriptionText,
-                            categoryName: transaction.categoryName,
-                            categoryIcon: transaction.categoryIcon,
-                            extraField: nil,
-                            item: transaction.item
-                        )
+                    Button {
+                        onTap(transaction)
+                    } label: {
+                        HStack {
+                            Image(systemName: transaction.isExpense ? "arrow.up.circle" : "arrow.down.circle")
+                                .foregroundStyle(transaction.isExpense ? .red : .green)
+                                .frame(width: 20)
+                                .accessibilityHidden(true)
+                            TransactionRowView(
+                                descriptionText: transaction.descriptionText,
+                                categoryName: transaction.categoryName,
+                                categoryIcon: transaction.categoryIcon,
+                                extraField: nil,
+                                item: transaction.item
+                            )
+                        }
+                        .contentShape(.rect)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }

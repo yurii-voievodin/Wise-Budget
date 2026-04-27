@@ -12,7 +12,7 @@ struct BaseCurrencyField: View {
     @State private var rateService = ExchangeRateService()
 
     private var rateTrigger: String {
-        "\(amount?.description ?? "nil")|\(currency)|\(date.timeIntervalSince1970)"
+        "\(amount?.description ?? "nil")|\(currency)|\(date.timeIntervalSince1970)|\(baseCurrencyAmount == nil)"
     }
 
     var body: some View {
@@ -35,6 +35,7 @@ struct BaseCurrencyField: View {
         }
         .task(id: rateTrigger) {
             suggestedAmount = nil
+            guard baseCurrencyAmount == nil else { return }
             guard let amount, amount > .zero else { return }
             isFetchingRate = true
             let result = await rateService.suggestedConversion(amount: amount, from: currency, to: defaultCurrency, on: date)
