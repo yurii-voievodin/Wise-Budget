@@ -28,22 +28,27 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable, Codable, Hashable
         }
     }
 
-    /// Whether the provider opens inside the app in an embedded web view
-    /// instead of being handed off to the default browser.
-    var usesEmbeddedWebView: Bool {
+    /// Bundle identifier of the native macOS app that hosts the provider,
+    /// if one exists. Used by `LocalAIAppDetector` to surface "Open in {App}"
+    /// menu rows when the app is installed.
+    var localAppBundleID: String? {
         switch self {
-        case .claude, .gemini: return true
-        case .chatgpt:         return false
+        case .claude:  return "com.anthropic.claudefordesktop"
+        case .chatgpt: return "com.openai.chat"
+        case .gemini:  return nil
         }
     }
 
-    /// Entry point loaded by the embedded web view. No `?q=` parameter —
-    /// the prompt is injected into the composer via JavaScript instead.
-    var embeddedURL: URL {
+    /// Custom URL schemes to probe in order before falling back to plain
+    /// "activate the app" handoff (option 2). Empty until specific apps
+    /// publish a documented prompt-prefill scheme — keeping the structure
+    /// here lets us add candidates without touching the call site.
+    func localAppPrefillURLs(prompt: String) -> [URL] {
+        let _ = prompt
         switch self {
-        case .claude:  return URL(string: "https://claude.ai/new")!
-        case .chatgpt: return URL(string: "https://chatgpt.com/")!
-        case .gemini:  return URL(string: "https://gemini.google.com/app")!
+        case .claude:  return []
+        case .chatgpt: return []
+        case .gemini:  return []
         }
     }
 
@@ -65,39 +70,5 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable, Codable, Hashable
         case .gemini:
             return URL(string: "https://gemini.google.com/app")!
         }
-    }
-
-    /// JavaScript function body that fills the provider's composer with the
-    /// `payload` argument (passed via `WebPage.callJavaScript(_:arguments:)`)
-    /// and returns `true` on success / `false` if the composer wasn't found
-    /// inside the retry window. The body uses `await` because
-    /// `WebPage.callJavaScript` runs it as an async function.
-    var autoPasteScriptBody: String {
-        let selector: String
-        switch self {
-        case .claude:
-            selector = #"div.ProseMirror[contenteditable=\"true\"]"#
-        case .gemini:
-            selector = #"rich-textarea div.ql-editor[contenteditable=\"true\"]"#
-        case .chatgpt:
-            selector = #"#prompt-textarea[contenteditable=\"true\"]"#
-        }
-
-        return """
-        const selector = "\(selector)";
-        const deadline = Date.now() + 5000;
-        while (Date.now() < deadline) {
-            const el = document.querySelector(selector);
-            if (el) {
-                el.focus();
-                el.textContent = payload;
-                el.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertFromPaste', data: payload }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-                return true;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return false;
-        """
     }
 }

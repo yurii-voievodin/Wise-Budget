@@ -34,6 +34,7 @@ struct WiseBudgetApp: App {
     @State private var showResetPlanConfirmation = false
     @State private var showingExportAlert = false
     @State private var exportError: String?
+    @State private var localAIAppDetector = LocalAIAppDetector()
 
     init() {
         try? Tips.configure([.displayFrequency(.monthly), .datastoreLocation(.applicationDefault)])
@@ -43,6 +44,7 @@ struct WiseBudgetApp: App {
         WindowGroup {
             ContentView()
                 .frame(minWidth: 750, maxWidth: 1400, minHeight: 400)
+                .environment(localAIAppDetector)
                 .onAppear {
                     let context = sharedModelContainer.mainContext
                     DataSeeder.prepopulateCategories(in: context)
@@ -86,14 +88,6 @@ struct WiseBudgetApp: App {
         .defaultSize(width: 900, height: 600)
         .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
-
-        WindowGroup(id: "ai-chat", for: AIChatRequest.self) { $request in
-            if let request {
-                AIChatWindowContent(request: request)
-                    .frame(minWidth: 600, minHeight: 500)
-            }
-        }
-        .defaultSize(width: 900, height: 720)
 
         Settings {
             SettingsView()

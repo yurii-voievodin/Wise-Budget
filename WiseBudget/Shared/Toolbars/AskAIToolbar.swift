@@ -4,13 +4,13 @@ import TipKit
 
 /// Toolbar menu that copies the selected month's transactions plus an
 /// analysis prompt to the clipboard, then opens a chosen AI chat provider
-/// (Claude / ChatGPT / Gemini). The last-used provider floats to the top
-/// of the menu via `@AppStorage`. Disabled when the selected month has no
+/// (Claude / ChatGPT / Gemini). The last-used target floats to the top of
+/// the menu via `@AppStorage`. Disabled when the selected month has no
 /// expenses.
 @MainActor
 struct AskAIToolbar: ToolbarContent {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.openWindow) private var openWindow
+    @Environment(LocalAIAppDetector.self) private var localAppDetector
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
     @AppStorage("defaultAIProvider") private var defaultProvider: AIProvider = .claude
 
@@ -35,9 +35,11 @@ struct AskAIToolbar: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItem {
             Menu {
-                ForEach(orderedProviders) { provider in
-                    Button(provider.displayName, systemImage: provider.iconName) {
-                        handoff(provider: provider)
+                ForEach(orderedTargets) { target in
+                    Button {
+                        handoff(target: target)
+                    } label: {
+                        targetLabel(for: target)
                     }
                 }
             } label: {
@@ -49,12 +51,44 @@ struct AskAIToolbar: ToolbarContent {
         }
     }
 
-    private var orderedProviders: [AIProvider] {
-        let rest = AIProvider.allCases.filter { $0 != defaultProvider }
-        return [defaultProvider] + rest
+    @ViewBuilder
+    private func targetLabel(for target: AIHandoffTarget) -> some View {
+        switch target.destination {
+        case .nativeApp:
+            if let app = localAppDetector.localApp(for: target.provider) {
+                Label {
+                    Text(target.provider.displayName)
+                } icon: {
+                    Image(nsImage: app.icon)
+                }
+            } else {
+                Label(target.provider.displayName, systemImage: target.provider.iconName)
+            }
+        case .web:
+            Label(target.provider.displayName, systemImage: target.provider.iconName)
+        }
     }
 
-    private func handoff(provider: AIProvider) {
+    /// One row per provider. If a native macOS app is detected, the row
+    /// hands off to that app; otherwise it falls back to the browser. The
+    /// last-used provider floats to the top via `defaultProvider`.
+    private var orderedTargets: [AIHandoffTarget] {
+        let all = AIProvider.allCases.map { provider -> AIHandoffTarget in
+            let destination: AIHandoffTarget.Destination =
+                localAppDetector.localApp(for: provider) != nil ? .nativeApp : .web
+            return AIHandoffTarget(provider: provider, destination: destination)
+        }
+
+        guard let preferredIndex = all.firstIndex(where: { $0.provider == defaultProvider }) else {
+            return all
+        }
+        var ordered = all
+        let item = ordered.remove(at: preferredIndex)
+        ordered.insert(item, at: 0)
+        return ordered
+    }
+
+    private func handoff(target: AIHandoffTarget) {
         let currentStart = filter.startOfMonth
         let currentEnd = filter.startOfNextMonth
 
@@ -71,15 +105,23 @@ struct AskAIToolbar: ToolbarContent {
             responseLanguageName: AskClaudePromptBuilder.systemResponseLanguageName()
         )
 
-        if provider.usesEmbeddedWebView {
-            let combined = AIHandoffService.openerPrompt + "\n\n" + payload
-            openWindow(id: "ai-chat", value: AIChatRequest(provider: provider, payload: combined))
-        } else {
-            AIHandoffService.handoff(payload: payload, provider: provider)
+        switch target.destination {
+        case .nativeApp:
+            if let app = localAppDetector.localApp(for: target.provider) {
+                AIHandoffService.handoffToLocalApp(
+                    payload: payload,
+                    provider: target.provider,
+                    appURL: app.url
+                )
+            } else {
+                AIHandoffService.handoff(payload: payload, provider: target.provider)
+            }
+        case .web:
+            AIHandoffService.handoff(payload: payload, provider: target.provider)
         }
 
-        defaultProvider = provider
+        defaultProvider = target.provider
         Self.tip.invalidate(reason: .actionPerformed)
-        onCopied(provider)
+        onCopied(target.provider)
     }
 }
