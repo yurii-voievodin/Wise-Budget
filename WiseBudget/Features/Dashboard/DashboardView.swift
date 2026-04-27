@@ -130,10 +130,8 @@ struct DashboardView: View {
         SpendingSummary.build(
             monthFilter: monthFilter,
             currency: defaultCurrency,
-            totalIncome: NSDecimalNumber(decimal: totalIncome).doubleValue,
-            totalExpenses: NSDecimalNumber(decimal: totalExpenses).doubleValue,
-            transactionCount: expenses.count + incomes.count,
-            expenseSlices: expenseSlices
+            expenses: expenses,
+            incomes: incomes
         )
     }
 

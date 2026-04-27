@@ -160,7 +160,7 @@ struct SpendingSummaryTests {
         #expect(summary.month.lowercased().contains("march") || summary.month.lowercased().contains("mar"))
     }
 
-    @Test func promptEncodingIncludesKeyFields() {
+    @Test func promptEncodingIncludesTotalsAndLedger() {
         let summary = SpendingSummary(
             month: "March 2026",
             currency: "EUR",
@@ -171,6 +171,13 @@ struct SpendingSummaryTests {
             topCategories: [
                 .init(name: "Rent", amount: 400, percentOfExpenses: 72.7),
                 .init(name: "Groceries", amount: 150, percentOfExpenses: 27.3),
+            ],
+            incomes: [
+                .init(amount: 2000, category: "Salary", label: "ACME Corp"),
+            ],
+            expenses: [
+                .init(amount: 400, category: "Rent", label: nil),
+                .init(amount: 150, category: "Groceries", label: "Whole Foods"),
             ]
         )
 
@@ -180,10 +187,13 @@ struct SpendingSummaryTests {
         #expect(prompt.contains("Income: 2000.00"))
         #expect(prompt.contains("Expenses: 550.00"))
         #expect(prompt.contains("Balance: 1450.00"))
+        #expect(prompt.contains("Savings: 73%"))
         #expect(prompt.contains("Transactions: 4"))
-        #expect(prompt.contains("Top categories:"))
-        #expect(prompt.contains("- Rent: 400.00 (73%)"))
-        #expect(prompt.contains("- Groceries: 150.00 (27%)"))
+        #expect(prompt.contains("Income transactions"))
+        #expect(prompt.contains("+2000.00  Salary  ACME Corp"))
+        #expect(prompt.contains("Expense transactions"))
+        #expect(prompt.contains("-400.00  Rent"))
+        #expect(prompt.contains("-150.00  Groceries  Whole Foods"))
     }
 
     @Test func percentagesSumApproximatelyToHundred() throws {

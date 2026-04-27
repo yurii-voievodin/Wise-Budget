@@ -11,6 +11,15 @@ struct SpendingSummary: Codable, Sendable {
         let percentOfExpenses: Double
     }
 
+    /// One transaction line in the encoded prompt. Dates are deliberately
+    /// omitted — the on-device model gets the most signal per token from the
+    /// amount, category, and merchant/source label.
+    struct LineItem: Codable, Sendable {
+        let amount: Double       // unsigned magnitude
+        let category: String
+        let label: String?       // merchant / source / note, truncated
+    }
+
     let month: String           // e.g. "March 2026"
     let currency: String        // e.g. "EUR"
     let totalIncome: Double
@@ -18,6 +27,15 @@ struct SpendingSummary: Codable, Sendable {
     let balance: Double
     let transactionCount: Int
     let topCategories: [CategoryTotal]
+    /// Raw income lines fed to the model so it can spot paycheck timing,
+    /// irregular income, etc. Defaulted for the legacy memberwise initializer
+    /// still used by tests that only care about totals.
+    var incomes: [LineItem] = []
+    /// Raw expense lines fed to the model so it can spot recurring merchants,
+    /// outsized one-offs, weekday-vs-weekend patterns, etc.
+    var expenses: [LineItem] = []
+
+    private static let labelMaxChars = 30
 
     func encodedAsPrompt() -> String {
         var lines: [String] = []
@@ -25,14 +43,34 @@ struct SpendingSummary: Codable, Sendable {
         lines.append("Income: \(Self.formatAmount(totalIncome))")
         lines.append("Expenses: \(Self.formatAmount(totalExpenses))")
         lines.append("Balance: \(Self.formatAmount(balance))")
+        let savingsPct = totalIncome > 0
+            ? Int(((totalIncome - totalExpenses) / totalIncome * 100).rounded())
+            : 0
+        lines.append("Savings: \(savingsPct)%")
         lines.append("Transactions: \(transactionCount)")
-        if !topCategories.isEmpty {
-            lines.append("Top categories:")
-            for cat in topCategories {
-                lines.append("- \(cat.name): \(Self.formatAmount(cat.amount)) (\(Self.formatPercent(cat.percentOfExpenses))%)")
+
+        if !incomes.isEmpty {
+            lines.append("")
+            lines.append("Income transactions (amount, category, source):")
+            for item in incomes.sorted(by: { $0.amount > $1.amount }) {
+                lines.append(Self.renderLine(item, sign: "+"))
             }
         }
+
+        if !expenses.isEmpty {
+            lines.append("")
+            lines.append("Expense transactions (amount, category, merchant):")
+            for item in expenses.sorted(by: { $0.amount > $1.amount }) {
+                lines.append(Self.renderLine(item, sign: "-"))
+            }
+        }
+
         return lines.joined(separator: "\n")
+    }
+
+    private static func renderLine(_ item: LineItem, sign: String) -> String {
+        let label = item.label.map { "  \($0)" } ?? ""
+        return "\(sign)\(formatAmount(item.amount))  \(item.category)\(label)"
     }
 
     private static func formatAmount(_ value: Double) -> String {
@@ -50,7 +88,8 @@ struct SpendingSummary: Codable, Sendable {
 
 extension SpendingSummary {
     /// Builds a summary from raw expenses and incomes (grouping happens here).
-    /// Used by unit tests and callers that don't already have category slices.
+    /// Used by the Dashboard, unit tests, and any caller that has the raw
+    /// transactions on hand.
     static func build(
         monthFilter: MonthFilter,
         currency: String,
@@ -68,6 +107,26 @@ extension SpendingSummary {
             return CategoryChartSlice(name: name, iconName: "", total: NSDecimalNumber(decimal: sum).doubleValue)
         }
 
+        let incomeItems: [LineItem] = incomes.compactMap { income in
+            let amount = NSDecimalNumber(decimal: income.convertedAmount(to: currency) ?? .zero).doubleValue
+            guard amount > 0 else { return nil }
+            return LineItem(
+                amount: amount,
+                category: income.category?.name ?? "Uncategorized",
+                label: trimmedLabel(income.source, fallback: income.descriptionText)
+            )
+        }
+
+        let expenseItems: [LineItem] = expenses.compactMap { expense in
+            let amount = NSDecimalNumber(decimal: expense.convertedAmount(to: currency) ?? .zero).doubleValue
+            guard amount > 0 else { return nil }
+            return LineItem(
+                amount: amount,
+                category: expense.category?.name ?? "Uncategorized",
+                label: trimmedLabel(expense.destination, fallback: expense.descriptionText)
+            )
+        }
+
         return build(
             monthFilter: monthFilter,
             currency: currency,
@@ -75,12 +134,15 @@ extension SpendingSummary {
             totalExpenses: NSDecimalNumber(decimal: totalExpenses).doubleValue,
             transactionCount: expenses.count + incomes.count,
             expenseSlices: slices,
+            incomes: incomeItems,
+            expenses: expenseItems,
             topCategoryLimit: topCategoryLimit
         )
     }
 
-    /// Builds a summary from already-computed totals and category slices.
-    /// Preferred when the caller (e.g. the Dashboard) has already grouped the data for charts.
+    /// Builds a summary from already-computed totals and category slices, plus
+    /// optional raw transaction lines. Preferred when the caller (e.g. the
+    /// Dashboard) has already grouped the data for charts.
     static func build(
         monthFilter: MonthFilter,
         currency: String,
@@ -88,6 +150,8 @@ extension SpendingSummary {
         totalExpenses: Double,
         transactionCount: Int,
         expenseSlices: [CategoryChartSlice],
+        incomes: [LineItem] = [],
+        expenses: [LineItem] = [],
         topCategoryLimit: Int = 8
     ) -> SpendingSummary {
         let categoryTotals: [CategoryTotal] = expenseSlices
@@ -105,11 +169,19 @@ extension SpendingSummary {
             totalExpenses: totalExpenses,
             balance: totalIncome - totalExpenses,
             transactionCount: transactionCount,
-            topCategories: categoryTotals
+            topCategories: categoryTotals,
+            incomes: incomes,
+            expenses: expenses
         )
     }
 
     private static func monthLabel(for filter: MonthFilter) -> String {
         filter.startOfMonth.formatted(.dateTime.month(.wide).year())
+    }
+
+    private static func trimmedLabel(_ primary: String?, fallback: String?) -> String? {
+        let raw = (primary ?? fallback)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let raw, !raw.isEmpty else { return nil }
+        return String(raw.prefix(Self.labelMaxChars))
     }
 }

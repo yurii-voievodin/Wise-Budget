@@ -13,20 +13,34 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsi
 final class SpendingInsightsService {
 
     private static let instructions = """
-    You are a concise personal-finance analyst. The user message lists one \
-    month of expenses and incomes. Respond with 3 to 5 short bullet points \
-    covering: the biggest spending categories, anything unusual, and one \
-    concrete suggestion. Use the currency stated in the message. Do not \
-    invent numbers. Keep the whole response under 120 words.
+    You are a personal-finance coach reviewing one month of the user's \
+    complete income and expense ledger. The app's UI ALREADY shows totals \
+    and the largest categories, so do NOT restate those — the user can see \
+    them.
+
+    Use the raw transactions to surface insights the user is unlikely to \
+    notice on their own. Look for things like:
+    - recurring or subscription-like charges (same merchant appearing multiple times),
+    - merchants the user spends disproportionately on,
+    - relationships between categories (e.g. dining spikes when groceries dip),
+    - savings rate this month and what's driving it,
+    - one-off large purchases vs ongoing patterns.
+
+    Then give 2-3 concrete, specific recommendations the user can act on. \
+    Each recommendation must reference real numbers or merchant names from \
+    the data — no generic advice like "make a budget" or "reduce dining out". \
+    If the data is too thin for a confident insight, say so briefly rather \
+    than guessing.
+
+    Use the currency stated in the message. Do not invent numbers or \
+    merchants. Markdown bullets, under 200 words total.
     """
 
     /// `.greedy` sampling is deterministic (improves cache hit rate against
     /// `InsightsCache`) and slightly faster than nucleus sampling.
-    /// `maximumResponseTokens` caps worst-case latency: at ~30 tok/s on
-    /// modern devices, 220 tokens covers the 120-word ceiling with headroom.
     private static let generationOptions = GenerationOptions(
         sampling: .greedy,
-        maximumResponseTokens: 220
+        maximumResponseTokens: 380
     )
 
     /// Below this transaction count there isn't enough signal for the model to
