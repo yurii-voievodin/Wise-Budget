@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import TipKit
 import UniformTypeIdentifiers
 
 @main
@@ -33,6 +34,10 @@ struct WiseBudgetApp: App {
     @State private var showResetPlanConfirmation = false
     @State private var showingExportAlert = false
     @State private var exportError: String?
+
+    init() {
+        try? Tips.configure([.displayFrequency(.monthly), .datastoreLocation(.applicationDefault)])
+    }
 
     var body: some Scene {
         WindowGroup {

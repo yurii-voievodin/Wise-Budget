@@ -36,7 +36,9 @@ struct MonthlyInsightsCard: View {
 
     @Sendable
     private func autoGenerate() async {
-        guard service.availability == .available, !summary.isEmpty else { return }
+        guard service.availability == .available,
+              summary.transactionCount >= SpendingInsightsService.minimumTransactionsForInsights
+        else { return }
         await service.generate(from: summary, scopeKey: scopeKey, in: modelContext)
     }
 }

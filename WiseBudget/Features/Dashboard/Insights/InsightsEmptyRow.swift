@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct InsightsEmptyRow: View {
+    var message: String = "Add expenses or income to generate insights."
+
     var body: some View {
-        Label("Add expenses or income to generate insights.", systemImage: "sparkles")
+        Label(message, systemImage: "sparkles")
             .foregroundStyle(.secondary)
             .font(.callout)
     }

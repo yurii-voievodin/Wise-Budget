@@ -10,6 +10,8 @@ struct InsightsStateView: View {
         case .idle:
             if summary.isEmpty {
                 InsightsEmptyRow()
+            } else if summary.transactionCount < SpendingInsightsService.minimumTransactionsForInsights {
+                InsightsEmptyRow(message: "Add a few more transactions this month to generate insights.")
             } else {
                 InsightsPreparingRow(month: summary.month)
             }

@@ -17,6 +17,11 @@ final class SpendingInsightsService {
     Do not invent numbers. Keep the whole response under 120 words.
     """
 
+    /// Below this transaction count there isn't enough signal for the model to
+    /// produce a useful narrative — the UI shows a static hint instead and the
+    /// Ask AI handoff is disabled.
+    static let minimumTransactionsForInsights = 5
+
     enum Availability: Equatable {
         case available
         case appleIntelligenceNotEnabled
@@ -74,6 +79,11 @@ final class SpendingInsightsService {
 
         if summary.isEmpty {
             state = .ready("No transactions recorded for \(summary.month).")
+            return
+        }
+
+        if summary.transactionCount < Self.minimumTransactionsForInsights {
+            state = .idle
             return
         }
 

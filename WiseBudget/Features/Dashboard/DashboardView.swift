@@ -12,6 +12,9 @@ struct DashboardView: View {
 
     @State private var expenseToEdit: Expense?
     @State private var incomeToEdit: Income?
+    @State private var askAIToastProvider: AIProvider?
+    @State private var askAIToastTask: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(monthFilter: Binding<MonthFilter>, onSelectCategory: @escaping (String) -> Void = { _ in }) {
         self._monthFilter = monthFilter
@@ -244,7 +247,50 @@ struct DashboardView: View {
                     }
                 }
             }
+            .overlay(alignment: .bottom) {
+                if let provider = askAIToastProvider {
+                    AIHandoffCopiedToast(provider: provider)
+                        .padding(.bottom, 24)
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                        .accessibilityAddTraits(.isStaticText)
+                }
+            }
+            .toolbar {
+                AskAIToolbar(
+                    filter: monthFilter,
+                    expenseCount: expenses.count,
+                    onCopied: presentAskAIToast
+                )
+            }
         }
+    }
+
+    private func presentAskAIToast(provider: AIProvider) {
+        askAIToastTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            askAIToastProvider = provider
+        }
+        askAIToastTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                askAIToastProvider = nil
+            }
+        }
+    }
+}
+
+private struct AIHandoffCopiedToast: View {
+    let provider: AIProvider
+
+    var body: some View {
+        Label("Copied — paste in \(provider.displayName) with ⌘V", systemImage: "doc.on.clipboard")
+            .font(.callout)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.thinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
+            .shadow(radius: 6, y: 2)
     }
 }
 
