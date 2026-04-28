@@ -7,6 +7,8 @@ struct DashboardView: View {
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage("monobankConnectedName") private var monobankConnectedName: String = ""
+    @AppStorage("wiseConnectedName") private var wiseConnectedName: String = ""
 
     @Binding var monthFilter: MonthFilter
     var onSelectCategory: (String) -> Void
@@ -184,7 +186,9 @@ struct DashboardView: View {
     }
 
     private var hasConnectedBank: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+        !monobankConnectedName.isEmpty
+            || !wiseConnectedName.isEmpty
+            || KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
             || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
@@ -209,7 +213,7 @@ struct DashboardView: View {
 
     private var emptyStateView: some View {
         DashboardEmptyStateView(
-            showGettingStartedActions: isFirstLaunchEmptyState,
+            state: isFirstLaunchEmptyState ? .onboarding : .noTransactionsThisMonth,
             onAddExpense: onAddExpense,
             onConnectBank: onConnectBank
         )

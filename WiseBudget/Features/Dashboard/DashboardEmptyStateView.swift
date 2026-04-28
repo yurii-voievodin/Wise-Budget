@@ -1,18 +1,34 @@
 import SwiftUI
 
 struct DashboardEmptyStateView: View {
-    let showGettingStartedActions: Bool
+    enum State {
+        case onboarding
+        case noTransactionsThisMonth
+    }
+
+    let state: State
     let onAddExpense: () -> Void
     let onConnectBank: () -> Void
 
     var body: some View {
         ContentUnavailableView {
-            Label("No Data This Month", systemImage: "square.grid.2x2")
+            Label(title, systemImage: systemImage)
                 .foregroundStyle(.secondary)
         } description: {
-            Text(descriptionText)
+            Text(description)
         } actions: {
-            if showGettingStartedActions {
+            if state == .onboarding {
+                HStack(spacing: 12) {
+                    Button(action: onConnectBank) {
+                        Label("Connect Bank", systemImage: "link")
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button(action: onAddExpense) {
+                        Label("Add Expense", systemImage: "plus")
+                    }
+                }
+            } else {
                 HStack(spacing: 12) {
                     Button(action: onAddExpense) {
                         Label("Add Expense", systemImage: "plus")
@@ -26,18 +42,45 @@ struct DashboardEmptyStateView: View {
         }
     }
 
-    private var descriptionText: String {
-        if showGettingStartedActions {
-            return "Start by adding your first expense or connect a bank account to import transactions automatically."
+    private var title: String {
+        switch state {
+        case .onboarding:
+            "Connect Your First Bank"
+        case .noTransactionsThisMonth:
+            "No Data This Month"
         }
+    }
 
-        return "Add expenses or income to see your monthly overview."
+    private var systemImage: String {
+        switch state {
+        case .onboarding:
+            "link.badge.plus"
+        case .noTransactionsThisMonth:
+            "square.grid.2x2"
+        }
+    }
+
+    private var description: String {
+        switch state {
+        case .onboarding:
+            "Connect a bank account to import transactions automatically and start building your dashboard."
+        case .noTransactionsThisMonth:
+            "Add expenses or income to see your monthly overview."
+        }
     }
 }
 
 #Preview {
     DashboardEmptyStateView(
-        showGettingStartedActions: true,
+        state: .onboarding,
+        onAddExpense: {},
+        onConnectBank: {}
+    )
+}
+
+#Preview("No Transactions This Month") {
+    DashboardEmptyStateView(
+        state: .noTransactionsThisMonth,
         onAddExpense: {},
         onConnectBank: {}
     )
