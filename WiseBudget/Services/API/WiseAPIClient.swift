@@ -123,7 +123,7 @@ final class WiseAPIClient {
         var request = URLRequest(url: components.url!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        logger.debug("GET /v1/profiles/\(profileId)/activities (cursor=\(nextCursor ?? "nil"))")
+        logger.debug("GET /v1/profiles/\(profileId, privacy: .private)/activities (cursor=\(nextCursor ?? "nil", privacy: .private))")
 
         let (data, response) = try await performRequest(request)
         try validateResponse(response)
@@ -164,7 +164,7 @@ final class WiseAPIClient {
             nextCursor = cursor
         }
 
-        logger.info("fetched \(allActivities.count) total activities for profile \(profileId)")
+        logger.info("fetched \(allActivities.count) total activities for profile \(profileId, privacy: .private)")
         return allActivities
     }
 
@@ -208,7 +208,7 @@ final class WiseAPIClient {
         // Log request details
         let method = request.httpMethod ?? "GET"
         let url = request.url?.absoluteString ?? "unknown"
-        logger.debug("REQUEST: \(method) \(url)")
+        logger.debug("REQUEST: \(method) \(url, privacy: .private)")
 
         if let headers = request.allHTTPHeaderFields {
             let safeHeaders = headers.map { key, value in
@@ -217,11 +217,11 @@ final class WiseAPIClient {
                 }
                 return "\(key): \(value)"
             }.joined(separator: ", ")
-            logger.debug("HEADERS: \(safeHeaders)")
+            logger.debug("HEADERS: \(safeHeaders, privacy: .private)")
         }
 
         if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-            logger.debug("BODY: \(bodyString)")
+            logger.debug("BODY: \(bodyString, privacy: .private)")
         }
 
         do {
@@ -232,7 +232,7 @@ final class WiseAPIClient {
                 logger.debug("RESPONSE: HTTP \(httpResponse.statusCode)")
             }
             if let rawBody = String(data: data, encoding: .utf8) {
-                logger.debug("RESPONSE BODY: \(rawBody)")
+                logger.debug("RESPONSE BODY: \(rawBody, privacy: .private)")
             }
 
             return (data, response)

@@ -105,14 +105,14 @@ final class MonobankAPIClient {
         var request = URLRequest(url: url)
         request.setValue(token, forHTTPHeaderField: "X-Token")
 
-        logger.debug("GET /personal/statement/\(accountId)/\(fromTimestamp)/\(toTimestamp)")
+        logger.debug("GET /personal/statement/\(accountId, privacy: .private)/\(fromTimestamp)/\(toTimestamp)")
 
         let (data, response) = try await performRequest(request)
         try validateResponse(response, for: "/personal/statement/\(accountId)")
 
         do {
             let statements = try JSONDecoder().decode([MonobankStatement].self, from: data)
-            logger.debug("statement response: \(statements.count) transactions for account \(accountId)")
+            logger.debug("statement response: \(statements.count) transactions for account \(accountId, privacy: .private)")
             return statements
         } catch {
             logger.error("statement decoding failed: \(error.localizedDescription)")
@@ -124,7 +124,7 @@ final class MonobankAPIClient {
         // Log request details
         let method = request.httpMethod ?? "GET"
         let url = request.url?.absoluteString ?? "unknown"
-        logger.debug("REQUEST: \(method) \(url)")
+        logger.debug("REQUEST: \(method) \(url, privacy: .private)")
 
         if let headers = request.allHTTPHeaderFields {
             let safeHeaders = headers.map { key, value in
@@ -133,11 +133,11 @@ final class MonobankAPIClient {
                 }
                 return "\(key): \(value)"
             }.joined(separator: ", ")
-            logger.debug("HEADERS: \(safeHeaders)")
+            logger.debug("HEADERS: \(safeHeaders, privacy: .private)")
         }
 
         if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-            logger.debug("BODY: \(bodyString)")
+            logger.debug("BODY: \(bodyString, privacy: .private)")
         }
 
         do {
@@ -148,7 +148,7 @@ final class MonobankAPIClient {
                 logger.debug("RESPONSE: HTTP \(httpResponse.statusCode)")
             }
             if let rawBody = String(data: data, encoding: .utf8) {
-                logger.debug("RESPONSE BODY: \(rawBody)")
+                logger.debug("RESPONSE BODY: \(rawBody, privacy: .private)")
             }
 
             return (data, response)
@@ -161,19 +161,19 @@ final class MonobankAPIClient {
     private func validateResponse(_ response: URLResponse, for endpoint: String) throws {
         guard let httpResponse = response as? HTTPURLResponse else { return }
 
-        logger.debug("\(endpoint) -> HTTP \(httpResponse.statusCode)")
+        logger.debug("\(endpoint, privacy: .private) -> HTTP \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200...299:
             return
         case 401, 403:
-            logger.error("\(endpoint): invalid token (HTTP \(httpResponse.statusCode))")
+            logger.error("\(endpoint, privacy: .private): invalid token (HTTP \(httpResponse.statusCode))")
             throw MonobankAPIError.invalidToken
         case 429:
-            logger.warning("\(endpoint): rate limited (HTTP 429)")
+            logger.warning("\(endpoint, privacy: .private): rate limited (HTTP 429)")
             throw MonobankAPIError.rateLimited
         default:
-            logger.error("\(endpoint): server error (HTTP \(httpResponse.statusCode))")
+            logger.error("\(endpoint, privacy: .private): server error (HTTP \(httpResponse.statusCode))")
             throw MonobankAPIError.serverError(httpResponse.statusCode)
         }
     }

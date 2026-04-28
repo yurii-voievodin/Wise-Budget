@@ -207,14 +207,14 @@ final class MonobankSyncService {
 
         // Skip own-account transfers
         if let counterIban = statement.counterIban, ownIbans.contains(counterIban) {
-            logger.debug("skipping own-account transfer (IBAN match): \(statement.id)")
+            logger.debug("skipping own-account transfer (IBAN match): \(statement.id, privacy: .private)")
             return nil
         }
 
         // Skip FOP ↔ personal account transfers (incoming side has no counterIban)
         let desc = statement.description.lowercased()
         if desc.contains("рахунку фоп") || desc.contains("рахунок фоп") {
-            logger.debug("skipping FOP transfer: \(statement.id)")
+            logger.debug("skipping FOP transfer: \(statement.id, privacy: .private)")
             return nil
         }
 

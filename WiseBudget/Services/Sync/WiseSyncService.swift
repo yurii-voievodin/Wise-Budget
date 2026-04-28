@@ -36,7 +36,7 @@ final class WiseSyncService {
             throw WiseAPIError.noProfile
         }
 
-        logger.debug("using profile \(profile.id) (\(profile.fullName, privacy: .private))")
+        logger.debug("using profile \(profile.id, privacy: .private) (\(profile.fullName, privacy: .private))")
 
         let fromDate = Date(timeIntervalSince1970: fromTimestamp)
         let toDate = Date(timeIntervalSince1970: toTimestamp)
@@ -64,23 +64,23 @@ final class WiseSyncService {
     /// Converts a Wise activity into a CSVTransaction for import.
     private static func convertActivity(_ activity: WiseActivity) -> CSVTransaction? {
         guard let amountString = activity.primaryAmount, !amountString.isEmpty else {
-            logger.debug("skipping activity \(activity.id): no primaryAmount")
+            logger.debug("skipping activity \(activity.id, privacy: .private): no primaryAmount")
             return nil
         }
 
         guard let (amount, currency) = parseFormattedAmount(amountString) else {
-            logger.warning("skipping activity \(activity.id): could not parse amount '\(amountString)'")
+            logger.warning("skipping activity \(activity.id, privacy: .private): could not parse amount '\(amountString, privacy: .private)'")
             return nil
         }
 
         guard let dateString = activity.createdOn, let date = parseDate(dateString) else {
-            logger.warning("skipping activity \(activity.id): could not parse date")
+            logger.warning("skipping activity \(activity.id, privacy: .private): could not parse date")
             return nil
         }
 
         // Skip inter-balance transfers (e.g. moving money between EUR and savings jars)
         if activity.type == "INTERBALANCE" {
-            logger.debug("skipping activity \(activity.id): inter-balance transfer")
+            logger.debug("skipping activity \(activity.id, privacy: .private): inter-balance transfer")
             return nil
         }
 

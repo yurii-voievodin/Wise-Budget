@@ -14,6 +14,12 @@ When a new idea comes up, either extend `FEATURES.md` / `ARCHITECTURE.md` or add
 
 ## Build & Test Commands
 
+**Prefer the Xcode MCP** (`mcp__xcode__BuildProject`, `mcp__xcode__RunAllTests`, `mcp__xcode__RunSomeTests`, `mcp__xcode__GetBuildLog`) for builds and tests — it reuses the open Xcode workspace, is incremental, and surfaces issues via `mcp__xcode__XcodeListNavigatorIssues`.
+
+Only fall back to the `xcodebuild` CLI **after at least 3 attempts via the MCP, waiting between retries** (e.g. for a transient indexing/Xcode-busy state). Document the failures briefly before falling back.
+
+CLI fallback:
+
 ```bash
 # Build
 xcodebuild build -project WiseBudget.xcodeproj -scheme WiseBudget
