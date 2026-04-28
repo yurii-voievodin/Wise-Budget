@@ -25,11 +25,22 @@ struct ContentView: View {
         } detail: {
             switch selectedSidebarItem {
             case .dashboard:
-                DashboardView(monthFilter: $monthFilter) { categoryName in
-                    expenseCategoryFilter = categoryName
-                    expenseListTab = .expenses
-                    selectedSidebarItem = .expenses
-                }
+                DashboardView(
+                    monthFilter: $monthFilter,
+                    onSelectCategory: { categoryName in
+                        expenseCategoryFilter = categoryName
+                        expenseListTab = .expenses
+                        selectedSidebarItem = .expenses
+                    },
+                    onAddExpense: {
+                        expenseCategoryFilter = nil
+                        expenseListTab = .expenses
+                        selectedSidebarItem = .expenses
+                    },
+                    onConnectBank: {
+                        selectedSidebarItem = .bankConnections
+                    }
+                )
                 .id(monthFilter)
                 .toolbar {
                     MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)

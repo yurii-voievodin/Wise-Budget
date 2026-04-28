@@ -3,22 +3,34 @@ import SwiftData
 import Charts
 
 struct DashboardView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     @Binding var monthFilter: MonthFilter
     var onSelectCategory: (String) -> Void
+    var onAddExpense: () -> Void
+    var onConnectBank: () -> Void
 
     @State private var expenseToEdit: Expense?
     @State private var incomeToEdit: Income?
     @State private var askAIToastProvider: AIProvider?
     @State private var askAIToastTask: Task<Void, Never>?
+    @State private var hasAnyExpenses = true
+    @State private var hasAnyIncomes = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(monthFilter: Binding<MonthFilter>, onSelectCategory: @escaping (String) -> Void = { _ in }) {
+    init(
+        monthFilter: Binding<MonthFilter>,
+        onSelectCategory: @escaping (String) -> Void = { _ in },
+        onAddExpense: @escaping () -> Void = {},
+        onConnectBank: @escaping () -> Void = {}
+    ) {
         self._monthFilter = monthFilter
         self.onSelectCategory = onSelectCategory
+        self.onAddExpense = onAddExpense
+        self.onConnectBank = onConnectBank
 
         let startDate = monthFilter.wrappedValue.startOfMonth
         let endDate = monthFilter.wrappedValue.startOfNextMonth
@@ -167,100 +179,135 @@ struct DashboardView: View {
         )
     }
 
+    private var isFirstLaunchEmptyState: Bool {
+        !hasAnyExpenses && !hasAnyIncomes && !hasConnectedBank
+    }
+
+    private var hasConnectedBank: Bool {
+        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+    }
+
+    private var isCurrentMonthEmpty: Bool {
+        expenses.isEmpty && incomes.isEmpty
+    }
+
     // MARK: - Body
 
     var body: some View {
-        if expenses.isEmpty && incomes.isEmpty {
-            DashboardEmptyStateView()
-        } else {
-            Form {
-                MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
-                DashboardMonthSummarySection(
-                    totalIncome: totalIncome,
-                    totalExpenses: totalExpenses,
-                    balance: balance,
-                    currency: defaultCurrency
-                )
-                DashboardDailyAveragesSection(
-                    incomeDailyAverage: incomeDailyAverage,
-                    expenseDailyAverage: expenseDailyAverage,
-                    dailyBalance: dailyBalance,
-                    currency: defaultCurrency
-                )
-                if shouldShowBudgetPacing {
-                    DashboardBudgetPacingSection(
-                        daysRemainingInMonth: daysRemainingInMonth,
-                        dailyAllowance: dailyAllowance,
-                        currency: defaultCurrency
-                    )
-                }
-                if !expenseSlices.isEmpty {
-                    CategoryChartSection(
-                        slices: sortedExpenseSlices,
-                        currency: defaultCurrency,
-                        emptyText: "No expenses",
-                        colorMap: DefaultExpenseCategory.chartColorMap
-                    )
-                    DashboardTopCategoriesSection(
-                        slices: topCategories,
-                        totalExpenses: totalExpenses,
-                        currency: defaultCurrency,
-                        onSelect: onSelectCategory
-                    )
-                }
-                DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
-                    if let expense = transaction.item as? Expense {
-                        expenseToEdit = expense
-                    } else if let income = transaction.item as? Income {
-                        incomeToEdit = income
-                    }
-                }
-            }
-            .formStyle(.grouped)
-            .sheet(item: $expenseToEdit) { expense in
-                ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
-                    withAnimation {
-                        expense.amount = amount
-                        expense.currency = currency
-                        expense.date = date
-                        expense.category = category
-                        expense.descriptionText = descriptionText
-                        expense.destination = destination
-                        expense.baseCurrencyAmount = baseCurrencyAmount
-                        expense.baseCurrency = baseCurrency
-                    }
-                }
-            }
-            .sheet(item: $incomeToEdit) { income in
-                IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
-                    withAnimation {
-                        income.amount = amount
-                        income.currency = currency
-                        income.date = date
-                        income.category = category
-                        income.descriptionText = descriptionText
-                        income.source = source
-                        income.baseCurrencyAmount = baseCurrencyAmount
-                        income.baseCurrency = baseCurrency
-                    }
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if let provider = askAIToastProvider {
-                    AIHandoffCopiedToast(provider: provider)
-                        .padding(.bottom, 24)
-                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-                        .accessibilityAddTraits(.isStaticText)
-                }
-            }
-            .toolbar {
-                AskAIToolbar(
-                    filter: monthFilter,
-                    expenseCount: expenses.count,
-                    onCopied: presentAskAIToast
-                )
+        Group {
+            if isCurrentMonthEmpty {
+                emptyStateView
+            } else {
+                dashboardContentView
             }
         }
+        .onAppear { checkForAnyTransactions() }
+        .onChange(of: expenses.count) { checkForAnyTransactions() }
+        .onChange(of: incomes.count) { checkForAnyTransactions() }
+    }
+
+    private var emptyStateView: some View {
+        DashboardEmptyStateView(
+            showGettingStartedActions: isFirstLaunchEmptyState,
+            onAddExpense: onAddExpense,
+            onConnectBank: onConnectBank
+        )
+    }
+
+    private var dashboardContentView: some View {
+        Form {
+            MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
+            DashboardMonthSummarySection(
+                totalIncome: totalIncome,
+                totalExpenses: totalExpenses,
+                balance: balance,
+                currency: defaultCurrency
+            )
+            DashboardDailyAveragesSection(
+                incomeDailyAverage: incomeDailyAverage,
+                expenseDailyAverage: expenseDailyAverage,
+                dailyBalance: dailyBalance,
+                currency: defaultCurrency
+            )
+            if shouldShowBudgetPacing {
+                DashboardBudgetPacingSection(
+                    daysRemainingInMonth: daysRemainingInMonth,
+                    dailyAllowance: dailyAllowance,
+                    currency: defaultCurrency
+                )
+            }
+            if !expenseSlices.isEmpty {
+                CategoryChartSection(
+                    slices: sortedExpenseSlices,
+                    currency: defaultCurrency,
+                    emptyText: "No expenses",
+                    colorMap: DefaultExpenseCategory.chartColorMap
+                )
+                DashboardTopCategoriesSection(
+                    slices: topCategories,
+                    totalExpenses: totalExpenses,
+                    currency: defaultCurrency,
+                    onSelect: onSelectCategory
+                )
+            }
+            DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
+                if let expense = transaction.item as? Expense {
+                    expenseToEdit = expense
+                } else if let income = transaction.item as? Income {
+                    incomeToEdit = income
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .sheet(item: $expenseToEdit) { expense in
+            ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
+                withAnimation {
+                    expense.amount = amount
+                    expense.currency = currency
+                    expense.date = date
+                    expense.category = category
+                    expense.descriptionText = descriptionText
+                    expense.destination = destination
+                    expense.baseCurrencyAmount = baseCurrencyAmount
+                    expense.baseCurrency = baseCurrency
+                }
+            }
+        }
+        .sheet(item: $incomeToEdit) { income in
+            IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
+                withAnimation {
+                    income.amount = amount
+                    income.currency = currency
+                    income.date = date
+                    income.category = category
+                    income.descriptionText = descriptionText
+                    income.source = source
+                    income.baseCurrencyAmount = baseCurrencyAmount
+                    income.baseCurrency = baseCurrency
+                }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let provider = askAIToastProvider {
+                AIHandoffCopiedToast(provider: provider)
+                    .padding(.bottom, 24)
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                    .accessibilityAddTraits(.isStaticText)
+            }
+        }
+        .toolbar {
+            AskAIToolbar(
+                filter: monthFilter,
+                expenseCount: expenses.count,
+                onCopied: presentAskAIToast
+            )
+        }
+    }
+
+    private func checkForAnyTransactions() {
+        hasAnyExpenses = ((try? modelContext.fetchCount(FetchDescriptor<Expense>())) ?? 0) > 0
+        hasAnyIncomes = ((try? modelContext.fetchCount(FetchDescriptor<Income>())) ?? 0) > 0
     }
 
     private func presentAskAIToast(provider: AIProvider) {
