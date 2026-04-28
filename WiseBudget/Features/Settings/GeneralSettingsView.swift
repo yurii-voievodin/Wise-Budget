@@ -76,7 +76,7 @@ struct GeneralSettingsView: View {
 
     private func deleteAllExpenses() {
         do {
-            try modelContext.delete(model: Expense.self)
+            try modelContext.deleteAll(Expense.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {
@@ -86,7 +86,7 @@ struct GeneralSettingsView: View {
 
     private func deleteAllIncomes() {
         do {
-            try modelContext.delete(model: Income.self)
+            try modelContext.deleteAll(Income.self)
             monobankLastSync = 0
             wiseLastSync = 0
         } catch {

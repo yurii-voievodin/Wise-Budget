@@ -229,6 +229,44 @@ struct WiseBudgetTests {
         #expect(incomes.first?.amount == Decimal(string: "3754.76"))
     }
 
+    @Test func deleteAllExpensesKeepsCategoriesAndClearsInverseRelationships() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let category = ExpenseCategory(name: "Groceries")
+        let expense = Expense(amount: 10, currency: "EUR", category: category)
+        context.insert(category)
+        context.insert(expense)
+        try context.save()
+
+        try context.deleteAll(Expense.self)
+
+        let expenses = try context.fetch(FetchDescriptor<Expense>())
+        let categories = try context.fetch(FetchDescriptor<ExpenseCategory>())
+        #expect(expenses.isEmpty)
+        #expect(categories.count == 1)
+        #expect(categories.first?.expenses.isEmpty == true)
+    }
+
+    @Test func deleteAllIncomesKeepsCategoriesAndClearsInverseRelationships() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let category = IncomeCategory(name: "Salary")
+        let income = Income(amount: 10, currency: "EUR", category: category)
+        context.insert(category)
+        context.insert(income)
+        try context.save()
+
+        try context.deleteAll(Income.self)
+
+        let incomes = try context.fetch(FetchDescriptor<Income>())
+        let categories = try context.fetch(FetchDescriptor<IncomeCategory>())
+        #expect(incomes.isEmpty)
+        #expect(categories.count == 1)
+        #expect(categories.first?.incomes.isEmpty == true)
+    }
+
     // MARK: - Deduplication
 
     @Test func importSameCSVTwiceSkipsDuplicates() throws {
