@@ -112,17 +112,58 @@ struct SpendingSummary: Codable, Sendable {
 
         if !incomes.isEmpty {
             lines.append("")
-            lines.append("Income transactions (amount, category, source):")
+            lines.append("Income sources:")
             for item in incomes.sorted(by: { $0.amount > $1.amount }) {
                 lines.append(Self.renderLine(item, sign: "+"))
             }
         }
 
-        if !expenses.isEmpty {
+        if !topCategories.isEmpty {
             lines.append("")
-            lines.append("Expense transactions (amount, category, merchant):")
-            for item in expenses.sorted(by: { $0.amount > $1.amount }) {
-                lines.append(Self.renderLine(item, sign: "-"))
+            lines.append("Top spending categories:")
+            for (idx, category) in topCategories.enumerated() {
+                lines.append("\(idx + 1). \(category.name)  \(Self.formatAmount(category.amount)) (\(Self.formatPercent(category.percentOfExpenses))%)")
+            }
+        }
+
+        if !recurringMerchants.isEmpty {
+            lines.append("")
+            lines.append("Recurring merchants (>=3 charges this month):")
+            for merchant in recurringMerchants {
+                lines.append(Self.renderMerchantLine(merchant))
+            }
+        }
+
+        if !subscriptionLikeCharges.isEmpty {
+            lines.append("")
+            lines.append("Subscription-like charges:")
+            for merchant in subscriptionLikeCharges {
+                lines.append(Self.renderMerchantLine(merchant))
+            }
+        }
+
+        if !largestOneOffs.isEmpty {
+            lines.append("")
+            lines.append("Largest one-off expenses:")
+            for item in largestOneOffs {
+                lines.append(Self.renderOneOffLine(item))
+            }
+        }
+
+        if !crossCategoryMerchants.isEmpty {
+            lines.append("")
+            lines.append("Merchants split across categories:")
+            for merchant in crossCategoryMerchants {
+                let cats = merchant.categories.joined(separator: ", ")
+                lines.append("- \(merchant.displayLabel): \(cats) (\(Self.formatAmount(merchant.total)) total over \(merchant.count) charges)")
+            }
+        }
+
+        if !possibleDuplicates.isEmpty {
+            lines.append("")
+            lines.append("Possible duplicate or near-duplicate charges:")
+            for group in possibleDuplicates {
+                lines.append("- \(group.displayLabel) x \(group.count) ~ \(Self.formatAmount(group.representativeAmount))  (\(group.category))")
             }
         }
 
@@ -132,6 +173,16 @@ struct SpendingSummary: Codable, Sendable {
     private static func renderLine(_ item: LineItem, sign: String) -> String {
         let label = item.label.map { "  \($0)" } ?? ""
         return "\(sign)\(formatAmount(item.amount))  \(item.category)\(label)"
+    }
+
+    private static func renderMerchantLine(_ merchant: MerchantAggregate) -> String {
+        let category = merchant.categories.joined(separator: ", ")
+        return "- \(merchant.displayLabel) x \(merchant.count) = \(formatAmount(merchant.total)) (avg \(formatAmount(merchant.averagePerCharge)))  (\(category))"
+    }
+
+    private static func renderOneOffLine(_ item: LineItem) -> String {
+        let label = item.label.map { "  \($0)" } ?? ""
+        return "- \(formatAmount(item.amount))  \(item.category)\(label)"
     }
 
     private static func formatAmount(_ value: Double) -> String {
@@ -299,7 +350,9 @@ extension SpendingSummary {
         )
         let oneOffs = buildLargestOneOffs(expenses: expenses, repeatingKeys: repeatingKeys)
         let crossCategory = buildCrossCategoryMerchants(buckets: buckets)
-        let duplicates = buildPossibleDuplicates(expenses: expenses)
+        // Recurring merchants are already a known pattern — flagging two
+        // close-priced fill-ups at OMV as "possible duplicate" is noise.
+        let duplicates = buildPossibleDuplicates(expenses: expenses, excluding: recurringKeys)
 
         return AggregateBundle(
             recurring: recurring,
@@ -392,7 +445,10 @@ extension SpendingSummary {
             .map { $0 }
     }
 
-    private static func buildPossibleDuplicates(expenses: [LineItem]) -> [DuplicateGroup] {
+    private static func buildPossibleDuplicates(
+        expenses: [LineItem],
+        excluding excludedKeys: Set<String>
+    ) -> [DuplicateGroup] {
         struct GroupKey: Hashable {
             let canonicalKey: String
             let category: String
@@ -401,6 +457,7 @@ extension SpendingSummary {
         var displayByKey: [String: String] = [:]
         for item in expenses {
             guard let canonical = canonicalMerchantKey(item.label) else { continue }
+            if excludedKeys.contains(canonical.key) { continue }
             let key = GroupKey(canonicalKey: canonical.key, category: item.category)
             byMerchantCategory[key, default: []].append(item)
             displayByKey[canonical.key] = displayByKey[canonical.key] ?? canonical.display
