@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Comments
+
+- Default to writing **no** comment. Well-named identifiers already say what the code does.
+- Only add one when the *why* is non-obvious — a hidden constraint, a workaround, an invariant a reader would miss.
+- Keep them short and clear. One line is usually enough; never write a paragraph where a sentence will do.
+
 ## Planning Documents
 
 Before suggesting new features or architectural changes, read:

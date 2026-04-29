@@ -5,18 +5,8 @@ import SwiftData
 
 private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsights")
 
-/// Structured output schema for the on-device model. `@Generable` constrains
-/// the model to emit exactly two arrays; we render them to markdown
-/// ourselves, so the model can't collapse the sections, skip recommendations,
-/// or stop mid-stream.
-///
-/// Apple's Foundation Models docs nest `@Generable` types inside other
-/// `@Generable` structs (or at file scope), never inside a class — keeping
-/// this top-level so the macro expansion has nothing unusual to deal with.
-/// `@Guide` descriptions stay deliberately short (TN3193: *"Keep the
-/// descriptions as short as possible — long descriptions take up additional
-/// context size and can introduce latency"*); behavioural rules live in the
-/// service's `instructions` string instead.
+/// File-scope (not nested) and short `@Guide` text are deliberate per Apple
+/// TN3193 — long descriptions inflate context size and add latency.
 @Generable
 struct InsightOutput: Equatable {
     @Guide(description: "Specific observations about merchants, amounts, or patterns from the data.")
@@ -26,9 +16,7 @@ struct InsightOutput: Equatable {
     let recommendations: [String]
 }
 
-/// Wraps a Foundation Models `LanguageModelSession` to produce a short,
-/// human-readable narrative about a `SpendingSummary`. Runs entirely on-device
-/// and caches the result in SwiftData so repeated visits reuse it instantly.
+/// On-device generation; results cached in SwiftData via `InsightsCache`.
 @Observable
 @MainActor
 final class SpendingInsightsService {
@@ -60,28 +48,18 @@ final class SpendingInsightsService {
     Use the currency at the top. Keep total output under 150 words.
     """
 
-    /// `.greedy` sampling is deterministic (improves cache hit rate against
-    /// `InsightsCache`) and slightly faster than nucleus sampling.
-    ///
-    /// Token budget is generous on purpose. Apple's `GenerationOptions` doc:
-    /// *"Enforcing a strict token response limit can lead to the model
-    /// producing malformed results."* Structured output (`@Generable`) carries
-    /// a JSON schema overhead on top of the response itself, so 600 leaves
-    /// comfortable headroom over the ~250 tokens a 150-word reply needs.
+    /// `.greedy` for cache determinism; 600 tokens to clear schema overhead
+    /// and avoid Apple's "strict token limits cause malformed results" mode.
     private static let generationOptions = GenerationOptions(
         sampling: .greedy,
         maximumResponseTokens: 600
     )
 
-    /// Below this transaction count there isn't enough signal for the model to
-    /// produce a useful narrative — the UI shows a static hint instead and the
-    /// Ask AI handoff is disabled.
+    /// Below this, the UI shows a static hint and the Ask AI handoff is disabled.
     static let minimumTransactionsForInsights = 5
 
-    /// AppStorage key for the user-facing "Enable AI Insights" toggle in
-    /// Settings. Source of truth for whether Dashboard / Expenses cards render.
-    /// Settings is the only code path that flips this on (after confirming
-    /// Apple Intelligence is actually available on this device).
+    /// AppStorage source of truth for whether AI cards render. Only Settings
+    /// flips this on, and only after checking Apple Intelligence availability.
     static let userPreferenceKey = "aiInsightsEnabled"
     static let userPreferenceDefault = false
 
@@ -105,15 +83,12 @@ final class SpendingInsightsService {
     /// Held so we can release the session when a generation is cancelled.
     private var activeSession: LanguageModelSession?
 
-    /// Long-lived session used purely to call `prewarm()` and keep the
-    /// on-device model loaded in memory between generations.
+    /// Long-lived session whose only job is keeping the model warm via `prewarm()`.
     private var warmupSession: LanguageModelSession?
 
     var availability: Availability { Self.currentAvailability() }
 
-    /// Loads the on-device model into memory ahead of the first `generate(...)`
-    /// call. Apple reports up to ~40% reduction in time-to-first-token. Safe
-    /// to call repeatedly; subsequent calls are cheap no-ops.
+    /// Idempotent — subsequent calls are cheap no-ops.
     func prewarm() {
         guard availability == .available else { return }
         if warmupSession == nil {
@@ -137,13 +112,9 @@ final class SpendingInsightsService {
         }
     }
 
-    /// Generates or reuses a cached insight for the given month summary.
     /// - Parameters:
-    ///   - summary: aggregated totals + top categories for the month.
     ///   - scopeKey: locale-independent month key, e.g. `"2026-03"`.
-    ///   - context: SwiftData context used for cache lookup and persistence.
-    ///   - forceRefresh: when `true`, evict any cached row and run the model again.
-    ///     Used by the "Regenerate" button.
+    ///   - forceRefresh: bypass the cache (used by the Regenerate button).
     func generate(
         from summary: SpendingSummary,
         scopeKey: String,
@@ -214,8 +185,7 @@ final class SpendingInsightsService {
                 return
             }
             let markdown = Self.renderMarkdown(from: final)
-            // Stream ended with no usable content (e.g. cancelled between
-            // iterations). Don't cache or present an empty card.
+            // Stream cancelled between iterations — don't cache an empty card.
             guard !markdown.isEmpty else {
                 state = .idle
                 return
@@ -232,8 +202,7 @@ final class SpendingInsightsService {
             logger.debug("Received response (\(markdown.count) chars):\n\(markdown, privacy: .public)")
             state = .ready(markdown)
         } catch is CancellationError {
-            // Navigated away mid-generation. Reset so the card doesn't get
-            // stuck in `.generating` if the user returns to the same scope.
+            // Navigated away mid-stream — avoid sticking the card in `.generating`.
             state = .idle
             return
         } catch {
@@ -246,11 +215,8 @@ final class SpendingInsightsService {
         state = .idle
     }
 
-    /// Renders an `InsightOutput.PartiallyGenerated` to markdown. Used both
-    /// for streaming partials (where `insights`/`recommendations` may be nil
-    /// or partially filled) and for the final output. Headings only appear
-    /// when the corresponding section has at least one item — keeps the
-    /// streaming UI from flashing empty headers.
+    /// Headings only render once their section has an item — avoids flashing
+    /// empty headers during streaming.
     private static func renderMarkdown(from partial: InsightOutput.PartiallyGenerated) -> String {
         var lines: [String] = []
         if let insights = partial.insights, !insights.isEmpty {
