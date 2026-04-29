@@ -18,10 +18,10 @@ final class SpendingInsightsService {
     /// recommendations, or stop mid-stream.
     @Generable
     struct InsightOutput: Equatable {
-        @Guide(description: "Two or three short narrative observations about the month. Each must name a specific merchant, category, or amount that appears verbatim in the data. At least one observation must reference an entry from 'Largest one-off expenses' or 'Possible duplicate or near-duplicate charges'. If 'Savings' is negative, the first observation must address what caused the shortfall.")
+        @Guide(description: "Two or three short narrative observations about the month. Every observation MUST name a specific merchant, category, or amount that appears VERBATIM in the data — never invent merchants. At least one observation MUST reference an entry from 'Largest one-off expenses' or 'Possible duplicate or near-duplicate charges' — these are the most interesting items of any month. If 'Savings' is negative, the first observation MUST address what caused the shortfall.")
         let insights: [String]
 
-        @Guide(description: "Two or three actionable recommendations the user can act on this week. Each must reference a specific merchant or amount from the data. No generic advice — never say 'make a budget', 'track your spending', 'reduce dining out', 'plan meals', 'switch to a cheaper alternative', or 'consider cutting back'.")
+        @Guide(description: "Two or three actionable recommendations the user can act on this week. Every recommendation MUST reference a specific merchant or amount that appears VERBATIM in the data — never invent merchants. NO generic advice — never say 'make a budget', 'track your spending', 'reduce dining out', 'plan meals', 'switch to a cheaper alternative', 'consider cutting back', 'set aside a portion of income', or 'build an emergency fund'.")
         let recommendations: [String]
     }
 
@@ -29,27 +29,13 @@ final class SpendingInsightsService {
     You are a personal-finance coach reviewing one month of the user's spending.
 
     The data below is ALREADY AGGREGATED. Trust the numbers as given. DO NOT \
-    recompute sums, DO NOT invent numbers, DO NOT list transactions back to \
-    the user — the UI already shows them.
+    recompute sums, DO NOT invent merchants or amounts, DO NOT list \
+    transactions back to the user — the UI already shows them. Every \
+    merchant or amount you mention must appear verbatim in the data above.
 
     Your job is narrative judgment: connect the dots and tell the user the \
     story of their month. Bland "you spend a lot at X, switch to something \
     cheaper" is useless; a real coach connects facts.
-
-    Worked example (FICTIONAL data — copy the STRUCTURE, never the content. \
-    Always use the actual merchants and amounts from the data above):
-
-    insights:
-      - Two "Refinery Cabinets Ltd" charges of 720.00 and 690.00 within a \
-        week look like a duplicate posting — recovering one would close most \
-        of a -34% savings gap.
-      - The 1450.00 conference booking at "Tallinn Travel Ko" was the \
-        month's hidden hit, roughly equal to a typical week of spending.
-    recommendations:
-      - Open a chargeback for the second "Refinery Cabinets Ltd" line of \
-        690.00 before the 60-day window closes.
-      - Re-tag the two stray Spotify charges from Other and Entertainment to \
-        Subscription so next month's chart adds up.
 
     If "Transactions" is below 10, return a single insight saying "Not \
     enough data this month for a confident insight" and an empty \
