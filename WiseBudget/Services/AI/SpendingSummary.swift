@@ -20,6 +20,28 @@ struct SpendingSummary: Codable, Sendable {
         let label: String?       // merchant / source / note, truncated
     }
 
+    /// Pre-aggregated merchant statistics. Each merchant appears once with
+    /// `count × total` already computed so the on-device model never has to
+    /// sum rows or count occurrences (it gets those wrong).
+    struct MerchantAggregate: Codable, Sendable {
+        let canonicalKey: String        // e.g. "omv" — used for grouping only
+        let displayLabel: String        // first non-empty original casing seen
+        let count: Int
+        let total: Double
+        let averagePerCharge: Double    // total / count
+        let categories: [String]        // unique, sorted
+    }
+
+    /// Two charges with the same merchant + category and similar amounts
+    /// within the month — surfaces likely double-charges or data-entry errors
+    /// (e.g. the same MacBook posted twice as €1200 and €1000).
+    struct DuplicateGroup: Codable, Sendable {
+        let displayLabel: String
+        let category: String
+        let representativeAmount: Double  // max amount in the group
+        let count: Int                    // >= 2
+    }
+
     let month: String           // e.g. "March 2026"
     let currency: String        // e.g. "EUR"
     let totalIncome: Double
@@ -31,11 +53,50 @@ struct SpendingSummary: Codable, Sendable {
     /// irregular income, etc. Defaulted for the legacy memberwise initializer
     /// still used by tests that only care about totals.
     var incomes: [LineItem] = []
-    /// Raw expense lines fed to the model so it can spot recurring merchants,
-    /// outsized one-offs, weekday-vs-weekend patterns, etc.
+    /// Raw expense lines retained on the summary for callers that still want
+    /// them (e.g. previews); the prompt no longer emits per-row data — see
+    /// `recurringMerchants` and friends.
     var expenses: [LineItem] = []
 
+    /// Merchants charged at least 3 times this month. Used to surface fuel,
+    /// supermarket, and delivery patterns the model would otherwise miss.
+    var recurringMerchants: [MerchantAggregate] = []
+    /// Low-amount, low-variance recurring charges plus anything in the
+    /// `Subscription` category. Distinct from `recurringMerchants` — a
+    /// merchant in subscriptions is excluded from recurring to avoid double
+    /// reporting.
+    var subscriptionLikeCharges: [MerchantAggregate] = []
+    /// Top single-occurrence expenses (by amount). Excludes anything that
+    /// repeats — those belong in recurring/subscription sections.
+    var largestOneOffs: [LineItem] = []
+    /// Same merchant string appearing in 2+ different categories. Surfaces
+    /// inconsistent categorisation (e.g. Pulse split between Medical and
+    /// Groceries).
+    var crossCategoryMerchants: [MerchantAggregate] = []
+    /// Possible double-charges within the same merchant+category bucket.
+    var possibleDuplicates: [DuplicateGroup] = []
+
     private static let labelMaxChars = 30
+    /// Subscriptions are typically small recurring charges. Charges above
+    /// this cap are treated as recurring purchases instead.
+    private static let subscriptionAmountCap: Double = 25.0
+    /// Subscription detection requires per-charge amounts to vary by at most
+    /// this fraction from the mean (otherwise it's just an irregular
+    /// purchase pattern).
+    private static let subscriptionVarianceFraction: Double = 0.10
+    private static let recurringMinCount: Int = 3
+    private static let recurringMerchantCap: Int = 6
+    private static let subscriptionMerchantCap: Int = 6
+    private static let largestOneOffCap: Int = 5
+    private static let crossCategoryCap: Int = 4
+    private static let duplicateGroupCap: Int = 4
+    /// Two charges with the same merchant+category whose amounts are within
+    /// this fraction of each other are flagged as possible duplicates.
+    private static let duplicateAmountTolerance: Double = 0.05
+    /// For large amounts (≥ this threshold), use the wider tolerance below
+    /// instead — catches the "MacBook posted twice as €1200/€1000" case.
+    private static let largeAmountThreshold: Double = 500.0
+    private static let largeAmountDuplicateTolerance: Double = 0.25
 
     func encodedAsPrompt() -> String {
         var lines: [String] = []
@@ -162,7 +223,9 @@ extension SpendingSummary {
                 return CategoryTotal(name: slice.name, amount: slice.total, percentOfExpenses: pct)
             }
 
-        return SpendingSummary(
+        let bundle = computeAggregates(from: expenses)
+
+        var summary = SpendingSummary(
             month: monthLabel(for: monthFilter),
             currency: currency,
             totalIncome: totalIncome,
@@ -173,6 +236,12 @@ extension SpendingSummary {
             incomes: incomes,
             expenses: expenses
         )
+        summary.recurringMerchants = bundle.recurring
+        summary.subscriptionLikeCharges = bundle.subscriptions
+        summary.largestOneOffs = bundle.oneOffs
+        summary.crossCategoryMerchants = bundle.crossCategory
+        summary.possibleDuplicates = bundle.duplicates
+        return summary
     }
 
     private static func monthLabel(for filter: MonthFilter) -> String {
@@ -183,5 +252,227 @@ extension SpendingSummary {
         let raw = (primary ?? fallback)?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let raw, !raw.isEmpty else { return nil }
         return String(raw.prefix(Self.labelMaxChars))
+    }
+
+    /// Canonicalises a merchant label so variants like "OMV", "OMV TANK 482",
+    /// and "omv-bratislava" group together. Returns `nil` for empty labels.
+    /// Falls back to lowercased+trimmed if no `MerchantCategoryMapping` rule
+    /// matches.
+    static func canonicalMerchantKey(_ raw: String?) -> (key: String, display: String)? {
+        guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else { return nil }
+        let lowered = trimmed.lowercased()
+        if let matched = MerchantCategoryMapping.rules.first(where: { lowered.contains($0.keyword) }) {
+            return (matched.keyword, trimmed)
+        }
+        return (lowered, trimmed)
+    }
+}
+
+// MARK: - Aggregations
+
+extension SpendingSummary {
+    fileprivate struct AggregateBundle {
+        var recurring: [MerchantAggregate]
+        var subscriptions: [MerchantAggregate]
+        var oneOffs: [LineItem]
+        var crossCategory: [MerchantAggregate]
+        var duplicates: [DuplicateGroup]
+    }
+
+    fileprivate struct MerchantBucket {
+        let canonicalKey: String
+        var displayLabel: String
+        var amounts: [Double] = []
+        var categories: [String] = []
+    }
+
+    fileprivate static func computeAggregates(from expenses: [LineItem]) -> AggregateBundle {
+        let buckets = bucketsByMerchant(expenses)
+
+        let recurring = buildRecurringMerchants(buckets: buckets)
+        let recurringKeys = Set(recurring.map(\.canonicalKey))
+        let subscriptions = buildSubscriptionLikeCharges(buckets: buckets, excluding: recurringKeys)
+
+        let repeatingKeys = Set(
+            buckets.values.filter { $0.amounts.count >= 2 }.map(\.canonicalKey)
+        )
+        let oneOffs = buildLargestOneOffs(expenses: expenses, repeatingKeys: repeatingKeys)
+        let crossCategory = buildCrossCategoryMerchants(buckets: buckets)
+        let duplicates = buildPossibleDuplicates(expenses: expenses)
+
+        return AggregateBundle(
+            recurring: recurring,
+            subscriptions: subscriptions,
+            oneOffs: oneOffs,
+            crossCategory: crossCategory,
+            duplicates: duplicates
+        )
+    }
+
+    private static func bucketsByMerchant(_ expenses: [LineItem]) -> [String: MerchantBucket] {
+        var buckets: [String: MerchantBucket] = [:]
+        for item in expenses {
+            guard let canonical = canonicalMerchantKey(item.label) else { continue }
+            var bucket = buckets[canonical.key] ?? MerchantBucket(
+                canonicalKey: canonical.key,
+                displayLabel: canonical.display
+            )
+            bucket.amounts.append(item.amount)
+            if !bucket.categories.contains(item.category) {
+                bucket.categories.append(item.category)
+            }
+            buckets[canonical.key] = bucket
+        }
+        return buckets
+    }
+
+    private static func buildRecurringMerchants(buckets: [String: MerchantBucket]) -> [MerchantAggregate] {
+        buckets.values
+            .filter { $0.amounts.count >= recurringMinCount }
+            .map { aggregateFrom($0) }
+            .sorted { $0.total > $1.total }
+            .prefix(recurringMerchantCap)
+            .map { $0 }
+    }
+
+    private static func buildSubscriptionLikeCharges(
+        buckets: [String: MerchantBucket],
+        excluding excludedKeys: Set<String>
+    ) -> [MerchantAggregate] {
+        buckets.values
+            .filter { !excludedKeys.contains($0.canonicalKey) }
+            .filter { isSubscriptionLike($0) }
+            .map { aggregateFrom($0) }
+            .sorted { $0.total > $1.total }
+            .prefix(subscriptionMerchantCap)
+            .map { $0 }
+    }
+
+    private static func isSubscriptionLike(_ bucket: MerchantBucket) -> Bool {
+        // Anything tagged in the user's `Subscription` category counts.
+        if bucket.categories.contains("Subscription") {
+            return true
+        }
+        guard bucket.amounts.count >= 2,
+              let maxAmount = bucket.amounts.max(),
+              let minAmount = bucket.amounts.min(),
+              maxAmount <= subscriptionAmountCap else {
+            return false
+        }
+        let mean = bucket.amounts.reduce(0, +) / Double(bucket.amounts.count)
+        guard mean > 0 else { return false }
+        let variance = (maxAmount - minAmount) / mean
+        return variance <= subscriptionVarianceFraction
+    }
+
+    private static func buildLargestOneOffs(
+        expenses: [LineItem],
+        repeatingKeys: Set<String>
+    ) -> [LineItem] {
+        expenses
+            .filter { item in
+                guard let canonical = canonicalMerchantKey(item.label) else {
+                    // No merchant string — keep as one-off (it's a single row by definition).
+                    return true
+                }
+                return !repeatingKeys.contains(canonical.key)
+            }
+            .sorted { $0.amount > $1.amount }
+            .prefix(largestOneOffCap)
+            .map { $0 }
+    }
+
+    private static func buildCrossCategoryMerchants(buckets: [String: MerchantBucket]) -> [MerchantAggregate] {
+        buckets.values
+            .filter { $0.categories.count >= 2 && $0.amounts.count >= 2 }
+            .map { aggregateFrom($0) }
+            .sorted { $0.total > $1.total }
+            .prefix(crossCategoryCap)
+            .map { $0 }
+    }
+
+    private static func buildPossibleDuplicates(expenses: [LineItem]) -> [DuplicateGroup] {
+        struct GroupKey: Hashable {
+            let canonicalKey: String
+            let category: String
+        }
+        var byMerchantCategory: [GroupKey: [LineItem]] = [:]
+        var displayByKey: [String: String] = [:]
+        for item in expenses {
+            guard let canonical = canonicalMerchantKey(item.label) else { continue }
+            let key = GroupKey(canonicalKey: canonical.key, category: item.category)
+            byMerchantCategory[key, default: []].append(item)
+            displayByKey[canonical.key] = displayByKey[canonical.key] ?? canonical.display
+        }
+
+        var groups: [DuplicateGroup] = []
+        for (key, items) in byMerchantCategory {
+            guard items.count >= 2 else { continue }
+            let sorted = items.sorted { $0.amount > $1.amount }
+            var bucket: [LineItem] = []
+            for item in sorted {
+                if let last = bucket.last, isWithinDuplicateTolerance(item.amount, last.amount) {
+                    bucket.append(item)
+                } else {
+                    appendIfDuplicate(
+                        bucket: bucket,
+                        displayLabel: displayByKey[key.canonicalKey] ?? "(unknown)",
+                        category: key.category,
+                        into: &groups
+                    )
+                    bucket = [item]
+                }
+            }
+            appendIfDuplicate(
+                bucket: bucket,
+                displayLabel: displayByKey[key.canonicalKey] ?? "(unknown)",
+                category: key.category,
+                into: &groups
+            )
+        }
+        return groups
+            .sorted { $0.representativeAmount > $1.representativeAmount }
+            .prefix(duplicateGroupCap)
+            .map { $0 }
+    }
+
+    private static func appendIfDuplicate(
+        bucket: [LineItem],
+        displayLabel: String,
+        category: String,
+        into groups: inout [DuplicateGroup]
+    ) {
+        guard bucket.count >= 2 else { return }
+        let representative = bucket.map(\.amount).max() ?? 0
+        groups.append(
+            DuplicateGroup(
+                displayLabel: displayLabel,
+                category: category,
+                representativeAmount: representative,
+                count: bucket.count
+            )
+        )
+    }
+
+    private static func isWithinDuplicateTolerance(_ a: Double, _ b: Double) -> Bool {
+        let larger = max(a, b)
+        guard larger > 0 else { return false }
+        let delta = abs(a - b) / larger
+        let tolerance = larger >= largeAmountThreshold ? largeAmountDuplicateTolerance : duplicateAmountTolerance
+        return delta <= tolerance
+    }
+
+    private static func aggregateFrom(_ bucket: MerchantBucket) -> MerchantAggregate {
+        let total = bucket.amounts.reduce(0, +)
+        let count = bucket.amounts.count
+        return MerchantAggregate(
+            canonicalKey: bucket.canonicalKey,
+            displayLabel: bucket.displayLabel,
+            count: count,
+            total: total,
+            averagePerCharge: count > 0 ? total / Double(count) : 0,
+            categories: bucket.categories.sorted()
+        )
     }
 }
