@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Commits
+
+Never commit until the user explicitly asks. Even after a clean build and passing tests, wait for the word.
+
 ## Comments
 
 - Default to writing **no** comment. Well-named identifiers already say what the code does.

@@ -217,7 +217,8 @@ struct SpendingSummaryTests {
             // Cross-category merchant
             Expense(amount: 234, currency: "EUR", date: date(2026, 3, 8), category: medical, destination: "Pulse"),
             Expense(amount: 10, currency: "EUR", date: date(2026, 3, 18), category: groceries, destination: "Pulse"),
-            // Large one-off + duplicate (large-amount tolerance)
+            // Two MacBook charges — not recurring (need 3+), so each lands as
+            // its own one-off line.
             Expense(amount: 1200, currency: "EUR", date: date(2026, 3, 5), category: personal, destination: "MacBook Pro M5 Pro"),
             Expense(amount: 1000, currency: "EUR", date: date(2026, 3, 6), category: personal, destination: "MacBook Pro M5 Pro"),
             // Standalone large one-off
@@ -237,18 +238,13 @@ struct SpendingSummaryTests {
         #expect(prompt.contains("Recurring merchants (>=3 charges this month):"))
         #expect(prompt.contains("- OMV x 3 = 242.00 (avg 80.67)  (Auto)"))
 
-        // MacBook is a duplicate (2 charges) so it's excluded from one-offs
-        // and surfaces in the duplicates section instead. The standalone
-        // "Big Dinner" remains the only one-off in this fixture.
         #expect(prompt.contains("Largest one-off expenses:"))
+        #expect(prompt.contains("- 1200.00  Personal Items  MacBook Pro M5 Pro"))
+        #expect(prompt.contains("- 1000.00  Personal Items  MacBook Pro M5 Pro"))
         #expect(prompt.contains("- 580.00  Cafes  Big Dinner"))
-        #expect(!prompt.contains("- 1200.00  Personal Items  MacBook Pro M5 Pro"))
 
         #expect(prompt.contains("Merchants split across categories:"))
         #expect(prompt.contains("- Pulse: Groceries, Medical"))
-
-        #expect(prompt.contains("Possible duplicate or near-duplicate charges:"))
-        #expect(prompt.contains("- MacBook Pro M5 Pro x 2"))
     }
 
     @Test func promptEncodingOmitsEmptySections() {
@@ -272,7 +268,6 @@ struct SpendingSummaryTests {
         #expect(!prompt.contains("Subscription-like charges"))
         #expect(!prompt.contains("Largest one-off expenses"))
         #expect(!prompt.contains("Merchants split across categories"))
-        #expect(!prompt.contains("Possible duplicate"))
     }
 
     @Test func promptEncodingSectionOrder() throws {
@@ -297,9 +292,8 @@ struct SpendingSummaryTests {
             // Cross-category
             Expense(amount: 200, currency: "EUR", date: date(2026, 3, 5), category: med, destination: "Pulse"),
             Expense(amount: 10, currency: "EUR", date: date(2026, 3, 8), category: groc, destination: "Pulse"),
-            // Large one-off + duplicate
+            // Large one-off
             Expense(amount: 1200, currency: "EUR", date: date(2026, 3, 5), category: med, destination: "MacBook Pro M5 Pro"),
-            Expense(amount: 1000, currency: "EUR", date: date(2026, 3, 6), category: med, destination: "MacBook Pro M5 Pro"),
         ]
         let incomes = [
             Income(amount: 2000, currency: "EUR", date: date(2026, 3, 1), category: salary, source: "ACME"),
@@ -323,7 +317,6 @@ struct SpendingSummaryTests {
             "Subscription-like charges:",
             "Largest one-off expenses:",
             "Merchants split across categories:",
-            "Possible duplicate or near-duplicate charges:",
         ]
         var cursor = prompt.startIndex
         for marker in order {
@@ -658,80 +651,6 @@ struct SpendingSummaryTests {
         #expect(summary.crossCategoryMerchants.isEmpty)
     }
 
-    @Test func possibleDuplicatesCatchLargeAmountWideTolerance() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let personal = ExpenseCategory(name: "Personal Items")
-        context.insert(personal)
-
-        let expenses = [
-            Expense(amount: 1200, currency: "EUR", date: date(2026, 3, 5), category: personal, destination: "MacBook Pro M5 Pro"),
-            Expense(amount: 1000, currency: "EUR", date: date(2026, 3, 6), category: personal, destination: "MacBook Pro M5 Pro"),
-        ]
-        expenses.forEach { context.insert($0) }
-
-        let summary = SpendingSummary.build(
-            monthFilter: march2026(),
-            currency: "EUR",
-            expenses: expenses,
-            incomes: []
-        )
-
-        #expect(summary.possibleDuplicates.count == 1)
-        #expect(summary.possibleDuplicates.first?.count == 2)
-        #expect(summary.possibleDuplicates.first?.representativeAmount == 1200)
-        #expect(summary.possibleDuplicates.first?.category == "Personal Items")
-    }
-
-    @Test func possibleDuplicatesCatchSmallAmountTightTolerance() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let cafes = ExpenseCategory(name: "Cafes")
-        context.insert(cafes)
-
-        let expenses = [
-            Expense(amount: 4.00, currency: "EUR", date: date(2026, 3, 5), category: cafes, destination: "Random Coffee"),
-            Expense(amount: 4.05, currency: "EUR", date: date(2026, 3, 5), category: cafes, destination: "Random Coffee"),
-        ]
-        expenses.forEach { context.insert($0) }
-
-        let summary = SpendingSummary.build(
-            monthFilter: march2026(),
-            currency: "EUR",
-            expenses: expenses,
-            incomes: []
-        )
-
-        #expect(summary.possibleDuplicates.count == 1)
-    }
-
-    @Test func possibleDuplicatesExcludeRecurringMerchants() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let auto = ExpenseCategory(name: "Auto")
-        context.insert(auto)
-
-        // Three OMV charges where two are within 5% of each other. Without
-        // the exclusion, this would land in possibleDuplicates AND in
-        // recurringMerchants — noisy. Recurring suppresses duplicates.
-        let expenses = [
-            Expense(amount: 84, currency: "EUR", date: date(2026, 3, 5), category: auto, destination: "OMV"),
-            Expense(amount: 84, currency: "EUR", date: date(2026, 3, 12), category: auto, destination: "OMV"),
-            Expense(amount: 60, currency: "EUR", date: date(2026, 3, 20), category: auto, destination: "OMV"),
-        ]
-        expenses.forEach { context.insert($0) }
-
-        let summary = SpendingSummary.build(
-            monthFilter: march2026(),
-            currency: "EUR",
-            expenses: expenses,
-            incomes: []
-        )
-
-        #expect(summary.recurringMerchants.count == 1)
-        #expect(summary.possibleDuplicates.isEmpty)
-    }
-
     @Test func aggregationIgnoresMissingMerchantStrings() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -757,7 +676,6 @@ struct SpendingSummaryTests {
         #expect(summary.recurringMerchants.isEmpty)
         #expect(summary.subscriptionLikeCharges.isEmpty)
         #expect(summary.crossCategoryMerchants.isEmpty)
-        #expect(summary.possibleDuplicates.isEmpty)
     }
 
     @Test func emptyMonthHasEmptyAggregations() {
@@ -771,6 +689,5 @@ struct SpendingSummaryTests {
         #expect(summary.subscriptionLikeCharges.isEmpty)
         #expect(summary.largestOneOffs.isEmpty)
         #expect(summary.crossCategoryMerchants.isEmpty)
-        #expect(summary.possibleDuplicates.isEmpty)
     }
 }
