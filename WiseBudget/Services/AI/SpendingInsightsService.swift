@@ -9,11 +9,8 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsi
 /// TN3193 — long descriptions inflate context size and add latency.
 @Generable
 struct InsightOutput: Equatable {
-    @Guide(description: "Specific observations about merchants, amounts, or patterns from the data.")
-    let insights: [String]
-
-    @Guide(description: "Actionable suggestions citing specific merchants or amounts from the data.")
-    let recommendations: [String]
+    @Guide(description: "Up to three short hints about the month's spending.")
+    let hints: [String]
 }
 
 /// On-device generation; results cached in SwiftData via `InsightsCache`.
@@ -22,34 +19,19 @@ struct InsightOutput: Equatable {
 final class SpendingInsightsService {
 
     private static let instructions = """
-    You are a personal-finance coach reviewing one month of the user's spending.
+    You are looking at one month of the user's spending.
 
-    The data below is ALREADY AGGREGATED. Trust the numbers as given. Do not \
-    recompute sums, do not invent merchants or amounts, do not list \
-    transactions back to the user — the UI already shows them. Every \
-    merchant or amount you mention must appear verbatim in the data above.
+    The data below is already aggregated. Don't recompute totals or list \
+    transactions back — the UI shows those. Mention only merchants and \
+    amounts that appear above.
 
-    Your job is narrative judgment: connect the dots between recurring \
-    patterns, one-off expenses, and the savings rate, and tell the user the \
-    story of their month. Bland "you spend a lot at X, switch to something \
-    cheaper" is useless; a real coach connects facts.
+    Write up to three short hints — one sentence each — flagging the most \
+    interesting facts of the month: a large one-off, a recurring pattern, a \
+    category split, an unusual savings rate. Plain and specific, no advice.
 
-    Rules:
-    - If "Savings" is negative, the first insight must address what caused \
-      the shortfall.
-    - At least one insight must reference an entry from "Largest one-off \
-      expenses" or "Possible duplicate or near-duplicate charges".
-    - Recommendations are concrete actions for this week — not generic \
-      advice. Never say "make a budget", "track your spending", "reduce \
-      dining out", "plan meals", "switch to a cheaper alternative", \
-      "consider cutting back", "set aside a portion of income", or "build \
-      an emergency fund".
-
-    Use the currency at the top. Keep total output under 150 words.
+    Use the currency at the top.
     """
 
-    /// `.greedy` for cache determinism; 600 tokens to clear schema overhead
-    /// and avoid Apple's "strict token limits cause malformed results" mode.
     private static let generationOptions = GenerationOptions(
         sampling: .greedy,
         maximumResponseTokens: 600
@@ -73,8 +55,8 @@ final class SpendingInsightsService {
 
     enum State: Equatable {
         case idle
-        case generating(String)
-        case ready(String)
+        case generating([String])
+        case ready([String])
         case error(String)
     }
 
@@ -126,12 +108,7 @@ final class SpendingInsightsService {
             return
         }
 
-        if summary.isEmpty {
-            state = .ready("No transactions recorded for \(summary.month).")
-            return
-        }
-
-        if summary.transactionCount < Self.minimumTransactionsForInsights {
+        if summary.isEmpty || summary.transactionCount < Self.minimumTransactionsForInsights {
             state = .idle
             return
         }
@@ -156,12 +133,12 @@ final class SpendingInsightsService {
             dataHash: hash
         ) {
             logger.debug("Cache hit for scope=\(scopeKey, privacy: .public)")
-            state = .ready(cached)
+            state = .ready(Self.decodeCachedHints(cached))
             return
         }
 
         logger.debug("Sending prompt (scope=\(scopeKey, privacy: .public), \(prompt.count) chars):\n\(prompt, privacy: .public)")
-        state = .generating("")
+        state = .generating([])
 
         let session = LanguageModelSession(instructions: Self.instructions)
         activeSession = session
@@ -177,19 +154,16 @@ final class SpendingInsightsService {
             for try await snapshot in stream {
                 try Task.checkCancellation()
                 latestPartial = snapshot.content
-                state = .generating(Self.renderMarkdown(from: snapshot.content))
+                state = .generating(snapshot.content.hints ?? [])
             }
             try Task.checkCancellation()
-            guard let final = latestPartial else {
-                state = .idle
-                return
-            }
-            let markdown = Self.renderMarkdown(from: final)
+            let hints = (latestPartial?.hints ?? []).filter { !$0.isEmpty }
             // Stream cancelled between iterations — don't cache an empty card.
-            guard !markdown.isEmpty else {
+            guard !hints.isEmpty else {
                 state = .idle
                 return
             }
+            let encoded = hints.joined(separator: "\n")
             InsightsCache.upsert(
                 in: context,
                 kind: .monthSummary,
@@ -197,10 +171,10 @@ final class SpendingInsightsService {
                 currency: summary.currency,
                 localeIdentifier: "en",
                 dataHash: hash,
-                content: markdown
+                content: encoded
             )
-            logger.debug("Received response (\(markdown.count) chars):\n\(markdown, privacy: .public)")
-            state = .ready(markdown)
+            logger.debug("Received \(hints.count) hints:\n\(encoded, privacy: .public)")
+            state = .ready(hints)
         } catch is CancellationError {
             // Navigated away mid-stream — avoid sticking the card in `.generating`.
             state = .idle
@@ -215,23 +189,19 @@ final class SpendingInsightsService {
         state = .idle
     }
 
-    /// Headings only render once their section has an item — avoids flashing
-    /// empty headers during streaming.
-    private static func renderMarkdown(from partial: InsightOutput.PartiallyGenerated) -> String {
-        var lines: [String] = []
-        if let insights = partial.insights, !insights.isEmpty {
-            lines.append("### Insights")
-            for item in insights {
-                lines.append("* \(item)")
+    /// Decodes a cached payload back into hints. Tolerates the legacy markdown
+    /// format (`* hint`) so entries written before the format change still
+    /// render correctly.
+    private static func decodeCachedHints(_ content: String) -> [String] {
+        content
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .map { line -> String in
+                if line.hasPrefix("* ") { return String(line.dropFirst(2)) }
+                if line.hasPrefix("- ") { return String(line.dropFirst(2)) }
+                if line.hasPrefix("• ") { return String(line.dropFirst(2)) }
+                return line
             }
-        }
-        if let recommendations = partial.recommendations, !recommendations.isEmpty {
-            if !lines.isEmpty { lines.append("") }
-            lines.append("### Recommendations")
-            for item in recommendations {
-                lines.append("* \(item)")
-            }
-        }
-        return lines.joined(separator: "\n")
+            .filter { !$0.isEmpty }
     }
 }

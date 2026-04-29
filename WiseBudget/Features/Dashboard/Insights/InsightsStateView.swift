@@ -15,10 +15,10 @@ struct InsightsStateView: View {
             } else {
                 InsightsPreparingRow(month: summary.month)
             }
-        case .generating(let partial):
-            InsightsGeneratingView(month: summary.month, partial: partial)
-        case .ready(let text):
-            InsightsReadyView(text: text, onRegenerate: onRegenerate)
+        case .generating(let hints):
+            InsightsGeneratingView(month: summary.month, hints: hints)
+        case .ready(let hints):
+            InsightsReadyView(hints: hints, onRegenerate: onRegenerate)
         case .error(let message):
             InsightsErrorView(message: message, onRegenerate: onRegenerate)
         }

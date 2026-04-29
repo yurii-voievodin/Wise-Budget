@@ -1,13 +1,12 @@
 import SwiftUI
 
 struct InsightsReadyView: View {
-    let text: String
+    let hints: [String]
     let onRegenerate: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            MarkdownText(text)
-                .textSelection(.enabled)
+            InsightHintsList(hints: hints)
             HStack {
                 Spacer()
                 Button("Regenerate", action: onRegenerate)
