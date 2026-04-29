@@ -3,7 +3,7 @@ import SwiftData
 
 struct GeneralSettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
     @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
 

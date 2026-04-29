@@ -6,7 +6,7 @@ struct IncomeQueryListView: View {
     @Query private var incomes: [Income]
     @State private var hasAnyIncomes = true
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
     let selectedCategoryName: String?

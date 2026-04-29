@@ -3,7 +3,7 @@ import SwiftData
 
 struct TransactionFormContent<C: CategoryModel & Hashable>: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let categories: [C]
     let entityLabel: String
@@ -53,7 +53,7 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
                 TextField("Description", text: $descriptionText)
                 TextField(extraFieldLabel, text: $extraField)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
-                Toggle("Mark as transfer", isOn: $isInternalTransfer)
+                Toggle("Transfer", isOn: $isInternalTransfer)
                     .help("Transfers between your own accounts stay in history but are excluded from statistics and budgets.")
             }
             .padding(.horizontal)

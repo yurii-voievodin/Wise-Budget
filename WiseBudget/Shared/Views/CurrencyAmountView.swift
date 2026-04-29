@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CurrencyAmountView: View {
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let item: CurrencyConvertible
     var tintColor: Color?

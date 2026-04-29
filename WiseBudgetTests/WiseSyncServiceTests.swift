@@ -107,6 +107,10 @@ struct WiseSyncServiceTests {
         let result = try #require(WiseSyncService.convertActivity(activity))
         #expect(result.isInternalTransfer == true)
         #expect(result.externalId == "wise_act-1")
+        // Flagging must not zero out the rest of the conversion.
+        #expect(result.amount == Decimal(string: "100.00"))
+        #expect(result.currency == "EUR")
+        #expect(!result.categoryName.isEmpty)
     }
 
     @Test func cardTransactionIsNotInternal() throws {

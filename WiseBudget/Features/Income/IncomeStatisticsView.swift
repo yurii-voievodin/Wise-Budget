@@ -4,7 +4,7 @@ import SwiftData
 struct IncomeStatisticsView: View {
     @Query private var incomes: [Income]
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService

@@ -201,6 +201,10 @@ struct MonobankSyncServiceTests {
         ))
         #expect(result.isInternalTransfer == true, "Own-account transfers should be flagged as internal")
         #expect(result.externalId == "mono_testId")
+        // Flagging must not zero out the rest of the conversion.
+        #expect(result.amount > 0)
+        #expect(result.direction == "OUT")
+        #expect(!result.categoryName.isEmpty)
     }
 
     @Test func counterIbanNotInOwnSetIsNotFlagged() throws {
@@ -223,6 +227,8 @@ struct MonobankSyncServiceTests {
             defaultCurrency: "UAH"
         ))
         #expect(result.isInternalTransfer == true, "FOP transfers should be flagged as internal")
+        #expect(result.amount > 0)
+        #expect(!result.categoryName.isEmpty)
     }
 
     @Test func fopTransferDetectionIsCaseInsensitive() throws {

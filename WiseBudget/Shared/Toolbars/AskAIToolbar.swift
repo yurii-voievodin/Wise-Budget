@@ -11,7 +11,7 @@ import TipKit
 struct AskAIToolbar: ToolbarContent {
     @Environment(\.modelContext) private var modelContext
     @Environment(LocalAIAppDetector.self) private var localAppDetector
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("defaultAIProvider") private var defaultProvider: AIProvider = .claude
 
     let filter: MonthFilter

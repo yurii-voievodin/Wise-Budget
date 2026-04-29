@@ -4,7 +4,7 @@ import SwiftData
 struct BudgetEmptyStateView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
 

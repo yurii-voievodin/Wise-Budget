@@ -5,7 +5,7 @@ struct ExpenseCalendarView: View {
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService

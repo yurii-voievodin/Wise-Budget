@@ -21,7 +21,11 @@ struct TransactionRowView: View {
                         }
                     }
                 } else if item.isInternalTransfer {
-                    transferBadge
+                    Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Internal transfer")
                 }
                 if let name = categoryName, let icon = categoryIcon {
                     Label(name, systemImage: icon)
@@ -36,6 +40,7 @@ struct TransactionRowView: View {
             }
             Spacer()
             CurrencyAmountView(item: item, tintColor: item.isInternalTransfer ? .secondary : amountTintColor)
+                .opacity(item.isInternalTransfer ? 0.7 : 1)
         }
         .contentShape(Rectangle())
     }

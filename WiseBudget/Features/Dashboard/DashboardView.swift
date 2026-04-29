@@ -6,7 +6,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("monobankConnectedName") private var monobankConnectedName: String = ""
     @AppStorage("wiseConnectedName") private var wiseConnectedName: String = ""
 
