@@ -33,6 +33,7 @@ private struct PreviewItem: CurrencyConvertible {
     var currency: String
     var baseCurrencyAmount: Decimal?
     var baseCurrency: String?
+    var isInternalTransfer: Bool = false
 }
 
 #Preview("Currency Amount") {

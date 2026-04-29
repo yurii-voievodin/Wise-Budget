@@ -55,25 +55,15 @@ struct ExpenseListView: View {
             BankSyncToolbar(syncService: syncService, filter: filter)
         }
         .sheet(isPresented: $isAddingExpense) {
-            ExpenseFormSheet { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
+            ExpenseFormSheet { result in
                 withAnimation {
-                    let newExpense = Expense(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText, destination: destination, baseCurrencyAmount: baseCurrencyAmount, baseCurrency: baseCurrency)
-                    modelContext.insert(newExpense)
+                    modelContext.insert(result.makeExpense())
                 }
             }
         }
         .sheet(item: $expenseToEdit) { expense in
-            ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    expense.amount = amount
-                    expense.currency = currency
-                    expense.date = date
-                    expense.category = category
-                    expense.descriptionText = descriptionText
-                    expense.destination = destination
-                    expense.baseCurrencyAmount = baseCurrencyAmount
-                    expense.baseCurrency = baseCurrency
-                }
+            ExpenseFormSheet(expense: expense) { result in
+                withAnimation { result.apply(to: expense) }
             }
         }
     }

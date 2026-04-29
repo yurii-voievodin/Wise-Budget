@@ -34,7 +34,7 @@ struct BudgetPlanQueryListView: View {
 
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate && !expense.isInternalTransfer
             }
         )
     }

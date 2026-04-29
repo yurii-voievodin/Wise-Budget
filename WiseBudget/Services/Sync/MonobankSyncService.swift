@@ -66,8 +66,7 @@ final class MonobankSyncService {
         // Collect all user IBANs to detect own-account transfers
         let ownIbans = Set(allCachedAccounts.compactMap { $0.iban })
 
-        let defaultCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
-            ?? Locale.current.currency?.identifier ?? "USD"
+        let defaultCurrency = DefaultCurrency.resolve()
 
         let fromDate = Date(timeIntervalSince1970: fromTimestamp)
         let toDate = Date(timeIntervalSince1970: toTimestamp)
@@ -205,17 +204,17 @@ final class MonobankSyncService {
         // Previously we skipped them, but that caused all recent transactions to be missing.
         // If duplicate imports become an issue, re-enable: guard !statement.hold else { return nil }
 
-        // Skip own-account transfers
+        // Detect own-account transfers (counterIban matches one of the user's IBANs)
+        // and FOP ↔ personal account transfers (incoming side has no counterIban; matched by description).
+        // Both stay in history but are flagged so statistics exclude them.
+        var isInternalTransfer = false
         if let counterIban = statement.counterIban, ownIbans.contains(counterIban) {
-            logger.debug("skipping own-account transfer (IBAN match): \(statement.id, privacy: .private)")
-            return nil
-        }
-
-        // Skip FOP ↔ personal account transfers (incoming side has no counterIban)
-        let desc = statement.description.lowercased()
-        if desc.contains("рахунку фоп") || desc.contains("рахунок фоп") {
-            logger.debug("skipping FOP transfer: \(statement.id, privacy: .private)")
-            return nil
+            isInternalTransfer = true
+        } else {
+            let desc = statement.description.lowercased()
+            if desc.contains("рахунку фоп") || desc.contains("рахунок фоп") {
+                isInternalTransfer = true
+            }
         }
 
         let date = Date(timeIntervalSince1970: TimeInterval(statement.time))
@@ -274,7 +273,8 @@ final class MonobankSyncService {
             destination: nil,
             baseCurrencyAmount: baseCurrencyAmount,
             baseCurrency: baseCurrency,
-            externalId: "mono_\(statement.id)"
+            externalId: "mono_\(statement.id)",
+            isInternalTransfer: isInternalTransfer
         )
     }
 }

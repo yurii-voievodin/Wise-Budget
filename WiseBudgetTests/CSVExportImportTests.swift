@@ -516,4 +516,79 @@ struct CSVExportImportTests {
         #expect(imported.count == 1)
         #expect(imported[0].descriptionText == "Deel, Inc.")
     }
+
+    // MARK: - Internal transfers
+
+    @Test func exportInternalTransferUsesTransferType() throws {
+        let category = ExpenseCategory(name: "Other")
+        let transfer = Expense(
+            amount: 250,
+            currency: "USD",
+            date: try makeDate(year: 2026, month: 3, day: 10),
+            category: category,
+            descriptionText: "To savings",
+            isInternalTransfer: true
+        )
+        let regularExpense = Expense(
+            amount: 12.50,
+            currency: "USD",
+            date: try makeDate(year: 2026, month: 3, day: 11),
+            category: category,
+            descriptionText: "Coffee"
+        )
+
+        let csv = CSVExporter.exportCSV(expenses: [transfer, regularExpense], incomes: [])
+        let lines = csv.components(separatedBy: "\n")
+        #expect(lines.count == 3)
+        #expect(lines[0] == CSVExporter.header)
+
+        let transferFields = CSVImporter.parseCSVLine(lines[1])
+        #expect(transferFields[0] == "Transfer")
+        #expect(transferFields[5] == "To savings")
+
+        let expenseFields = CSVImporter.parseCSVLine(lines[2])
+        #expect(expenseFields[0] == "Expense")
+    }
+
+    @Test func exportInternalTransferIncomeUsesTransferType() throws {
+        let category = IncomeCategory(name: "Other")
+        let transferIncome = Income(
+            amount: 250,
+            currency: "USD",
+            date: try makeDate(year: 2026, month: 3, day: 10),
+            category: category,
+            descriptionText: "From checking",
+            isInternalTransfer: true
+        )
+
+        let csv = CSVExporter.exportCSV(expenses: [], incomes: [transferIncome])
+        let lines = csv.components(separatedBy: "\n")
+        let fields = CSVImporter.parseCSVLine(lines[1])
+        #expect(fields[0] == "Transfer")
+    }
+
+    // MARK: - Aggregation excludes transfers
+
+    @Test func internalTransfersExcludedFromMonthlyTotals() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let category = ExpenseCategory(name: "Other")
+        context.insert(category)
+
+        context.insert(Expense(amount: 100, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 5), category: category))
+        context.insert(Expense(amount: 50, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 12), category: category))
+        context.insert(Expense(amount: 250, currency: "USD", date: try makeDate(year: 2026, month: 3, day: 15), category: category, isInternalTransfer: true))
+
+        let start = try makeDate(year: 2026, month: 3, day: 1)
+        let end = try makeDate(year: 2026, month: 4, day: 1)
+        let descriptor = FetchDescriptor<Expense>(
+            predicate: #Predicate { $0.date >= start && $0.date < end && !$0.isInternalTransfer }
+        )
+        let nonTransfers = try context.fetch(descriptor)
+
+        let total = nonTransfers.reduce(Decimal.zero) { $0 + $1.amount }
+        #expect(nonTransfers.count == 2)
+        #expect(total == 150)
+    }
 }

@@ -12,8 +12,9 @@ final nonisolated class Income: CurrencyConvertible {
     var baseCurrencyAmount: Decimal?
     var baseCurrency: String?
     var externalId: String?
+    var isInternalTransfer: Bool = false
 
-    init(amount: Decimal, currency: String, date: Date = Date.now, category: IncomeCategory? = nil, descriptionText: String? = nil, source: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
+    init(amount: Decimal, currency: String, date: Date = Date.now, category: IncomeCategory? = nil, descriptionText: String? = nil, source: String? = nil, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil, isInternalTransfer: Bool = false) {
         self.amount = amount
         self.currency = currency
         self.date = date
@@ -23,5 +24,6 @@ final nonisolated class Income: CurrencyConvertible {
         self.baseCurrencyAmount = baseCurrencyAmount
         self.baseCurrency = baseCurrency
         self.externalId = externalId
+        self.isInternalTransfer = isInternalTransfer
     }
 }

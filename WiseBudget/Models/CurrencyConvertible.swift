@@ -5,6 +5,9 @@ nonisolated protocol CurrencyConvertible {
     var currency: String { get }
     var baseCurrencyAmount: Decimal? { get }
     var baseCurrency: String? { get }
+    /// Internal transfers stay visible in history but are excluded from
+    /// every aggregation (totals, charts, budgets, AI insights, day totals).
+    var isInternalTransfer: Bool { get }
 }
 
 extension CurrencyConvertible {

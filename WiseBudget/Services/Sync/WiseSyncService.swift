@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import OSLog
 
-private let logger = Logger(subsystem: "com.wisebudget", category: "WiseSync")
+nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "WiseSync")
 
 final class WiseSyncService {
 
@@ -62,7 +62,7 @@ final class WiseSyncService {
     }
 
     /// Converts a Wise activity into a CSVTransaction for import.
-    private static func convertActivity(_ activity: WiseActivity) -> CSVTransaction? {
+    nonisolated static func convertActivity(_ activity: WiseActivity) -> CSVTransaction? {
         guard let amountString = activity.primaryAmount, !amountString.isEmpty else {
             logger.debug("skipping activity \(activity.id, privacy: .private): no primaryAmount")
             return nil
@@ -78,11 +78,10 @@ final class WiseSyncService {
             return nil
         }
 
-        // Skip inter-balance transfers (e.g. moving money between EUR and savings jars)
-        if activity.type == "INTERBALANCE" {
-            logger.debug("skipping activity \(activity.id, privacy: .private): inter-balance transfer")
-            return nil
-        }
+        // Inter-balance moves (e.g. between EUR and savings jars) stay in history but
+        // are flagged so statistics exclude them. Other Wise transfer types lack
+        // recipient info in the API and are left unflagged for users to mark manually.
+        let isInternalTransfer = activity.type == "INTERBALANCE"
 
         // Determine direction: the Wise API wraps incoming amounts in <positive> tags
         // (e.g. "<positive>+ 3,754.76 EUR</positive>") and outgoing amounts are plain
@@ -144,7 +143,8 @@ final class WiseSyncService {
             destination: nil,
             baseCurrencyAmount: baseCurrencyAmount,
             baseCurrency: baseCurrency,
-            externalId: "wise_\(activity.id)"
+            externalId: "wise_\(activity.id)",
+            isInternalTransfer: isInternalTransfer
         )
     }
 
@@ -175,7 +175,7 @@ final class WiseSyncService {
         return (amount, currencyCode)
     }
 
-    private static func parseDate(_ dateString: String) -> Date? {
+    nonisolated private static func parseDate(_ dateString: String) -> Date? {
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = isoFormatter.date(from: dateString) {

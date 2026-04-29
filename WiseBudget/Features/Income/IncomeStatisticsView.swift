@@ -18,7 +18,7 @@ struct IncomeStatisticsView: View {
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate && !income.isInternalTransfer
             },
             sort: \.date,
             order: .reverse

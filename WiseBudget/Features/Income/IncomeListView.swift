@@ -57,25 +57,15 @@ struct IncomeListView: View {
             }
         }
         .sheet(isPresented: $isAddingIncome) {
-            IncomeFormSheet { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
+            IncomeFormSheet { result in
                 withAnimation {
-                    let newIncome = Income(amount: amount, currency: currency, date: date, category: category, descriptionText: descriptionText, source: source, baseCurrencyAmount: baseCurrencyAmount, baseCurrency: baseCurrency)
-                    modelContext.insert(newIncome)
+                    modelContext.insert(result.makeIncome())
                 }
             }
         }
         .sheet(item: $incomeToEdit) { income in
-            IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    income.amount = amount
-                    income.currency = currency
-                    income.date = date
-                    income.category = category
-                    income.descriptionText = descriptionText
-                    income.source = source
-                    income.baseCurrencyAmount = baseCurrencyAmount
-                    income.baseCurrency = baseCurrency
-                }
+            IncomeFormSheet(income: income) { result in
+                withAnimation { result.apply(to: income) }
             }
         }
     }

@@ -11,15 +11,15 @@ struct ExpenseFormSheet: View {
     @State private var descriptionText: String = ""
     @State private var destination: String = ""
     @State private var baseCurrencyAmount: Decimal?
+    @State private var isInternalTransfer: Bool = false
 
     var expenseToEdit: Expense?
-    var onSave: (Decimal, String, Date, ExpenseCategory?, String?, String?, Decimal?, String?) -> Void
+    var onSave: (ExpenseFormResult) -> Void
 
-    init(expense: Expense? = nil, onSave: @escaping (Decimal, String, Date, ExpenseCategory?, String?, String?, Decimal?, String?) -> Void) {
+    init(expense: Expense? = nil, onSave: @escaping (ExpenseFormResult) -> Void) {
         self.expenseToEdit = expense
         self.onSave = onSave
-        let storedCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
-            ?? Locale.current.currency?.identifier ?? "USD"
+        let storedCurrency = DefaultCurrency.resolve()
         if let expense {
             _amount = State(initialValue: expense.amount)
             _currency = State(initialValue: expense.currency)
@@ -28,6 +28,7 @@ struct ExpenseFormSheet: View {
             _descriptionText = State(initialValue: expense.descriptionText ?? "")
             _destination = State(initialValue: expense.destination ?? "")
             _baseCurrencyAmount = State(initialValue: expense.baseCurrencyAmount)
+            _isInternalTransfer = State(initialValue: expense.isInternalTransfer)
         } else {
             _currency = State(initialValue: storedCurrency)
         }
@@ -46,12 +47,24 @@ struct ExpenseFormSheet: View {
             descriptionText: $descriptionText,
             extraField: $destination,
             baseCurrencyAmount: $baseCurrencyAmount,
-            onSave: onSave
-        )
+            isInternalTransfer: $isInternalTransfer
+        ) { payload in
+            onSave(ExpenseFormResult(
+                amount: payload.amount,
+                currency: payload.currency,
+                date: payload.date,
+                category: payload.category,
+                descriptionText: payload.descriptionText,
+                destination: payload.extraField,
+                baseCurrencyAmount: payload.baseCurrencyAmount,
+                baseCurrency: payload.baseCurrency,
+                isInternalTransfer: payload.isInternalTransfer
+            ))
+        }
     }
 }
 
 #Preview("Add Expense Sheet") {
-    ExpenseFormSheet { _, _, _, _, _, _, _, _ in }
+    ExpenseFormSheet { _ in }
         .modelContainer(for: [ExpenseCategory.self, Expense.self], inMemory: true)
 }

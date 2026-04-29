@@ -3,7 +3,8 @@ import SwiftData
 import Charts
 
 struct ExpenseComparisonView: View {
-    @Query(sort: \Expense.date) private var allExpenses: [Expense]
+    // Internal transfers stay in history but are excluded from every comparison surface.
+    @Query(filter: #Predicate<Expense> { !$0.isInternalTransfer }, sort: \Expense.date) private var allExpenses: [Expense]
     @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
 
     let filter: MonthFilter

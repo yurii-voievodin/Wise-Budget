@@ -19,13 +19,13 @@ struct ExpenseCalendarView: View {
 
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate && !expense.isInternalTransfer
             },
             sort: \.date
         )
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate && !income.isInternalTransfer
             },
             sort: \.date
         )

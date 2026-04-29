@@ -55,17 +55,8 @@ struct ExpenseDayDetailView: View {
         .padding()
         .frame(minWidth: 280, maxWidth: 350)
         .sheet(item: $expenseToEdit) { expense in
-            ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    expense.amount = amount
-                    expense.currency = currency
-                    expense.date = date
-                    expense.category = category
-                    expense.descriptionText = descriptionText
-                    expense.destination = destination
-                    expense.baseCurrencyAmount = baseCurrencyAmount
-                    expense.baseCurrency = baseCurrency
-                }
+            ExpenseFormSheet(expense: expense) { result in
+                withAnimation { result.apply(to: expense) }
             }
         }
     }

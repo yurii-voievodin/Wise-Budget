@@ -93,7 +93,7 @@ struct AskAIToolbar: ToolbarContent {
         let currentEnd = filter.startOfNextMonth
 
         let descriptor = FetchDescriptor<Expense>(
-            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd },
+            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
             sortBy: [SortDescriptor(\.date)]
         )
         let currentExpenses = (try? modelContext.fetch(descriptor)) ?? []

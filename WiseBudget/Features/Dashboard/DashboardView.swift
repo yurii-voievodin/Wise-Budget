@@ -38,7 +38,7 @@ struct DashboardView: View {
         let endDate = monthFilter.wrappedValue.startOfNextMonth
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate && !expense.isInternalTransfer
             },
             sort: \.date,
             order: .reverse
@@ -46,7 +46,7 @@ struct DashboardView: View {
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate && !income.isInternalTransfer
             },
             sort: \.date,
             order: .reverse
@@ -265,31 +265,13 @@ struct DashboardView: View {
         }
         .formStyle(.grouped)
         .sheet(item: $expenseToEdit) { expense in
-            ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    expense.amount = amount
-                    expense.currency = currency
-                    expense.date = date
-                    expense.category = category
-                    expense.descriptionText = descriptionText
-                    expense.destination = destination
-                    expense.baseCurrencyAmount = baseCurrencyAmount
-                    expense.baseCurrency = baseCurrency
-                }
+            ExpenseFormSheet(expense: expense) { result in
+                withAnimation { result.apply(to: expense) }
             }
         }
         .sheet(item: $incomeToEdit) { income in
-            IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    income.amount = amount
-                    income.currency = currency
-                    income.date = date
-                    income.category = category
-                    income.descriptionText = descriptionText
-                    income.source = source
-                    income.baseCurrencyAmount = baseCurrencyAmount
-                    income.baseCurrency = baseCurrency
-                }
+            IncomeFormSheet(income: income) { result in
+                withAnimation { result.apply(to: income) }
             }
         }
         .overlay(alignment: .bottom) {
