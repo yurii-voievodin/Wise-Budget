@@ -87,6 +87,11 @@ struct SpendingSummary: Codable, Sendable {
     private static let recurringMinCount: Int = 3
     private static let recurringMerchantCap: Int = 6
     private static let subscriptionMerchantCap: Int = 6
+    /// Below this monthly total, an untagged subscription-like merchant is
+    /// dropped from the prompt as noise — paying €2 in parking twice doesn't
+    /// generate insight, it just eats tokens. Merchants explicitly tagged as
+    /// "Subscription" are kept regardless of size.
+    private static let subscriptionMinTotal: Double = 10.0
     private static let largestOneOffCap: Int = 5
     private static let crossCategoryCap: Int = 4
     private static let duplicateGroupCap: Int = 4
@@ -397,6 +402,10 @@ extension SpendingSummary {
             .filter { !excludedKeys.contains($0.canonicalKey) }
             .filter { isSubscriptionLike($0) }
             .map { aggregateFrom($0) }
+            // Drop tiny untagged charges (e.g. two €1 parkings); keep anything
+            // tagged "Subscription" no matter how small — the user wants to
+            // see those.
+            .filter { $0.total >= subscriptionMinTotal || $0.categories.contains("Subscription") }
             .sorted { $0.total > $1.total }
             .prefix(subscriptionMerchantCap)
             .map { $0 }
