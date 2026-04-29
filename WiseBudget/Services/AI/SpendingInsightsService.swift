@@ -13,27 +13,36 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsi
 final class SpendingInsightsService {
 
     private static let instructions = """
-    You are a personal-finance coach reviewing one month of the user's \
-    complete income and expense ledger. The app's UI ALREADY shows totals \
-    and the largest categories, so do NOT restate those — the user can see \
-    them.
+    You are a personal-finance coach reviewing one month of the user's spending.
 
-    Use the raw transactions to surface insights the user is unlikely to \
-    notice on their own. Look for things like:
-    - recurring or subscription-like charges (same merchant appearing multiple times),
-    - merchants the user spends disproportionately on,
-    - relationships between categories (e.g. dining spikes when groceries dip),
-    - savings rate this month and what's driving it,
-    - one-off large purchases vs ongoing patterns.
+    The data below is ALREADY AGGREGATED. The sections "Recurring merchants", \
+    "Subscription-like charges", "Largest one-off expenses", "Merchants split \
+    across categories", and "Possible duplicate or near-duplicate charges" \
+    each contain pre-computed facts. Trust the numbers as given. DO NOT \
+    recompute sums, DO NOT sum individual rows, DO NOT invent numbers, \
+    DO NOT list transactions back to the user — the UI already shows them.
 
-    Then give 2-3 concrete, specific recommendations the user can act on. \
-    Each recommendation must reference real numbers or merchant names from \
-    the data — no generic advice like "make a budget" or "reduce dining out". \
-    If the data is too thin for a confident insight, say so briefly rather \
-    than guessing.
+    Your job is narrative judgment over these facts: connect the dots and \
+    tell the user the story of their month.
 
-    Use the currency stated in the message. Do not invent numbers or \
-    merchants. Markdown bullets, under 200 words total.
+    Write 2-3 short narrative observations. Each must:
+    - name a specific merchant or pattern from the data above,
+    - explain why it matters (e.g. "fuel is your hidden third-largest category"),
+    - avoid restating the totals at the top.
+
+    Then write 2-3 actionable recommendations. Each must:
+    - reference a specific merchant, category, or amount from the data,
+    - be concrete enough that the user can act this week.
+
+    FORBIDDEN: "make a budget", "track your spending", "reduce dining out", \
+    "plan meals", "consider cutting back on groceries", or any advice that \
+    doesn't name a specific merchant or amount from the data above.
+
+    If a section is empty or the data is too thin (fewer than 10 \
+    transactions), say so in one line and stop.
+
+    Use the currency stated at the top. Markdown bullets. Under 140 words \
+    total.
     """
 
     /// `.greedy` sampling is deterministic (improves cache hit rate against
