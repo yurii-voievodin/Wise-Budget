@@ -5,22 +5,20 @@ struct MonthlyInsightsCard: View {
     let summary: SpendingSummary
     let scopeKey: String
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(SpendingInsightsService.userPreferenceKey) private var aiInsightsEnabled: Bool = SpendingInsightsService.userPreferenceDefault
     @State private var service = SpendingInsightsService()
     @State private var regenerateTask: Task<Void, Never>?
 
     var body: some View {
-        Section {
-            InsightsSectionContent(
-                availability: service.availability,
-                state: service.state,
-                summary: summary,
-                onRegenerate: regenerate
-            )
-        } header: {
-            InsightsSectionHeader()
+        if aiInsightsEnabled {
+            Section {
+                InsightsStateView(state: service.state, summary: summary, onRegenerate: regenerate)
+            } header: {
+                InsightsSectionHeader()
+            }
+            .task(id: scopeKey, autoGenerate)
+            .onAppear { service.prewarm() }
         }
-        .task(id: scopeKey, autoGenerate)
-        .onAppear { service.prewarm() }
     }
 
     private func regenerate() {
@@ -37,9 +35,7 @@ struct MonthlyInsightsCard: View {
 
     @Sendable
     private func autoGenerate() async {
-        guard service.availability == .available,
-              summary.transactionCount >= SpendingInsightsService.minimumTransactionsForInsights
-        else { return }
+        guard summary.transactionCount >= SpendingInsightsService.minimumTransactionsForInsights else { return }
         await service.generate(from: summary, scopeKey: scopeKey, in: modelContext)
     }
 }

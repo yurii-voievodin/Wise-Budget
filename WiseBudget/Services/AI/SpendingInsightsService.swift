@@ -48,6 +48,13 @@ final class SpendingInsightsService {
     /// Ask AI handoff is disabled.
     static let minimumTransactionsForInsights = 5
 
+    /// AppStorage key for the user-facing "Enable AI Insights" toggle in
+    /// Settings. Source of truth for whether Dashboard / Expenses cards render.
+    /// Settings is the only code path that flips this on (after confirming
+    /// Apple Intelligence is actually available on this device).
+    static let userPreferenceKey = "aiInsightsEnabled"
+    static let userPreferenceDefault = false
+
     enum Availability: Equatable {
         case available
         case appleIntelligenceNotEnabled
