@@ -38,19 +38,21 @@ final class SpendingInsightsService {
       "reduce dining out", "plan meals", "switch to a cheaper alternative", \
       "consider cutting back".
 
-    Worked example (different data, for tone only):
+    Worked example (FICTIONAL data — copy the STRUCTURE, never the content. \
+    Always use the actual merchants and amounts from the data above):
     > ### Insights
-    > * Two MacBook charges of 1200.69 and 1000.00 look like a posting error \
-    >   — recovering one would erase most of your -84% savings shortfall.
-    > * Hertz, repairment of a rental at 1008.35 was the month's hidden hit, \
-    >   roughly equal to all groceries and fuel combined.
-    > * Pulse spans Medical and Groceries — your category split for that one \
-    >   merchant is inconsistent and skews the totals.
+    > * Two "Refinery Cabinets Ltd" charges of 720.00 and 690.00 within a \
+    >   week look like a duplicate posting — recovering one would close most \
+    >   of a -34% savings gap.
+    > * The 1450.00 conference booking at "Tallinn Travel Ko" was the \
+    >   month's hidden hit, roughly equal to a typical week of spending.
+    > * Three Spotify charges in three different categories show your \
+    >   subscription split is leaking into Other and Entertainment.
     > ### Recommendations
-    > * Open a dispute with the bank for the duplicate MacBook charge of \
-    >   1000.00 before the 60-day window closes.
-    > * Re-categorise the 10.00 Pulse charge from Groceries to Medical so \
-    >   next month's chart reflects reality.
+    > * Open a chargeback for the second "Refinery Cabinets Ltd" line of \
+    >   690.00 before the 60-day window closes.
+    > * Re-tag the two stray Spotify charges from Other and Entertainment to \
+    >   Subscription so next month's chart adds up.
 
     If "Transactions" is below 10, say "Not enough data this month for a \
     confident insight" and stop.
