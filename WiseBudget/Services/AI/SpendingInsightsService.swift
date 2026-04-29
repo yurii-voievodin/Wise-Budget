@@ -12,6 +12,19 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsi
 @MainActor
 final class SpendingInsightsService {
 
+    /// Structured output schema for the on-device model. `@Generable`
+    /// constrains the model to emit exactly two arrays; we render them to
+    /// markdown ourselves, so the model can't collapse the sections, skip
+    /// recommendations, or stop mid-stream.
+    @Generable
+    struct InsightOutput: Equatable {
+        @Guide(description: "Two or three short narrative observations about the month. Each must name a specific merchant, category, or amount that appears verbatim in the data. At least one observation must reference an entry from 'Largest one-off expenses' or 'Possible duplicate or near-duplicate charges'. If 'Savings' is negative, the first observation must address what caused the shortfall.")
+        let insights: [String]
+
+        @Guide(description: "Two or three actionable recommendations the user can act on this week. Each must reference a specific merchant or amount from the data. No generic advice — never say 'make a budget', 'track your spending', 'reduce dining out', 'plan meals', 'switch to a cheaper alternative', or 'consider cutting back'.")
+        let recommendations: [String]
+    }
+
     private static let instructions = """
     You are a personal-finance coach reviewing one month of the user's spending.
 
@@ -23,41 +36,26 @@ final class SpendingInsightsService {
     story of their month. Bland "you spend a lot at X, switch to something \
     cheaper" is useless; a real coach connects facts.
 
-    Write a "### Insights" heading followed by 2-3 short narrative bullets, \
-    then a "### Recommendations" heading followed by 2-3 actionable bullets.
-
-    Hard rules:
-    - At least ONE Insight bullet must reference an entry from "Largest \
-      one-off expenses" or "Possible duplicate or near-duplicate charges". \
-      These are the most interesting items of any month — never skip them.
-    - If "Savings" is negative, the first Insight should engage with that \
-      directly (what one-off or pattern caused the shortfall).
-    - Every bullet must name a specific merchant, category, or amount that \
-      appears verbatim in the data above.
-    - No generic advice. FORBIDDEN: "make a budget", "track your spending", \
-      "reduce dining out", "plan meals", "switch to a cheaper alternative", \
-      "consider cutting back".
-
     Worked example (FICTIONAL data — copy the STRUCTURE, never the content. \
     Always use the actual merchants and amounts from the data above):
-    > ### Insights
-    > * Two "Refinery Cabinets Ltd" charges of 720.00 and 690.00 within a \
-    >   week look like a duplicate posting — recovering one would close most \
-    >   of a -34% savings gap.
-    > * The 1450.00 conference booking at "Tallinn Travel Ko" was the \
-    >   month's hidden hit, roughly equal to a typical week of spending.
-    > * Three Spotify charges in three different categories show your \
-    >   subscription split is leaking into Other and Entertainment.
-    > ### Recommendations
-    > * Open a chargeback for the second "Refinery Cabinets Ltd" line of \
-    >   690.00 before the 60-day window closes.
-    > * Re-tag the two stray Spotify charges from Other and Entertainment to \
-    >   Subscription so next month's chart adds up.
 
-    If "Transactions" is below 10, say "Not enough data this month for a \
-    confident insight" and stop.
+    insights:
+      - Two "Refinery Cabinets Ltd" charges of 720.00 and 690.00 within a \
+        week look like a duplicate posting — recovering one would close most \
+        of a -34% savings gap.
+      - The 1450.00 conference booking at "Tallinn Travel Ko" was the \
+        month's hidden hit, roughly equal to a typical week of spending.
+    recommendations:
+      - Open a chargeback for the second "Refinery Cabinets Ltd" line of \
+        690.00 before the 60-day window closes.
+      - Re-tag the two stray Spotify charges from Other and Entertainment to \
+        Subscription so next month's chart adds up.
 
-    Use the currency at the top. Markdown bullets. Under 150 words total.
+    If "Transactions" is below 10, return a single insight saying "Not \
+    enough data this month for a confident insight" and an empty \
+    recommendations list.
+
+    Use the currency at the top of the data. Keep total output under 150 words.
     """
 
     /// `.greedy` sampling is deterministic (improves cache hit rate against
@@ -191,17 +189,26 @@ final class SpendingInsightsService {
         defer { if activeSession === session { activeSession = nil } }
 
         do {
-            let stream = session.streamResponse(to: prompt, options: Self.generationOptions)
-            var latest = ""
-            for try await partial in stream {
+            let stream = session.streamResponse(
+                to: prompt,
+                generating: InsightOutput.self,
+                options: Self.generationOptions
+            )
+            var latestPartial: InsightOutput.PartiallyGenerated?
+            for try await snapshot in stream {
                 try Task.checkCancellation()
-                latest = partial.content
-                state = .generating(latest)
+                latestPartial = snapshot.content
+                state = .generating(Self.renderMarkdown(from: snapshot.content))
             }
             try Task.checkCancellation()
-            // Don't cache or present empty output (e.g. stream ended with no
-            // partials because the task was cancelled between iterations).
-            guard !latest.isEmpty else {
+            guard let final = latestPartial else {
+                state = .idle
+                return
+            }
+            let markdown = Self.renderMarkdown(from: final)
+            // Stream ended with no usable content (e.g. cancelled between
+            // iterations). Don't cache or present an empty card.
+            guard !markdown.isEmpty else {
                 state = .idle
                 return
             }
@@ -212,10 +219,10 @@ final class SpendingInsightsService {
                 currency: summary.currency,
                 localeIdentifier: "en",
                 dataHash: hash,
-                content: latest
+                content: markdown
             )
-            logger.debug("Received response (\(latest.count) chars):\n\(latest, privacy: .public)")
-            state = .ready(latest)
+            logger.debug("Received response (\(markdown.count) chars):\n\(markdown, privacy: .public)")
+            state = .ready(markdown)
         } catch is CancellationError {
             // Navigated away mid-generation. Reset so the card doesn't get
             // stuck in `.generating` if the user returns to the same scope.
@@ -229,5 +236,28 @@ final class SpendingInsightsService {
 
     func reset() {
         state = .idle
+    }
+
+    /// Renders an `InsightOutput.PartiallyGenerated` to markdown. Used both
+    /// for streaming partials (where `insights`/`recommendations` may be nil
+    /// or partially filled) and for the final output. Headings only appear
+    /// when the corresponding section has at least one item — keeps the
+    /// streaming UI from flashing empty headers.
+    private static func renderMarkdown(from partial: InsightOutput.PartiallyGenerated) -> String {
+        var lines: [String] = []
+        if let insights = partial.insights, !insights.isEmpty {
+            lines.append("### Insights")
+            for item in insights {
+                lines.append("* \(item)")
+            }
+        }
+        if let recommendations = partial.recommendations, !recommendations.isEmpty {
+            if !lines.isEmpty { lines.append("") }
+            lines.append("### Recommendations")
+            for item in recommendations {
+                lines.append("* \(item)")
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 }
