@@ -110,13 +110,16 @@ final class WiseSyncService {
         let absAmount = abs(amount)
         let description = stripHTML(activity.title ?? activity.description ?? "Wise Activity")
 
-        // For card transactions, try merchant name matching first for better categorization
         let categoryName: String
-        if activity.type == "CARD_TRANSACTION" || activity.type == "CARD_PAYMENT",
-           let merchantCategory = MerchantCategoryMapping.category(for: description) {
-            categoryName = merchantCategory
+        if direction == "OUT" {
+            if activity.type == "CARD_TRANSACTION" || activity.type == "CARD_PAYMENT",
+               let merchantCategory = MerchantCategoryMapping.category(for: description) {
+                categoryName = merchantCategory
+            } else {
+                categoryName = categoryForActivityType(activity.type)
+            }
         } else {
-            categoryName = categoryForActivityType(activity.type)
+            categoryName = DefaultIncomeCategory.other.rawValue
         }
 
         // Parse secondary amount for currency conversion info
