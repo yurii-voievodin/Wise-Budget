@@ -5,6 +5,7 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
     case auto = "Auto"
     case cafes = "Cafes"
     case entertainment = "Entertainment"
+    case gifts = "Gifts"
     case groceries = "Groceries"
     case home = "Home"
     case medical = "Medical"
@@ -21,6 +22,7 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         case .auto: "car"
         case .cafes: "cup.and.saucer"
         case .entertainment: "film"
+        case .gifts: "gift"
         case .groceries: "cart"
         case .home: "house"
         case .medical: "cross.case"
@@ -39,6 +41,7 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         case .auto:          Color(red: 74/255, green: 144/255, blue: 217/255)  // #4A90D9 steel blue
         case .cafes:         Color(red: 232/255, green: 131/255, blue: 58/255)  // #E8833A warm orange
         case .entertainment: Color(red: 155/255, green: 89/255, blue: 182/255)  // #9B59B6 rich purple
+        case .gifts:         Color(red: 225/255, green: 112/255, blue: 85/255)  // #E17055 warm terracotta
         case .groceries:     Color(red: 46/255, green: 204/255, blue: 113/255)  // #2ECC71 fresh green
         case .home:          Color(red: 244/255, green: 197/255, blue: 66/255)  // #F4C542 golden yellow
         case .medical:       Color(red: 231/255, green: 76/255, blue: 60/255)   // #E74C3C red

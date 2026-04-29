@@ -114,4 +114,37 @@ struct DataSeederTests {
         let subscriptionCount = categories.filter { $0.name == "Subscription" }.count
         #expect(subscriptionCount == 1, "Should not duplicate existing Subscription category")
     }
+
+    // MARK: - prepopulateGiftsCategory
+
+    @Test func giftsCategoryAddedWhenMissing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        UserDefaults.standard.removeObject(forKey: "didAddGiftsCategory")
+        defer { UserDefaults.standard.removeObject(forKey: "didAddGiftsCategory") }
+
+        DataSeeder.prepopulateGiftsCategory(in: context)
+
+        let categories = try context.fetch(FetchDescriptor<ExpenseCategory>())
+        let gifts = categories.first { $0.name == "Gifts" }
+        #expect(gifts != nil, "Gifts category should be created")
+    }
+
+    @Test func giftsCategoryNotDuplicatedWhenExists() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        // Pre-insert a Gifts category
+        context.insert(ExpenseCategory(name: "Gifts", iconName: "gift"))
+
+        UserDefaults.standard.removeObject(forKey: "didAddGiftsCategory")
+        defer { UserDefaults.standard.removeObject(forKey: "didAddGiftsCategory") }
+
+        DataSeeder.prepopulateGiftsCategory(in: context)
+
+        let categories = try context.fetch(FetchDescriptor<ExpenseCategory>())
+        let giftsCount = categories.filter { $0.name == "Gifts" }.count
+        #expect(giftsCount == 1, "Should not duplicate existing Gifts category")
+    }
 }

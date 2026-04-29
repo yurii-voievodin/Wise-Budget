@@ -100,4 +100,30 @@ enum DataSeeder {
             logger.warning("Failed to prepopulate subscription category: \(error.localizedDescription)")
         }
     }
+
+    static func prepopulateGiftsCategory(in context: ModelContext) {
+        let key = "didAddGiftsCategory"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        do {
+            let descriptor = FetchDescriptor<ExpenseCategory>()
+            let existing = try context.fetch(descriptor)
+
+            let name = DefaultExpenseCategory.gifts.rawValue
+            guard !existing.contains(where: { $0.name == name }) else {
+                UserDefaults.standard.set(true, forKey: key)
+                return
+            }
+
+            context.insert(ExpenseCategory(
+                name: name,
+                iconName: DefaultExpenseCategory.gifts.iconName
+            ))
+            try context.save()
+            UserDefaults.standard.set(true, forKey: key)
+            logger.info("Added Gifts category")
+        } catch {
+            logger.warning("Failed to prepopulate gifts category: \(error.localizedDescription)")
+        }
+    }
 }
