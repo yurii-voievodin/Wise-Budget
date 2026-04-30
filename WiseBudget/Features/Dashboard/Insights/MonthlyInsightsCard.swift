@@ -18,13 +18,11 @@ struct MonthlyInsightsCard: View {
                     InsightsSectionHeader()
                     Spacer()
                     if isReady {
-                        Button(action: regenerate) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .help("Regenerate insights")
-                        .accessibilityLabel("Regenerate insights")
+                        Button("Regenerate insights", systemImage: "arrow.clockwise", action: regenerate)
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                            .controlSize(.small)
+                            .help("Regenerate insights")
                     }
                 }
                 .textCase(nil)

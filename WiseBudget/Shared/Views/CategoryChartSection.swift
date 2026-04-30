@@ -132,16 +132,15 @@ struct CategoryChartSection: View {
     }
 
     private var sortMenu: some View {
-        Menu {
+        Menu("Sort order", systemImage: "arrow.up.arrow.down") {
             Picker("Sort", selection: $sortOrder) {
                 Text("By Spending").tag(CategoryChartSortOrder.bySpending)
                 Text("By Category").tag(CategoryChartSortOrder.byCategoryOrder)
             }
             .pickerStyle(.inline)
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.caption)
         }
+        .labelStyle(.iconOnly)
+        .font(.caption)
         .textCase(nil)
     }
 }

@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
+import OSLog
 import TipKit
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "AskAIToolbar")
 
 /// Toolbar menu that copies the selected month's transactions plus an
 /// analysis prompt to the clipboard, then opens a chosen AI chat provider
@@ -96,13 +99,22 @@ struct AskAIToolbar: ToolbarContent {
             predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
             sortBy: [SortDescriptor(\.date)]
         )
-        let currentExpenses = (try? modelContext.fetch(expenseDescriptor)) ?? []
-
         let incomeDescriptor = FetchDescriptor<Income>(
             predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
             sortBy: [SortDescriptor(\.date)]
         )
-        let currentIncomes = (try? modelContext.fetch(incomeDescriptor)) ?? []
+
+        // Abort the handoff on a fetch failure rather than copying an empty
+        // prompt and showing a misleading "Copied" toast.
+        let currentExpenses: [Expense]
+        let currentIncomes: [Income]
+        do {
+            currentExpenses = try modelContext.fetch(expenseDescriptor)
+            currentIncomes = try modelContext.fetch(incomeDescriptor)
+        } catch {
+            logger.error("Failed to fetch transactions for AI handoff: \(error.localizedDescription, privacy: .public)")
+            return
+        }
 
         // `topCategoryLimit: .max` so the cloud prompt sees every category,
         // not the on-device default of 8. The dashboard's `spendingSummary`

@@ -220,10 +220,29 @@ struct DashboardView: View {
     private var dashboardContentView: some View {
         TabView(selection: $selectedTab) {
             Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
-                overviewTab
+                DashboardOverviewTab(
+                    summary: spendingSummary,
+                    scopeKey: insightsScopeKey,
+                    shouldShowBudgetPacing: shouldShowBudgetPacing,
+                    daysRemainingInMonth: daysRemainingInMonth,
+                    dailyAllowance: dailyAllowance,
+                    totalIncome: totalIncome,
+                    totalExpenses: totalExpenses,
+                    balance: balance,
+                    incomeDailyAverage: incomeDailyAverage,
+                    expenseDailyAverage: expenseDailyAverage,
+                    dailyBalance: dailyBalance,
+                    currency: defaultCurrency,
+                    recentTransactions: recentTransactions,
+                    onSelectTransaction: handleTransactionSelection
+                )
             }
             Tab("By Category", systemImage: "chart.pie", value: DashboardTab.byCategory) {
-                byCategoryTab
+                DashboardByCategoryTab(
+                    expenseSlices: expenseSlices,
+                    currency: defaultCurrency,
+                    onSelectCategory: onSelectCategory
+                )
             }
         }
         .sheet(item: $expenseToEdit) { expense in
@@ -253,52 +272,12 @@ struct DashboardView: View {
         }
     }
 
-    private var overviewTab: some View {
-        Form {
-            MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
-            if shouldShowBudgetPacing {
-                DashboardBudgetPacingSection(
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
-                    currency: defaultCurrency
-                )
-            }
-            DashboardMonthSummarySection(
-                totalIncome: totalIncome,
-                totalExpenses: totalExpenses,
-                balance: balance,
-                currency: defaultCurrency
-            )
-            DashboardDailyAveragesSection(
-                incomeDailyAverage: incomeDailyAverage,
-                expenseDailyAverage: expenseDailyAverage,
-                dailyBalance: dailyBalance,
-                currency: defaultCurrency
-            )
-            DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
-                if let expense = transaction.item as? Expense {
-                    expenseToEdit = expense
-                } else if let income = transaction.item as? Income {
-                    incomeToEdit = income
-                }
-            }
+    private func handleTransactionSelection(_ transaction: DashboardRecentTransaction) {
+        if let expense = transaction.item as? Expense {
+            expenseToEdit = expense
+        } else if let income = transaction.item as? Income {
+            incomeToEdit = income
         }
-        .formStyle(.grouped)
-    }
-
-    private var byCategoryTab: some View {
-        Form {
-            CategoryChartSection(
-                slices: expenseSlices,
-                currency: defaultCurrency,
-                emptyText: "No expenses this month",
-                colorMap: DefaultExpenseCategory.chartColorMap,
-                sortIndex: DefaultExpenseCategory.sortIndex(for:),
-                sortOrderStorageKey: "dashboardCategoryChartSortOrder",
-                onSelect: onSelectCategory
-            )
-        }
-        .formStyle(.grouped)
     }
 
     private func checkForAnyTransactions() {
