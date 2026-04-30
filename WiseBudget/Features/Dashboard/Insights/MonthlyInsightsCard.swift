@@ -14,11 +14,29 @@ struct MonthlyInsightsCard: View {
             Section {
                 InsightsStateView(state: service.state, summary: summary, onRegenerate: regenerate)
             } header: {
-                InsightsSectionHeader()
+                HStack {
+                    InsightsSectionHeader()
+                    Spacer()
+                    if isReady {
+                        Button(action: regenerate) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .help("Regenerate insights")
+                        .accessibilityLabel("Regenerate insights")
+                    }
+                }
+                .textCase(nil)
             }
             .task(id: scopeKey, autoGenerate)
             .onAppear { service.prewarm() }
         }
+    }
+
+    private var isReady: Bool {
+        if case .ready = service.state { return true }
+        return false
     }
 
     private func regenerate() {

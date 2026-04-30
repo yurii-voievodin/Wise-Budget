@@ -21,7 +21,13 @@ struct DashboardView: View {
     @State private var askAIToastTask: Task<Void, Never>?
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
+    @State private var selectedTab: DashboardTab = .overview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    enum DashboardTab: Hashable {
+        case overview
+        case byCategory
+    }
 
     init(
         monthFilter: Binding<MonthFilter>,
@@ -212,46 +218,14 @@ struct DashboardView: View {
     }
 
     private var dashboardContentView: some View {
-        Form {
-            MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
-            DashboardMonthSummarySection(
-                totalIncome: totalIncome,
-                totalExpenses: totalExpenses,
-                balance: balance,
-                currency: defaultCurrency
-            )
-            DashboardDailyAveragesSection(
-                incomeDailyAverage: incomeDailyAverage,
-                expenseDailyAverage: expenseDailyAverage,
-                dailyBalance: dailyBalance,
-                currency: defaultCurrency
-            )
-            if shouldShowBudgetPacing {
-                DashboardBudgetPacingSection(
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
-                    currency: defaultCurrency
-                )
+        TabView(selection: $selectedTab) {
+            Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
+                overviewTab
             }
-            if !expenseSlices.isEmpty {
-                CategoryChartSection(
-                    slices: expenseSlices,
-                    currency: defaultCurrency,
-                    emptyText: "No expenses",
-                    colorMap: DefaultExpenseCategory.chartColorMap,
-                    sortIndex: DefaultExpenseCategory.sortIndex(for:),
-                    onSelect: onSelectCategory
-                )
-            }
-            DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
-                if let expense = transaction.item as? Expense {
-                    expenseToEdit = expense
-                } else if let income = transaction.item as? Income {
-                    incomeToEdit = income
-                }
+            Tab("By Category", systemImage: "chart.pie", value: DashboardTab.byCategory) {
+                byCategoryTab
             }
         }
-        .formStyle(.grouped)
         .sheet(item: $expenseToEdit) { expense in
             ExpenseFormSheet(expense: expense) { result in
                 withAnimation { result.apply(to: expense) }
@@ -277,6 +251,53 @@ struct DashboardView: View {
                 onCopied: presentAskAIToast
             )
         }
+    }
+
+    private var overviewTab: some View {
+        Form {
+            MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
+            DashboardMonthSummarySection(
+                totalIncome: totalIncome,
+                totalExpenses: totalExpenses,
+                balance: balance,
+                currency: defaultCurrency
+            )
+            DashboardDailyAveragesSection(
+                incomeDailyAverage: incomeDailyAverage,
+                expenseDailyAverage: expenseDailyAverage,
+                dailyBalance: dailyBalance,
+                currency: defaultCurrency
+            )
+            if shouldShowBudgetPacing {
+                DashboardBudgetPacingSection(
+                    daysRemainingInMonth: daysRemainingInMonth,
+                    dailyAllowance: dailyAllowance,
+                    currency: defaultCurrency
+                )
+            }
+            DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
+                if let expense = transaction.item as? Expense {
+                    expenseToEdit = expense
+                } else if let income = transaction.item as? Income {
+                    incomeToEdit = income
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var byCategoryTab: some View {
+        Form {
+            CategoryChartSection(
+                slices: expenseSlices,
+                currency: defaultCurrency,
+                emptyText: "No expenses this month",
+                colorMap: DefaultExpenseCategory.chartColorMap,
+                sortIndex: DefaultExpenseCategory.sortIndex(for:),
+                onSelect: onSelectCategory
+            )
+        }
+        .formStyle(.grouped)
     }
 
     private func checkForAnyTransactions() {

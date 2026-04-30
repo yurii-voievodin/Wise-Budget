@@ -18,7 +18,7 @@ struct InsightsStateView: View {
         case .generating(let hints):
             InsightsGeneratingView(month: summary.month, hints: hints)
         case .ready(let hints):
-            InsightsReadyView(hints: hints, onRegenerate: onRegenerate)
+            InsightsReadyView(hints: hints)
         case .error(let message):
             InsightsErrorView(message: message, onRegenerate: onRegenerate)
         }
