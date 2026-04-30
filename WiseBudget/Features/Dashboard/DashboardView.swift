@@ -294,6 +294,7 @@ struct DashboardView: View {
                 emptyText: "No expenses this month",
                 colorMap: DefaultExpenseCategory.chartColorMap,
                 sortIndex: DefaultExpenseCategory.sortIndex(for:),
+                sortOrderStorageKey: "dashboardCategoryChartSortOrder",
                 onSelect: onSelectCategory
             )
         }

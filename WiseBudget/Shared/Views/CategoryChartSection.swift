@@ -1,7 +1,7 @@
 import SwiftUI
 import Charts
 
-enum CategoryChartSortOrder {
+enum CategoryChartSortOrder: String {
     case bySpending
     case byCategoryOrder
 }
@@ -14,7 +14,10 @@ struct CategoryChartSection: View {
     var sortIndex: ((String) -> Int)? = nil
     var onSelect: ((String) -> Void)? = nil
 
-    @State private var sortOrder: CategoryChartSortOrder
+    /// Persisted per-screen via `@AppStorage` so the user's sort choice survives
+    /// app restarts and re-renders. Tied to a stable `storageKey` per call site
+    /// (e.g. dashboard vs. income) so each surface remembers independently.
+    @AppStorage private var sortOrder: CategoryChartSortOrder
 
     init(
         slices: [CategoryChartSlice],
@@ -22,6 +25,7 @@ struct CategoryChartSection: View {
         emptyText: String,
         colorMap: [String: Color] = [:],
         sortIndex: ((String) -> Int)? = nil,
+        sortOrderStorageKey: String,
         defaultSortOrder: CategoryChartSortOrder = .bySpending,
         onSelect: ((String) -> Void)? = nil
     ) {
@@ -31,7 +35,7 @@ struct CategoryChartSection: View {
         self.colorMap = colorMap
         self.sortIndex = sortIndex
         self.onSelect = onSelect
-        self._sortOrder = State(initialValue: defaultSortOrder)
+        self._sortOrder = AppStorage(wrappedValue: defaultSortOrder, sortOrderStorageKey)
     }
 
     private var grandTotal: Double {
@@ -156,6 +160,7 @@ struct CategoryChartSection: View {
             sortIndex: { name in
                 ["Groceries", "Transport", "Entertainment"].firstIndex(of: name) ?? 99
             },
+            sortOrderStorageKey: "previewCategoryChartSortOrder",
             onSelect: { _ in }
         )
     }

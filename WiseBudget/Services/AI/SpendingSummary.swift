@@ -23,12 +23,15 @@ struct SpendingSummary: Codable, Sendable {
     /// Pre-aggregated merchant statistics. Each merchant appears once with
     /// `count × total` already computed so the on-device model never has to
     /// sum rows or count occurrences (it gets those wrong).
+    /// `total` and `averagePerCharge` are denominated in the enclosing
+    /// summary's `currency` (i.e. base-currency, post-conversion) — origin
+    /// currencies are never mixed in here.
     struct MerchantAggregate: Codable, Sendable {
         let canonicalKey: String        // e.g. "omv" — used for grouping only
         let displayLabel: String        // first non-empty original casing seen
         let count: Int
-        let total: Double
-        let averagePerCharge: Double    // total / count
+        let total: Double               // base-currency
+        let averagePerCharge: Double    // base-currency, total / count
         let categories: [String]        // unique, sorted
     }
 

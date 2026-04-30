@@ -83,12 +83,8 @@ struct GeneralSettingsView: View {
         } message: { message in
             Text(message)
         }
-        .onAppear {
+        .task {
             aiAvailability = SpendingInsightsService.currentAvailability()
-            // If Apple Intelligence is no longer available but the toggle was
-            // left on (e.g. user disabled it in System Settings since last
-            // launch), force the toggle off so app views never try to render
-            // insights without a working system model.
             if aiAvailability != .available && aiInsightsEnabled {
                 aiInsightsEnabled = false
             }

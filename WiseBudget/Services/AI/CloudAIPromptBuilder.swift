@@ -38,7 +38,7 @@ enum CloudAIPromptBuilder {
 
     private static func intro(baseCurrency: String, responseLanguageName: String?) -> String {
         var lines: [String] = []
-        lines.append("You are a personal-finance coach reviewing one month of my ledger. The data below lists every transaction grouped under its category, plus totals, income sources, subscription-like charges, and largest one-offs. Don't recompute totals — they're given. Base currency: \(baseCurrency). Please review this data and give me a recomendations, build charts if possible.")
+        lines.append("You are a personal-finance coach reviewing one month of my ledger. The data below lists every transaction grouped under its category, plus totals, income sources, subscription-like charges, and largest one-offs. Don't recompute totals — they're given. Base currency: \(baseCurrency). Please review the data, share recommendations, and build charts if possible.")
         if let language = responseLanguageName, !language.isEmpty {
             lines.append("Please respond in \(language).")
         }

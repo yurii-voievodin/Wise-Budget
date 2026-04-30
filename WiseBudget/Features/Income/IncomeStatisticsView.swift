@@ -103,6 +103,7 @@ struct IncomeStatisticsView: View {
             emptyText: "No income",
             colorMap: DefaultIncomeCategory.chartColorMap,
             sortIndex: DefaultIncomeCategory.sortIndex(for:),
+            sortOrderStorageKey: "incomeCategoryChartSortOrder",
             defaultSortOrder: .byCategoryOrder
         )
     }
