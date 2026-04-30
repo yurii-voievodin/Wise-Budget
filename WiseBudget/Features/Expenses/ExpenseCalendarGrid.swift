@@ -123,7 +123,7 @@ struct ExpenseCalendarGrid: View {
 
     private func colorForDay(total: Decimal?) -> (Color, Double) {
         guard let total, total > 0 else {
-            return (.green, Self.noExpenseOpacity)
+            return (.income, Self.noExpenseOpacity)
         }
 
         if averageDailyIncome > 0 && total <= averageDailyIncome {
@@ -132,9 +132,9 @@ struct ExpenseCalendarGrid: View {
             return (.yellow, opacity)
         }
 
-        guard maxDailyTotal > 0 else { return (.red, Self.heatMapMinOpacity) }
+        guard maxDailyTotal > 0 else { return (.expense, Self.heatMapMinOpacity) }
         let ratio = NSDecimalNumber(decimal: total / maxDailyTotal).doubleValue
         let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
-        return (.red, opacity)
+        return (.expense, opacity)
     }
 }

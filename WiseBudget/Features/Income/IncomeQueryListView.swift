@@ -62,7 +62,7 @@ struct IncomeQueryListView: View {
             categoryName: { $0.category?.name },
             categoryIcon: { $0.category?.displayIconName },
             extraField: { $0.source },
-            amountTintColor: .green,
+            amountTintColor: .income,
             onSelect: { incomeToEdit = $0 },
             onAdd: { isAddingIncome = true },
             onNavigateToBank: { selectedSidebarItem = .bankConnections }

@@ -53,7 +53,7 @@ struct ExpenseCalendarDayCellView: View {
     HStack(spacing: 4) {
         ExpenseCalendarDayCellView(
             day: 1, isToday: false, defaultCurrency: "USD",
-            currencyTotals: [:], backgroundColor: .green, backgroundOpacity: 0.06
+            currencyTotals: [:], backgroundColor: .income, backgroundOpacity: 0.06
         )
         ExpenseCalendarDayCellView(
             day: 15, isToday: true, defaultCurrency: "USD",
@@ -61,7 +61,7 @@ struct ExpenseCalendarDayCellView: View {
         )
         ExpenseCalendarDayCellView(
             day: 28, isToday: false, defaultCurrency: "USD",
-            currencyTotals: ["USD": 250, "EUR": 30], backgroundColor: .red, backgroundOpacity: 0.3
+            currencyTotals: ["USD": 250, "EUR": 30], backgroundColor: .expense, backgroundOpacity: 0.3
         )
     }
     .padding()

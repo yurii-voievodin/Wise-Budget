@@ -49,16 +49,14 @@ struct BudgetCategoryRow: View {
                 Text(currency)
                     .foregroundStyle(.secondary)
             }
-            if actual > 0 {
+            if actual > 0, planned > 0 {
                 HStack {
-                    BudgetProgressBar(spent: actual, planned: planned > 0 ? planned : actual)
-                    if planned > 0 {
-                        Text(actual / planned, format: .percent.precision(.fractionLength(0)))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                            .frame(width: 44, alignment: .trailing)
-                    }
+                    BudgetProgressBar(spent: actual, planned: planned)
+                    Text(actual / planned, format: .percent.precision(.fractionLength(0)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 44, alignment: .trailing)
                 }
             }
         }
@@ -73,32 +71,52 @@ struct BudgetCategoryRow: View {
     }
 }
 
-#Preview {
-    List {
-        BudgetCategoryRow(
-            categoryName: "Groceries",
-            categoryIcon: "cart",
-            actual: 320,
-            planned: 500,
-            currency: "USD",
-            onPlannedChange: { _ in }
-        )
-        BudgetCategoryRow(
-            categoryName: "Transport",
-            categoryIcon: "car",
-            actual: 0,
-            planned: 200,
-            currency: "USD",
-            onPlannedChange: { _ in }
-        )
-        BudgetCategoryRow(
-            categoryName: "Entertainment",
-            categoryIcon: "film",
-            actual: 150,
-            planned: 100,
-            currency: "USD",
-            onPlannedChange: { _ in }
-        )
+#Preview("Light") {
+    BudgetCategoryRowPreviewSamples()
+        .frame(width: 500, height: 360)
+}
+
+#Preview("Dark") {
+    BudgetCategoryRowPreviewSamples()
+        .frame(width: 500, height: 360)
+        .preferredColorScheme(.dark)
+}
+
+private struct BudgetCategoryRowPreviewSamples: View {
+    var body: some View {
+        List {
+            BudgetCategoryRow(
+                categoryName: "Groceries",
+                categoryIcon: "cart",
+                actual: 320,
+                planned: 500,
+                currency: "USD",
+                onPlannedChange: { _ in }
+            )
+            BudgetCategoryRow(
+                categoryName: "Transport",
+                categoryIcon: "car",
+                actual: 0,
+                planned: 200,
+                currency: "USD",
+                onPlannedChange: { _ in }
+            )
+            BudgetCategoryRow(
+                categoryName: "Entertainment",
+                categoryIcon: "film",
+                actual: 150,
+                planned: 100,
+                currency: "USD",
+                onPlannedChange: { _ in }
+            )
+            BudgetCategoryRow(
+                categoryName: "Coffee (unplanned)",
+                categoryIcon: "cup.and.saucer",
+                actual: 42,
+                planned: 0,
+                currency: "USD",
+                onPlannedChange: { _ in }
+            )
+        }
     }
-    .frame(width: 500, height: 300)
 }

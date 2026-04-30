@@ -19,10 +19,10 @@ struct BudgetProgressBar: View {
 
     private var barColor: Color {
         switch ratio {
-        case ..<Self.thresholdLow: .green
+        case ..<Self.thresholdLow: .income
         case Self.thresholdLow..<Self.thresholdMedium: .yellow
         case Self.thresholdMedium..<Self.thresholdHigh: .orange
-        default: .red
+        default: .expense
         }
     }
 
@@ -36,14 +36,26 @@ struct BudgetProgressBar: View {
     }
 }
 
-#Preview("Under Budget") {
-    VStack(spacing: 20) {
-        BudgetProgressBar(spent: 200, planned: 500)
-        BudgetProgressBar(spent: 400, planned: 500)
-        BudgetProgressBar(spent: 480, planned: 500)
-        BudgetProgressBar(spent: 500, planned: 500)
-        BudgetProgressBar(spent: 700, planned: 500)
+#Preview("Light") {
+    BudgetProgressBarPreviewSamples()
+        .frame(width: 400)
+}
+
+#Preview("Dark") {
+    BudgetProgressBarPreviewSamples()
+        .frame(width: 400)
+        .preferredColorScheme(.dark)
+}
+
+private struct BudgetProgressBarPreviewSamples: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            BudgetProgressBar(spent: 200, planned: 500)   // 40%
+            BudgetProgressBar(spent: 400, planned: 500)   // 80%
+            BudgetProgressBar(spent: 480, planned: 500)   // 96%
+            BudgetProgressBar(spent: 500, planned: 500)   // 100%
+            BudgetProgressBar(spent: 700, planned: 500)   // 140% over
+        }
+        .padding()
     }
-    .padding()
-    .frame(width: 400)
 }

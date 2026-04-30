@@ -10,30 +10,30 @@ struct DashboardMonthSummarySection: View {
         Section("Month Summary") {
             HStack {
                 Label("Income", systemImage: "arrow.down.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.income)
                 Spacer()
                 Text("\(totalIncome, format: .number.precision(.fractionLength(2))) \(currency)")
                     .monospacedDigit()
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.income)
             }
             HStack {
                 Label("Expenses", systemImage: "arrow.up.circle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.expense)
                 Spacer()
                 Text("\(totalExpenses, format: .number.precision(.fractionLength(2))) \(currency)")
                     .monospacedDigit()
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.expense)
             }
             HStack {
                 Label("Balance", systemImage: balance >= .zero ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .bold()
-                    .foregroundStyle(balance >= .zero ? .green : .red)
+                    .foregroundStyle(balance >= .zero ? .income : .expense)
                 Spacer()
                 Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(currency)")
                     .font(.title3)
                     .bold()
                     .monospacedDigit()
-                    .foregroundStyle(balance >= .zero ? .green : .red)
+                    .foregroundStyle(balance >= .zero ? .income : .expense)
             }
         }
     }

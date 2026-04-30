@@ -26,7 +26,7 @@ struct DashboardRecentTransactionsSection: View {
                     } label: {
                         HStack {
                             Image(systemName: transaction.isExpense ? "arrow.up.circle" : "arrow.down.circle")
-                                .foregroundStyle(transaction.isExpense ? .red : .green)
+                                .foregroundStyle(transaction.isExpense ? .expense : .income)
                                 .frame(width: 20)
                                 .accessibilityHidden(true)
                             TransactionRowView(
