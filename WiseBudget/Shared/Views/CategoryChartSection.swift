@@ -133,6 +133,7 @@ struct CategoryChartSection: View {
                 Text("By Spending").tag(CategoryChartSortOrder.bySpending)
                 Text("By Category").tag(CategoryChartSortOrder.byCategoryOrder)
             }
+            .pickerStyle(.inline)
         } label: {
             Image(systemName: "arrow.up.arrow.down")
                 .font(.caption)

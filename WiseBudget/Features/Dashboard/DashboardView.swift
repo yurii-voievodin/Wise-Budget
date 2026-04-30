@@ -256,6 +256,13 @@ struct DashboardView: View {
     private var overviewTab: some View {
         Form {
             MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
+            if shouldShowBudgetPacing {
+                DashboardBudgetPacingSection(
+                    daysRemainingInMonth: daysRemainingInMonth,
+                    dailyAllowance: dailyAllowance,
+                    currency: defaultCurrency
+                )
+            }
             DashboardMonthSummarySection(
                 totalIncome: totalIncome,
                 totalExpenses: totalExpenses,
@@ -268,13 +275,6 @@ struct DashboardView: View {
                 dailyBalance: dailyBalance,
                 currency: defaultCurrency
             )
-            if shouldShowBudgetPacing {
-                DashboardBudgetPacingSection(
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
-                    currency: defaultCurrency
-                )
-            }
             DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
                 if let expense = transaction.item as? Expense {
                     expenseToEdit = expense
