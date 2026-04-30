@@ -97,8 +97,7 @@ struct PreviewSampleData {
             from: DateComponents(year: month.year, month: month.month, day: 1)
         )!
         let daysElapsed = calendar.component(.day, from: now)
-        let currency = UserDefaults.standard.string(forKey: "defaultCurrency")
-            ?? Locale.current.currency?.identifier ?? "USD"
+        let currency = DefaultCurrency.resolve()
 
         context.insert(Income(
             amount: 3000, currency: currency, date: startOfMonth,

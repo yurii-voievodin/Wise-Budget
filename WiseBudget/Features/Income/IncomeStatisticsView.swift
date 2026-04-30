@@ -4,7 +4,7 @@ import SwiftData
 struct IncomeStatisticsView: View {
     @Query private var incomes: [Income]
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService
@@ -18,7 +18,7 @@ struct IncomeStatisticsView: View {
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate && !income.isInternalTransfer
             },
             sort: \.date,
             order: .reverse
@@ -38,7 +38,6 @@ struct IncomeStatisticsView: View {
             return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
         .filter { $0.total > 0 }
-        .sorted { DefaultIncomeCategory.sortIndex(for: $0.name) < DefaultIncomeCategory.sortIndex(for: $1.name) }
     }
 
     // MARK: - Computed Statistics
@@ -98,7 +97,15 @@ struct IncomeStatisticsView: View {
     }
 
     private var categoryChartSection: some View {
-        CategoryChartSection(slices: slices, currency: defaultCurrency, emptyText: "No income", colorMap: DefaultIncomeCategory.chartColorMap)
+        CategoryChartSection(
+            slices: slices,
+            currency: defaultCurrency,
+            emptyText: "No income",
+            colorMap: DefaultIncomeCategory.chartColorMap,
+            sortIndex: DefaultIncomeCategory.sortIndex(for:),
+            sortOrderStorageKey: "incomeCategoryChartSortOrder",
+            defaultSortOrder: .byCategoryOrder
+        )
     }
 
     private var overviewSection: some View {

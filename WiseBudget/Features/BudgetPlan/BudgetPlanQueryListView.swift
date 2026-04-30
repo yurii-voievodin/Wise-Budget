@@ -7,7 +7,7 @@ struct BudgetPlanQueryListView: View {
     @Query private var expenses: [Expense]
     @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
 
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     @Binding var selectedSidebarItem: SidebarItem
     @Binding var monthFilter: MonthFilter
@@ -34,7 +34,7 @@ struct BudgetPlanQueryListView: View {
 
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate && !expense.isInternalTransfer
             }
         )
     }

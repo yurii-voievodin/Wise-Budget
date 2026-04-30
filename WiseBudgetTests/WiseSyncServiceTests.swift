@@ -74,4 +74,56 @@ struct WiseSyncServiceTests {
     func activityTypeMapsToCategory(activityType: String, expected: String) {
         #expect(WiseSyncService.categoryForActivityType(activityType) == expected)
     }
+
+    // MARK: - convertActivity / internal transfer flagging
+
+    private static func makeActivity(
+        id: String = "act-1",
+        type: String = "CARD_TRANSACTION",
+        title: String? = "Coffee shop",
+        primaryAmount: String? = "10.00 EUR",
+        createdOn: String? = "2026-01-15T10:30:00.000Z"
+    ) -> WiseActivity {
+        WiseActivity(
+            id: id,
+            type: type,
+            resource: nil,
+            title: title,
+            description: nil,
+            primaryAmount: primaryAmount,
+            secondaryAmount: nil,
+            status: "COMPLETED",
+            createdOn: createdOn,
+            updatedOn: nil
+        )
+    }
+
+    @Test func interbalanceIsFlaggedAsInternal() throws {
+        let activity = Self.makeActivity(
+            type: "INTERBALANCE",
+            title: "Moving funds between balances",
+            primaryAmount: "100.00 EUR"
+        )
+        let result = try #require(WiseSyncService.convertActivity(activity))
+        #expect(result.isInternalTransfer == true)
+        #expect(result.externalId == "wise_act-1")
+        // Flagging must not zero out the rest of the conversion.
+        #expect(result.amount == Decimal(string: "100.00"))
+        #expect(result.currency == "EUR")
+        #expect(!result.categoryName.isEmpty)
+    }
+
+    @Test func cardTransactionIsNotInternal() throws {
+        let activity = Self.makeActivity()
+        let result = try #require(WiseSyncService.convertActivity(activity))
+        #expect(result.isInternalTransfer == false)
+    }
+
+    @Test func transferTypeIsNotAutoFlagged() throws {
+        // Wise API doesn't expose recipient info for TRANSFER; we don't auto-flag
+        // these so legitimate outgoing transfers don't disappear from statistics.
+        let activity = Self.makeActivity(type: "TRANSFER", title: "Sent to Alice")
+        let result = try #require(WiseSyncService.convertActivity(activity))
+        #expect(result.isInternalTransfer == false)
+    }
 }

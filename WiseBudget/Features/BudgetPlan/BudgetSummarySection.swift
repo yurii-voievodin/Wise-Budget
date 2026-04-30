@@ -50,7 +50,7 @@ struct BudgetSummarySection: View {
                     Text("\(unplannedAmount, format: .number) \(planCurrency)")
                         .fontWeight(.semibold)
                         .monospacedDigit()
-                        .foregroundStyle(unplannedAmount < 0 ? .red : .secondary)
+                        .foregroundStyle(unplannedAmount < 0 ? .expense : .secondary)
                 }
             }
 
@@ -60,7 +60,7 @@ struct BudgetSummarySection: View {
                 Text("\(totalActual, format: .number) \(planCurrency)")
                     .fontWeight(.semibold)
                     .monospacedDigit()
-                    .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .red : .primary)
+                    .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .expense : .primary)
             }
 
             if monthlyBudget > 0 {
@@ -75,7 +75,7 @@ struct BudgetSummarySection: View {
                             .fontWeight(.semibold)
                             .monospacedDigit()
                     }
-                    .foregroundStyle(remaining < 0 ? .red : .green)
+                    .foregroundStyle(remaining < 0 ? .expense : .income)
                 }
             }
 

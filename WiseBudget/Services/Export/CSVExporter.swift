@@ -19,7 +19,7 @@ final class CSVExporter {
 
         for expense in expenses.sorted(by: { $0.date < $1.date }) {
             lines.append(buildLine(
-                type: "Expense",
+                type: expense.isInternalTransfer ? "Transfer" : "Expense",
                 date: expense.date,
                 amount: expense.amount,
                 currency: expense.currency,
@@ -33,7 +33,7 @@ final class CSVExporter {
 
         for income in incomes.sorted(by: { $0.date < $1.date }) {
             lines.append(buildLine(
-                type: "Income",
+                type: income.isInternalTransfer ? "Transfer" : "Income",
                 date: income.date,
                 amount: income.amount,
                 currency: income.currency,

@@ -12,9 +12,20 @@ struct TransactionRowView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 if let desc = descriptionText {
-                    Text(desc)
+                    HStack(spacing: 4) {
+                        Text(desc)
+                            .font(.body)
+                            .fontWeight(.medium)
+                        if item.isInternalTransfer {
+                            transferBadge
+                        }
+                    }
+                } else if item.isInternalTransfer {
+                    Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
                         .font(.body)
                         .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Internal transfer")
                 }
                 if let name = categoryName, let icon = categoryIcon {
                     Label(name, systemImage: icon)
@@ -28,9 +39,19 @@ struct TransactionRowView: View {
                 }
             }
             Spacer()
-            CurrencyAmountView(item: item, tintColor: amountTintColor)
+            CurrencyAmountView(item: item, tintColor: item.isInternalTransfer ? .secondary : amountTintColor)
+                .opacity(item.isInternalTransfer ? 0.7 : 1)
         }
         .contentShape(Rectangle())
+    }
+
+    private var transferBadge: some View {
+        Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
+            .labelStyle(.iconOnly)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .help("Internal transfer — excluded from statistics")
+            .accessibilityLabel("Internal transfer")
     }
 }
 
@@ -39,6 +60,7 @@ private struct PreviewTransaction: CurrencyConvertible {
     var currency: String
     var baseCurrencyAmount: Decimal?
     var baseCurrency: String?
+    var isInternalTransfer: Bool = false
 }
 
 #Preview("Transaction Row") {
@@ -65,6 +87,14 @@ private struct PreviewTransaction: CurrencyConvertible {
             categoryIcon: nil,
             extraField: nil,
             item: PreviewTransaction(amount: 15, currency: "USD", baseCurrencyAmount: nil, baseCurrency: nil)
+        )
+        Divider()
+        TransactionRowView(
+            descriptionText: "To my savings jar",
+            categoryName: "Other",
+            categoryIcon: "folder",
+            extraField: nil,
+            item: PreviewTransaction(amount: 250, currency: "USD", baseCurrencyAmount: nil, baseCurrency: nil, isInternalTransfer: true)
         )
     }
     .padding()

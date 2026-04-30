@@ -76,28 +76,34 @@ enum DataSeeder {
     }
 
     static func prepopulateSubscriptionCategory(in context: ModelContext) {
-        let key = "didAddSubscriptionCategory"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        ensureExpenseCategory(.subscription, flagKey: "didAddSubscriptionCategory", in: context)
+    }
+
+    static func prepopulateGiftsCategory(in context: ModelContext) {
+        ensureExpenseCategory(.gifts, flagKey: "didAddGiftsCategory", in: context)
+    }
+
+    /// Inserts a default expense category once, gated by a UserDefaults flag.
+    /// Used to back-fill new defaults for existing users without touching ones
+    /// they may have renamed or deleted intentionally.
+    private static func ensureExpenseCategory(
+        _ category: DefaultExpenseCategory,
+        flagKey: String,
+        in context: ModelContext
+    ) {
+        guard !UserDefaults.standard.bool(forKey: flagKey) else { return }
 
         do {
-            let descriptor = FetchDescriptor<ExpenseCategory>()
-            let existing = try context.fetch(descriptor)
-
-            let name = DefaultExpenseCategory.subscription.rawValue
-            guard !existing.contains(where: { $0.name == name }) else {
-                UserDefaults.standard.set(true, forKey: key)
-                return
+            let existing = try context.fetch(FetchDescriptor<ExpenseCategory>())
+            let name = category.rawValue
+            if !existing.contains(where: { $0.name == name }) {
+                context.insert(ExpenseCategory(name: name, iconName: category.iconName))
+                try context.save()
+                logger.info("Added \(name) category")
             }
-
-            context.insert(ExpenseCategory(
-                name: name,
-                iconName: DefaultExpenseCategory.subscription.iconName
-            ))
-            try context.save()
-            UserDefaults.standard.set(true, forKey: key)
-            logger.info("Added Subscription category")
+            UserDefaults.standard.set(true, forKey: flagKey)
         } catch {
-            logger.warning("Failed to prepopulate subscription category: \(error.localizedDescription)")
+            logger.warning("Failed to prepopulate \(category.rawValue) category: \(error.localizedDescription)")
         }
     }
 }

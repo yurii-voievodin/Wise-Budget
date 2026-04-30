@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
+import OSLog
 import TipKit
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "AskAIToolbar")
 
 /// Toolbar menu that copies the selected month's transactions plus an
 /// analysis prompt to the clipboard, then opens a chosen AI chat provider
@@ -11,7 +14,7 @@ import TipKit
 struct AskAIToolbar: ToolbarContent {
     @Environment(\.modelContext) private var modelContext
     @Environment(LocalAIAppDetector.self) private var localAppDetector
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("defaultAIProvider") private var defaultProvider: AIProvider = .claude
 
     let filter: MonthFilter
@@ -92,17 +95,43 @@ struct AskAIToolbar: ToolbarContent {
         let currentStart = filter.startOfMonth
         let currentEnd = filter.startOfNextMonth
 
-        let descriptor = FetchDescriptor<Expense>(
-            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd },
+        let expenseDescriptor = FetchDescriptor<Expense>(
+            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
             sortBy: [SortDescriptor(\.date)]
         )
-        let currentExpenses = (try? modelContext.fetch(descriptor)) ?? []
+        let incomeDescriptor = FetchDescriptor<Income>(
+            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
+            sortBy: [SortDescriptor(\.date)]
+        )
 
-        let payload = AskClaudePromptBuilder.build(
+        // Abort the handoff on a fetch failure rather than copying an empty
+        // prompt and showing a misleading "Copied" toast.
+        let currentExpenses: [Expense]
+        let currentIncomes: [Income]
+        do {
+            currentExpenses = try modelContext.fetch(expenseDescriptor)
+            currentIncomes = try modelContext.fetch(incomeDescriptor)
+        } catch {
+            logger.error("Failed to fetch transactions for AI handoff: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+
+        // `topCategoryLimit: .max` so the cloud prompt sees every category,
+        // not the on-device default of 8. The dashboard's `spendingSummary`
+        // computed property keeps the default for the on-device pathway.
+        let summary = SpendingSummary.build(
             monthFilter: filter,
-            currentMonthExpenses: currentExpenses,
+            currency: defaultCurrency,
+            expenses: currentExpenses,
+            incomes: currentIncomes,
+            topCategoryLimit: .max
+        )
+
+        let payload = CloudAIPromptBuilder.build(
+            monthFilter: filter,
+            summary: summary,
             baseCurrency: defaultCurrency,
-            responseLanguageName: AskClaudePromptBuilder.systemResponseLanguageName()
+            responseLanguageName: CloudAIPromptBuilder.systemResponseLanguageName()
         )
 
         switch target.destination {

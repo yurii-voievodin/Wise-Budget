@@ -3,13 +3,15 @@ import SwiftData
 
 struct GeneralSettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
     @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
+    @AppStorage(SpendingInsightsService.userPreferenceKey) private var aiInsightsEnabled: Bool = SpendingInsightsService.userPreferenceDefault
 
     @State private var showDeleteAllExpensesConfirmation = false
     @State private var showDeleteAllIncomesConfirmation = false
     @State private var errorMessage: String?
+    @State private var aiAvailability: SpendingInsightsService.Availability = .modelNotReady
 
     private static let currencyOptions: [(code: String, label: String)] = Locale.commonISOCurrencyCodes.map { code in
         let localized = Locale.current.localizedString(forCurrencyCode: code) ?? code
@@ -24,6 +26,15 @@ struct GeneralSettingsView: View {
                         Text(option.label).tag(option.code)
                     }
                 }
+            }
+
+            Section("AI Insights") {
+                Toggle("Enable AI Insights", isOn: $aiInsightsEnabled)
+                    .disabled(aiAvailability != .available)
+
+                Label(Self.footerText(for: aiAvailability), systemImage: Self.footerIcon(for: aiAvailability))
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
             }
 
             Section("Data Management") {
@@ -72,6 +83,31 @@ struct GeneralSettingsView: View {
         } message: { message in
             Text(message)
         }
+        .task {
+            aiAvailability = SpendingInsightsService.currentAvailability()
+            if aiAvailability != .available && aiInsightsEnabled {
+                aiInsightsEnabled = false
+            }
+        }
+    }
+
+    private static func footerText(for availability: SpendingInsightsService.Availability) -> String {
+        switch availability {
+        case .available:
+            return "Generate on-device narratives about your monthly spending and trends. Runs entirely on your Mac via Apple Intelligence."
+        case .appleIntelligenceNotEnabled:
+            return "Turn on Apple Intelligence in System Settings to enable AI insights."
+        case .deviceNotEligible:
+            return "This Mac doesn't support Apple Intelligence."
+        case .modelNotReady:
+            return "Apple Intelligence is preparing. Try again in a few minutes."
+        case .other(let reason):
+            return "Apple Intelligence unavailable: \(reason)"
+        }
+    }
+
+    private static func footerIcon(for availability: SpendingInsightsService.Availability) -> String {
+        availability == .available ? "sparkles" : "sparkles.slash"
     }
 
     private func deleteAllExpenses() {

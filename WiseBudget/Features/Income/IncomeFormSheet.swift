@@ -11,15 +11,15 @@ struct IncomeFormSheet: View {
     @State private var descriptionText: String = ""
     @State private var source: String = ""
     @State private var baseCurrencyAmount: Decimal?
+    @State private var isInternalTransfer: Bool = false
 
     var incomeToEdit: Income?
-    var onSave: (Decimal, String, Date, IncomeCategory?, String?, String?, Decimal?, String?) -> Void
+    var onSave: (IncomeFormResult) -> Void
 
-    init(income: Income? = nil, onSave: @escaping (Decimal, String, Date, IncomeCategory?, String?, String?, Decimal?, String?) -> Void) {
+    init(income: Income? = nil, onSave: @escaping (IncomeFormResult) -> Void) {
         self.incomeToEdit = income
         self.onSave = onSave
-        let storedCurrency = UserDefaults.standard.string(forKey: "defaultCurrency")
-            ?? Locale.current.currency?.identifier ?? "USD"
+        let storedCurrency = DefaultCurrency.resolve()
         if let income {
             _amount = State(initialValue: income.amount)
             _currency = State(initialValue: income.currency)
@@ -28,6 +28,7 @@ struct IncomeFormSheet: View {
             _descriptionText = State(initialValue: income.descriptionText ?? "")
             _source = State(initialValue: income.source ?? "")
             _baseCurrencyAmount = State(initialValue: income.baseCurrencyAmount)
+            _isInternalTransfer = State(initialValue: income.isInternalTransfer)
         } else {
             _currency = State(initialValue: storedCurrency)
         }
@@ -46,12 +47,24 @@ struct IncomeFormSheet: View {
             descriptionText: $descriptionText,
             extraField: $source,
             baseCurrencyAmount: $baseCurrencyAmount,
-            onSave: onSave
-        )
+            isInternalTransfer: $isInternalTransfer
+        ) { payload in
+            onSave(IncomeFormResult(
+                amount: payload.amount,
+                currency: payload.currency,
+                date: payload.date,
+                category: payload.category,
+                descriptionText: payload.descriptionText,
+                source: payload.extraField,
+                baseCurrencyAmount: payload.baseCurrencyAmount,
+                baseCurrency: payload.baseCurrency,
+                isInternalTransfer: payload.isInternalTransfer
+            ))
+        }
     }
 }
 
 #Preview("Add Income Sheet") {
-    IncomeFormSheet { _, _, _, _, _, _, _, _ in }
+    IncomeFormSheet { _ in }
         .modelContainer(for: [IncomeCategory.self, Income.self], inMemory: true)
 }

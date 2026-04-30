@@ -5,48 +5,45 @@ import SwiftData
 
 private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsights")
 
-/// Wraps a Foundation Models `LanguageModelSession` to produce a short,
-/// human-readable narrative about a `SpendingSummary`. Runs entirely on-device
-/// and caches the result in SwiftData so repeated visits reuse it instantly.
+/// File-scope (not nested) and short `@Guide` text are deliberate per Apple
+/// TN3193 — long descriptions inflate context size and add latency.
+@Generable
+struct InsightOutput: Equatable {
+    @Guide(description: "Up to three short hints about the month's spending.")
+    let hints: [String]
+}
+
+/// On-device generation; results cached in SwiftData via `InsightsCache`.
 @Observable
 @MainActor
 final class SpendingInsightsService {
 
     private static let instructions = """
-    You are a personal-finance coach reviewing one month of the user's \
-    complete income and expense ledger. The app's UI ALREADY shows totals \
-    and the largest categories, so do NOT restate those — the user can see \
-    them.
+    You are looking at one month of the user's spending.
 
-    Use the raw transactions to surface insights the user is unlikely to \
-    notice on their own. Look for things like:
-    - recurring or subscription-like charges (same merchant appearing multiple times),
-    - merchants the user spends disproportionately on,
-    - relationships between categories (e.g. dining spikes when groceries dip),
-    - savings rate this month and what's driving it,
-    - one-off large purchases vs ongoing patterns.
+    The data below is already aggregated. Don't recompute totals or list \
+    transactions back — the UI shows those. Mention only merchants and \
+    amounts that appear above.
 
-    Then give 2-3 concrete, specific recommendations the user can act on. \
-    Each recommendation must reference real numbers or merchant names from \
-    the data — no generic advice like "make a budget" or "reduce dining out". \
-    If the data is too thin for a confident insight, say so briefly rather \
-    than guessing.
+    Write up to three short hints — one sentence each — flagging the most \
+    interesting facts of the month: a large one-off, a recurring pattern, a \
+    category split, an unusual savings rate. Plain and specific, no advice.
 
-    Use the currency stated in the message. Do not invent numbers or \
-    merchants. Markdown bullets, under 200 words total.
+    Use the currency at the top.
     """
 
-    /// `.greedy` sampling is deterministic (improves cache hit rate against
-    /// `InsightsCache`) and slightly faster than nucleus sampling.
     private static let generationOptions = GenerationOptions(
         sampling: .greedy,
-        maximumResponseTokens: 380
+        maximumResponseTokens: 600
     )
 
-    /// Below this transaction count there isn't enough signal for the model to
-    /// produce a useful narrative — the UI shows a static hint instead and the
-    /// Ask AI handoff is disabled.
+    /// Below this, the UI shows a static hint and the Ask AI handoff is disabled.
     static let minimumTransactionsForInsights = 5
+
+    /// AppStorage source of truth for whether AI cards render. Only Settings
+    /// flips this on, and only after checking Apple Intelligence availability.
+    static let userPreferenceKey = "aiInsightsEnabled"
+    static let userPreferenceDefault = false
 
     enum Availability: Equatable {
         case available
@@ -58,8 +55,8 @@ final class SpendingInsightsService {
 
     enum State: Equatable {
         case idle
-        case generating(String)
-        case ready(String)
+        case generating([String])
+        case ready([String])
         case error(String)
     }
 
@@ -68,15 +65,12 @@ final class SpendingInsightsService {
     /// Held so we can release the session when a generation is cancelled.
     private var activeSession: LanguageModelSession?
 
-    /// Long-lived session used purely to call `prewarm()` and keep the
-    /// on-device model loaded in memory between generations.
+    /// Long-lived session whose only job is keeping the model warm via `prewarm()`.
     private var warmupSession: LanguageModelSession?
 
     var availability: Availability { Self.currentAvailability() }
 
-    /// Loads the on-device model into memory ahead of the first `generate(...)`
-    /// call. Apple reports up to ~40% reduction in time-to-first-token. Safe
-    /// to call repeatedly; subsequent calls are cheap no-ops.
+    /// Idempotent — subsequent calls are cheap no-ops.
     func prewarm() {
         guard availability == .available else { return }
         if warmupSession == nil {
@@ -100,13 +94,9 @@ final class SpendingInsightsService {
         }
     }
 
-    /// Generates or reuses a cached insight for the given month summary.
     /// - Parameters:
-    ///   - summary: aggregated totals + top categories for the month.
     ///   - scopeKey: locale-independent month key, e.g. `"2026-03"`.
-    ///   - context: SwiftData context used for cache lookup and persistence.
-    ///   - forceRefresh: when `true`, evict any cached row and run the model again.
-    ///     Used by the "Regenerate" button.
+    ///   - forceRefresh: bypass the cache (used by the Regenerate button).
     func generate(
         from summary: SpendingSummary,
         scopeKey: String,
@@ -118,12 +108,7 @@ final class SpendingInsightsService {
             return
         }
 
-        if summary.isEmpty {
-            state = .ready("No transactions recorded for \(summary.month).")
-            return
-        }
-
-        if summary.transactionCount < Self.minimumTransactionsForInsights {
+        if summary.isEmpty || summary.transactionCount < Self.minimumTransactionsForInsights {
             state = .idle
             return
         }
@@ -148,32 +133,37 @@ final class SpendingInsightsService {
             dataHash: hash
         ) {
             logger.debug("Cache hit for scope=\(scopeKey, privacy: .public)")
-            state = .ready(cached)
+            state = .ready(Self.decodeCachedHints(cached))
             return
         }
 
         logger.debug("Sending prompt (scope=\(scopeKey, privacy: .public), \(prompt.count) chars):\n\(prompt, privacy: .public)")
-        state = .generating("")
+        state = .generating([])
 
         let session = LanguageModelSession(instructions: Self.instructions)
         activeSession = session
         defer { if activeSession === session { activeSession = nil } }
 
         do {
-            let stream = session.streamResponse(to: prompt, options: Self.generationOptions)
-            var latest = ""
-            for try await partial in stream {
+            let stream = session.streamResponse(
+                to: prompt,
+                generating: InsightOutput.self,
+                options: Self.generationOptions
+            )
+            var latestPartial: InsightOutput.PartiallyGenerated?
+            for try await snapshot in stream {
                 try Task.checkCancellation()
-                latest = partial.content
-                state = .generating(latest)
+                latestPartial = snapshot.content
+                state = .generating(snapshot.content.hints ?? [])
             }
             try Task.checkCancellation()
-            // Don't cache or present empty output (e.g. stream ended with no
-            // partials because the task was cancelled between iterations).
-            guard !latest.isEmpty else {
+            let hints = (latestPartial?.hints ?? []).filter { !$0.isEmpty }
+            // Stream cancelled between iterations — don't cache an empty card.
+            guard !hints.isEmpty else {
                 state = .idle
                 return
             }
+            let encoded = hints.joined(separator: "\n")
             InsightsCache.upsert(
                 in: context,
                 kind: .monthSummary,
@@ -181,13 +171,12 @@ final class SpendingInsightsService {
                 currency: summary.currency,
                 localeIdentifier: "en",
                 dataHash: hash,
-                content: latest
+                content: encoded
             )
-            logger.debug("Received response (\(latest.count) chars):\n\(latest, privacy: .public)")
-            state = .ready(latest)
+            logger.debug("Received \(hints.count) hints:\n\(encoded, privacy: .public)")
+            state = .ready(hints)
         } catch is CancellationError {
-            // Navigated away mid-generation. Reset so the card doesn't get
-            // stuck in `.generating` if the user returns to the same scope.
+            // Navigated away mid-stream — avoid sticking the card in `.generating`.
             state = .idle
             return
         } catch {
@@ -198,5 +187,21 @@ final class SpendingInsightsService {
 
     func reset() {
         state = .idle
+    }
+
+    /// Decodes a cached payload back into hints. Tolerates the legacy markdown
+    /// format (`* hint`) so entries written before the format change still
+    /// render correctly.
+    private static func decodeCachedHints(_ content: String) -> [String] {
+        content
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .map { line -> String in
+                if line.hasPrefix("* ") { return String(line.dropFirst(2)) }
+                if line.hasPrefix("- ") { return String(line.dropFirst(2)) }
+                if line.hasPrefix("• ") { return String(line.dropFirst(2)) }
+                return line
+            }
+            .filter { !$0.isEmpty }
     }
 }

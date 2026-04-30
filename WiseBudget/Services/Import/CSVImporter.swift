@@ -20,8 +20,9 @@ nonisolated struct CSVTransaction {
     let baseCurrencyAmount: Decimal?
     let baseCurrency: String?
     let externalId: String?
+    let isInternalTransfer: Bool
 
-    init(direction: String, status: String, date: Date, amount: Decimal, currency: String, categoryName: String, targetName: String?, destination: String?, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil) {
+    init(direction: String, status: String, date: Date, amount: Decimal, currency: String, categoryName: String, targetName: String?, destination: String?, baseCurrencyAmount: Decimal? = nil, baseCurrency: String? = nil, externalId: String? = nil, isInternalTransfer: Bool = false) {
         self.direction = direction
         self.status = status
         self.date = date
@@ -33,6 +34,7 @@ nonisolated struct CSVTransaction {
         self.baseCurrencyAmount = baseCurrencyAmount
         self.baseCurrency = baseCurrency
         self.externalId = externalId
+        self.isInternalTransfer = isInternalTransfer
     }
 }
 
@@ -238,7 +240,8 @@ final class CSVImporter {
                     destination: transaction.destination,
                     baseCurrencyAmount: transaction.baseCurrencyAmount,
                     baseCurrency: transaction.baseCurrency,
-                    externalId: transaction.externalId
+                    externalId: transaction.externalId,
+                    isInternalTransfer: transaction.isInternalTransfer
                 )
                 context.insert(expense)
                 if let externalId = transaction.externalId {
@@ -267,7 +270,8 @@ final class CSVImporter {
                     descriptionText: transaction.targetName,
                     baseCurrencyAmount: transaction.baseCurrencyAmount,
                     baseCurrency: transaction.baseCurrency,
-                    externalId: transaction.externalId
+                    externalId: transaction.externalId,
+                    isInternalTransfer: transaction.isInternalTransfer
                 )
                 context.insert(income)
                 if let externalId = transaction.externalId {

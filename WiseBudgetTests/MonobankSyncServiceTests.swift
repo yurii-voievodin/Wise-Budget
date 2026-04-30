@@ -190,38 +190,67 @@ struct MonobankSyncServiceTests {
         #expect(result == nil, "Zero-amount transactions should be skipped")
     }
 
-    @Test func ownAccountTransferReturnsNil() {
+    @Test func ownAccountTransferIsFlaggedAsInternal() throws {
         let ownIban = "UA213223130000026007233566001"
         let statement = Self.makeStatement(counterIban: ownIban)
-        let result = MonobankSyncService.convertStatement(
+        let result = try #require(MonobankSyncService.convertStatement(
             statement,
             accountCurrency: "UAH",
             ownIbans: [ownIban],
             defaultCurrency: "UAH"
-        )
-        #expect(result == nil, "Own-account transfers should be skipped")
+        ))
+        #expect(result.isInternalTransfer == true, "Own-account transfers should be flagged as internal")
+        #expect(result.externalId == "mono_testId")
+        // Flagging must not zero out the rest of the conversion.
+        #expect(result.amount > 0)
+        #expect(result.direction == "OUT")
+        #expect(!result.categoryName.isEmpty)
     }
 
-    @Test func fopTransferReturnsNil() {
+    @Test func counterIbanNotInOwnSetIsNotFlagged() throws {
+        let statement = Self.makeStatement(counterIban: "UA999000000000000000000000001")
+        let result = try #require(MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: ["UA213223130000026007233566001"],
+            defaultCurrency: "UAH"
+        ))
+        #expect(result.isInternalTransfer == false)
+    }
+
+    @Test func fopTransferIsFlaggedAsInternal() throws {
         let statement = Self.makeStatement(description: "З гривневого рахунку ФОП")
-        let result = MonobankSyncService.convertStatement(
+        let result = try #require(MonobankSyncService.convertStatement(
             statement,
             accountCurrency: "UAH",
             ownIbans: [],
             defaultCurrency: "UAH"
-        )
-        #expect(result == nil, "FOP transfers should be skipped")
+        ))
+        #expect(result.isInternalTransfer == true, "FOP transfers should be flagged as internal")
+        #expect(result.amount > 0)
+        #expect(!result.categoryName.isEmpty)
     }
 
-    @Test func fopTransferCaseInsensitive() {
+    @Test func fopTransferDetectionIsCaseInsensitive() throws {
         let statement = Self.makeStatement(description: "на рахунок фоп")
-        let result = MonobankSyncService.convertStatement(
+        let result = try #require(MonobankSyncService.convertStatement(
             statement,
             accountCurrency: "UAH",
             ownIbans: [],
             defaultCurrency: "UAH"
-        )
-        #expect(result == nil, "FOP matching should be case-insensitive")
+        ))
+        #expect(result.isInternalTransfer == true, "FOP matching should be case-insensitive")
+    }
+
+    @Test func regularTransactionIsNotInternal() throws {
+        let statement = Self.makeStatement(description: "Coffee shop")
+        let result = try #require(MonobankSyncService.convertStatement(
+            statement,
+            accountCurrency: "UAH",
+            ownIbans: [],
+            defaultCurrency: "UAH"
+        ))
+        #expect(result.isInternalTransfer == false)
     }
 
     @Test func commentOverridesDescription() throws {

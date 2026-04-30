@@ -6,7 +6,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("monobankConnectedName") private var monobankConnectedName: String = ""
     @AppStorage("wiseConnectedName") private var wiseConnectedName: String = ""
 
@@ -21,7 +21,13 @@ struct DashboardView: View {
     @State private var askAIToastTask: Task<Void, Never>?
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
+    @State private var selectedTab: DashboardTab = .overview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    enum DashboardTab: Hashable {
+        case overview
+        case byCategory
+    }
 
     init(
         monthFilter: Binding<MonthFilter>,
@@ -38,7 +44,7 @@ struct DashboardView: View {
         let endDate = monthFilter.wrappedValue.startOfNextMonth
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate && !expense.isInternalTransfer
             },
             sort: \.date,
             order: .reverse
@@ -46,7 +52,7 @@ struct DashboardView: View {
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate && !income.isInternalTransfer
             },
             sort: \.date,
             order: .reverse
@@ -132,14 +138,6 @@ struct DashboardView: View {
         .sorted { $0.total > $1.total }
     }
 
-    private var sortedExpenseSlices: [CategoryChartSlice] {
-        expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) }
-    }
-
-    private var topCategories: [CategoryChartSlice] {
-        Array(expenseSlices.prefix(5))
-    }
-
     private var spendingSummary: SpendingSummary {
         SpendingSummary.build(
             monthFilter: monthFilter,
@@ -220,76 +218,41 @@ struct DashboardView: View {
     }
 
     private var dashboardContentView: some View {
-        Form {
-            MonthlyInsightsCard(summary: spendingSummary, scopeKey: insightsScopeKey)
-            DashboardMonthSummarySection(
-                totalIncome: totalIncome,
-                totalExpenses: totalExpenses,
-                balance: balance,
-                currency: defaultCurrency
-            )
-            DashboardDailyAveragesSection(
-                incomeDailyAverage: incomeDailyAverage,
-                expenseDailyAverage: expenseDailyAverage,
-                dailyBalance: dailyBalance,
-                currency: defaultCurrency
-            )
-            if shouldShowBudgetPacing {
-                DashboardBudgetPacingSection(
+        TabView(selection: $selectedTab) {
+            Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
+                DashboardOverviewTab(
+                    summary: spendingSummary,
+                    scopeKey: insightsScopeKey,
+                    shouldShowBudgetPacing: shouldShowBudgetPacing,
                     daysRemainingInMonth: daysRemainingInMonth,
                     dailyAllowance: dailyAllowance,
-                    currency: defaultCurrency
-                )
-            }
-            if !expenseSlices.isEmpty {
-                CategoryChartSection(
-                    slices: sortedExpenseSlices,
-                    currency: defaultCurrency,
-                    emptyText: "No expenses",
-                    colorMap: DefaultExpenseCategory.chartColorMap
-                )
-                DashboardTopCategoriesSection(
-                    slices: topCategories,
+                    totalIncome: totalIncome,
                     totalExpenses: totalExpenses,
+                    balance: balance,
+                    incomeDailyAverage: incomeDailyAverage,
+                    expenseDailyAverage: expenseDailyAverage,
+                    dailyBalance: dailyBalance,
                     currency: defaultCurrency,
-                    onSelect: onSelectCategory
+                    recentTransactions: recentTransactions,
+                    onSelectTransaction: handleTransactionSelection
                 )
             }
-            DashboardRecentTransactionsSection(transactions: recentTransactions) { transaction in
-                if let expense = transaction.item as? Expense {
-                    expenseToEdit = expense
-                } else if let income = transaction.item as? Income {
-                    incomeToEdit = income
-                }
+            Tab("By Category", systemImage: "chart.pie", value: DashboardTab.byCategory) {
+                DashboardByCategoryTab(
+                    expenseSlices: expenseSlices,
+                    currency: defaultCurrency,
+                    onSelectCategory: onSelectCategory
+                )
             }
         }
-        .formStyle(.grouped)
         .sheet(item: $expenseToEdit) { expense in
-            ExpenseFormSheet(expense: expense) { amount, currency, date, category, descriptionText, destination, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    expense.amount = amount
-                    expense.currency = currency
-                    expense.date = date
-                    expense.category = category
-                    expense.descriptionText = descriptionText
-                    expense.destination = destination
-                    expense.baseCurrencyAmount = baseCurrencyAmount
-                    expense.baseCurrency = baseCurrency
-                }
+            ExpenseFormSheet(expense: expense) { result in
+                withAnimation { result.apply(to: expense) }
             }
         }
         .sheet(item: $incomeToEdit) { income in
-            IncomeFormSheet(income: income) { amount, currency, date, category, descriptionText, source, baseCurrencyAmount, baseCurrency in
-                withAnimation {
-                    income.amount = amount
-                    income.currency = currency
-                    income.date = date
-                    income.category = category
-                    income.descriptionText = descriptionText
-                    income.source = source
-                    income.baseCurrencyAmount = baseCurrencyAmount
-                    income.baseCurrency = baseCurrency
-                }
+            IncomeFormSheet(income: income) { result in
+                withAnimation { result.apply(to: income) }
             }
         }
         .overlay(alignment: .bottom) {
@@ -306,6 +269,14 @@ struct DashboardView: View {
                 expenseCount: expenses.count,
                 onCopied: presentAskAIToast
             )
+        }
+    }
+
+    private func handleTransactionSelection(_ transaction: DashboardRecentTransaction) {
+        if let expense = transaction.item as? Expense {
+            expenseToEdit = expense
+        } else if let income = transaction.item as? Income {
+            incomeToEdit = income
         }
     }
 

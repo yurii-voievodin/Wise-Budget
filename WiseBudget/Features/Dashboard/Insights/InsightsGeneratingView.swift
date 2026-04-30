@@ -2,7 +2,7 @@ import SwiftUI
 
 struct InsightsGeneratingView: View {
     let month: String
-    let partial: String
+    let hints: [String]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -11,9 +11,8 @@ struct InsightsGeneratingView: View {
                 Text("Analyzing \(month)…")
                     .foregroundStyle(.secondary)
             }
-            if !partial.isEmpty {
-                MarkdownText(partial)
-                    .textSelection(.enabled)
+            if !hints.isEmpty {
+                InsightHintsList(hints: hints)
             }
         }
     }

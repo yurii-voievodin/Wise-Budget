@@ -3,7 +3,7 @@ import SwiftData
 
 struct TransactionFormContent<C: CategoryModel & Hashable>: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("defaultCurrency") private var defaultCurrency: String = Locale.current.currency?.identifier ?? "USD"
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let categories: [C]
     let entityLabel: String
@@ -17,8 +17,9 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
     @Binding var descriptionText: String
     @Binding var extraField: String
     @Binding var baseCurrencyAmount: Decimal?
+    @Binding var isInternalTransfer: Bool
 
-    var onSave: (Decimal, String, Date, C?, String?, String?, Decimal?, String?) -> Void
+    var onSave: (TransactionFormPayload<C>) -> Void
 
     private var isForeignCurrency: Bool { currency != defaultCurrency }
 
@@ -52,6 +53,8 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
                 TextField("Description", text: $descriptionText)
                 TextField(extraFieldLabel, text: $extraField)
                 DatePicker("Date", selection: $date, displayedComponents: .date)
+                Toggle("Transfer", isOn: $isInternalTransfer)
+                    .help("Transfers between your own accounts stay in history but are excluded from statistics and budgets.")
             }
             .padding(.horizontal)
             .navigationTitle(isEditing ? "Edit \(entityLabel)" : "Add \(entityLabel)")
@@ -66,9 +69,18 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
                         guard let amount else { return }
                         let desc = descriptionText.trimmingCharacters(in: .whitespaces)
                         let extra = extraField.trimmingCharacters(in: .whitespaces)
-                        let baseAmount = isForeignCurrency ? baseCurrencyAmount : nil
-                        let baseCur = isForeignCurrency ? defaultCurrency : nil
-                        onSave(amount, currency, date, selectedCategory, desc.isEmpty ? nil : desc, extra.isEmpty ? nil : extra, baseAmount, baseCur)
+                        let payload = TransactionFormPayload(
+                            amount: amount,
+                            currency: currency,
+                            date: date,
+                            category: selectedCategory,
+                            descriptionText: desc.isEmpty ? nil : desc,
+                            extraField: extra.isEmpty ? nil : extra,
+                            baseCurrencyAmount: isForeignCurrency ? baseCurrencyAmount : nil,
+                            baseCurrency: isForeignCurrency ? defaultCurrency : nil,
+                            isInternalTransfer: isInternalTransfer
+                        )
+                        onSave(payload)
                         dismiss()
                     }
                     .disabled(amount == nil || (amount ?? .zero) <= .zero)

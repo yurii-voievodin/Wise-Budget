@@ -7,21 +7,19 @@ struct TrendsInsightsCard: View {
     let scopeKey: String
 
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(SpendingInsightsService.userPreferenceKey) private var aiInsightsEnabled: Bool = SpendingInsightsService.userPreferenceDefault
     @State private var service = TrendsInsightsService()
 
     var body: some View {
-        Section {
-            TrendsSectionContent(
-                availability: service.availability,
-                state: service.state,
-                summary: summary,
-                onGenerate: generate
-            )
-        } header: {
-            TrendsSectionHeader()
+        if aiInsightsEnabled {
+            Section {
+                TrendsStateView(state: service.state, summary: summary, onGenerate: generate)
+            } header: {
+                TrendsSectionHeader()
+            }
+            .task(id: scopeKey, loadCached)
+            .onAppear { service.prewarm() }
         }
-        .task(id: scopeKey, loadCached)
-        .onAppear { service.prewarm() }
     }
 
     private func generate() {
