@@ -38,7 +38,6 @@ struct IncomeStatisticsView: View {
             return CategoryChartSlice(name: name, iconName: icon, total: NSDecimalNumber(decimal: sum).doubleValue)
         }
         .filter { $0.total > 0 }
-        .sorted { DefaultIncomeCategory.sortIndex(for: $0.name) < DefaultIncomeCategory.sortIndex(for: $1.name) }
     }
 
     // MARK: - Computed Statistics
@@ -98,7 +97,14 @@ struct IncomeStatisticsView: View {
     }
 
     private var categoryChartSection: some View {
-        CategoryChartSection(slices: slices, currency: defaultCurrency, emptyText: "No income", colorMap: DefaultIncomeCategory.chartColorMap)
+        CategoryChartSection(
+            slices: slices,
+            currency: defaultCurrency,
+            emptyText: "No income",
+            colorMap: DefaultIncomeCategory.chartColorMap,
+            sortIndex: DefaultIncomeCategory.sortIndex(for:),
+            defaultSortOrder: .byCategoryOrder
+        )
     }
 
     private var overviewSection: some View {

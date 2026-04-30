@@ -132,14 +132,6 @@ struct DashboardView: View {
         .sorted { $0.total > $1.total }
     }
 
-    private var sortedExpenseSlices: [CategoryChartSlice] {
-        expenseSlices.sorted { DefaultExpenseCategory.sortIndex(for: $0.name) < DefaultExpenseCategory.sortIndex(for: $1.name) }
-    }
-
-    private var topCategories: [CategoryChartSlice] {
-        Array(expenseSlices.prefix(5))
-    }
-
     private var spendingSummary: SpendingSummary {
         SpendingSummary.build(
             monthFilter: monthFilter,
@@ -243,15 +235,11 @@ struct DashboardView: View {
             }
             if !expenseSlices.isEmpty {
                 CategoryChartSection(
-                    slices: sortedExpenseSlices,
+                    slices: expenseSlices,
                     currency: defaultCurrency,
                     emptyText: "No expenses",
-                    colorMap: DefaultExpenseCategory.chartColorMap
-                )
-                DashboardTopCategoriesSection(
-                    slices: topCategories,
-                    totalExpenses: totalExpenses,
-                    currency: defaultCurrency,
+                    colorMap: DefaultExpenseCategory.chartColorMap,
+                    sortIndex: DefaultExpenseCategory.sortIndex(for:),
                     onSelect: onSelectCategory
                 )
             }
