@@ -92,17 +92,34 @@ struct AskAIToolbar: ToolbarContent {
         let currentStart = filter.startOfMonth
         let currentEnd = filter.startOfNextMonth
 
-        let descriptor = FetchDescriptor<Expense>(
+        let expenseDescriptor = FetchDescriptor<Expense>(
             predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
             sortBy: [SortDescriptor(\.date)]
         )
-        let currentExpenses = (try? modelContext.fetch(descriptor)) ?? []
+        let currentExpenses = (try? modelContext.fetch(expenseDescriptor)) ?? []
 
-        let payload = AskClaudePromptBuilder.build(
+        let incomeDescriptor = FetchDescriptor<Income>(
+            predicate: #Predicate { $0.date >= currentStart && $0.date < currentEnd && !$0.isInternalTransfer },
+            sortBy: [SortDescriptor(\.date)]
+        )
+        let currentIncomes = (try? modelContext.fetch(incomeDescriptor)) ?? []
+
+        // `topCategoryLimit: .max` so the cloud prompt sees every category,
+        // not the on-device default of 8. The dashboard's `spendingSummary`
+        // computed property keeps the default for the on-device pathway.
+        let summary = SpendingSummary.build(
             monthFilter: filter,
-            currentMonthExpenses: currentExpenses,
+            currency: defaultCurrency,
+            expenses: currentExpenses,
+            incomes: currentIncomes,
+            topCategoryLimit: .max
+        )
+
+        let payload = CloudAIPromptBuilder.build(
+            monthFilter: filter,
+            summary: summary,
             baseCurrency: defaultCurrency,
-            responseLanguageName: AskClaudePromptBuilder.systemResponseLanguageName()
+            responseLanguageName: CloudAIPromptBuilder.systemResponseLanguageName()
         )
 
         switch target.destination {
