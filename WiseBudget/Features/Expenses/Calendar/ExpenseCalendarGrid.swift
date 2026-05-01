@@ -5,14 +5,19 @@ private struct IdentifiableDate: Identifiable {
     var id: Date { date }
 }
 
+struct CalendarHeatMapData {
+    let dailyTotals: [Int: Decimal]
+    let dailyTotalsByCurrency: [Int: [String: Decimal]]
+    let averageDailyIncome: Decimal
+
+    var maxDailyTotal: Decimal { dailyTotals.values.max() ?? .zero }
+    var daysWithExpenses: Set<Int> { Set(dailyTotals.keys) }
+}
+
 struct ExpenseCalendarGrid: View {
     let filter: MonthFilter
     let defaultCurrency: String
-    let dailyTotalsByCurrency: [Int: [String: Decimal]]
-    let dailyTotals: [Int: Decimal]
-    let maxDailyTotal: Decimal
-    let averageDailyIncome: Decimal
-    let daysWithExpenses: Set<Int>
+    let data: CalendarHeatMapData
 
     @State private var selectedDate: IdentifiableDate?
 
@@ -78,7 +83,7 @@ struct ExpenseCalendarGrid: View {
     private func dayButton(day: Int) -> some View {
         let isSelected = selectedDate.map { calendar.component(.day, from: $0.date) == day } ?? false
         return Button {
-            if daysWithExpenses.contains(day) {
+            if data.daysWithExpenses.contains(day) {
                 let date = calendar.date(from: DateComponents(year: filter.year, month: filter.month, day: day)) ?? Date.now
                 selectedDate = IdentifiableDate(date: date)
             } else {
@@ -99,14 +104,14 @@ struct ExpenseCalendarGrid: View {
     }
 
     private func dayCellView(day: Int) -> some View {
-        let total = dailyTotals[day]
+        let total = data.dailyTotals[day]
         let (bgColor, bgOpacity) = colorForDay(total: total)
 
         return ExpenseCalendarDayCellView(
             day: day,
             isToday: isToday(day: day),
             defaultCurrency: defaultCurrency,
-            currencyTotals: dailyTotalsByCurrency[day] ?? [:],
+            currencyTotals: data.dailyTotalsByCurrency[day] ?? [:],
             backgroundColor: bgColor,
             backgroundOpacity: bgOpacity
         )
@@ -126,14 +131,14 @@ struct ExpenseCalendarGrid: View {
             return (.income, Self.noExpenseOpacity)
         }
 
-        if averageDailyIncome > 0 && total <= averageDailyIncome {
-            let ratio = NSDecimalNumber(decimal: total / averageDailyIncome).doubleValue
+        if data.averageDailyIncome > 0 && total <= data.averageDailyIncome {
+            let ratio = NSDecimalNumber(decimal: total / data.averageDailyIncome).doubleValue
             let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
             return (.yellow, opacity)
         }
 
-        guard maxDailyTotal > 0 else { return (.expense, Self.heatMapMinOpacity) }
-        let ratio = NSDecimalNumber(decimal: total / maxDailyTotal).doubleValue
+        guard data.maxDailyTotal > 0 else { return (.expense, Self.heatMapMinOpacity) }
+        let ratio = NSDecimalNumber(decimal: total / data.maxDailyTotal).doubleValue
         let opacity = Self.heatMapMinOpacity + ratio * Self.heatMapOpacityRange
         return (.expense, opacity)
     }

@@ -15,7 +15,7 @@ struct ExpenseDayDetailView: View {
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startOfDay && expense.date < endOfDay
+                expense.date >= startOfDay && expense.date < endOfDay && !expense.isInternalTransfer
             },
             sort: \.date
         )

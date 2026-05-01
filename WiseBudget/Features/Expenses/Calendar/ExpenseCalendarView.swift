@@ -39,16 +39,11 @@ struct ExpenseCalendarView: View {
         calendar.range(of: .day, in: .month, for: filter.startOfMonth)?.count ?? 30
     }
 
-    /// Classifies an expense: if its currency or baseCurrency matches defaultCurrency,
-    /// returns the amount in defaultCurrency; otherwise returns (originalCurrency, originalAmount).
     private func classifyExpense(_ expense: Expense) -> (currency: String, amount: Decimal) {
-        if expense.currency == defaultCurrency {
-            return (defaultCurrency, expense.amount)
-        } else if expense.baseCurrency == defaultCurrency, let baseAmount = expense.baseCurrencyAmount {
-            return (defaultCurrency, baseAmount)
-        } else {
-            return (expense.currency, expense.amount)
+        if let converted = expense.convertedAmount(to: defaultCurrency) {
+            return (defaultCurrency, converted)
         }
+        return (expense.currency, expense.amount)
     }
 
     private var dailyTotalsByCurrency: [Int: [String: Decimal]] {
@@ -71,10 +66,6 @@ struct ExpenseCalendarView: View {
         return totals
     }
 
-    private var maxDailyTotal: Decimal {
-        dailyTotals.values.max() ?? .zero
-    }
-
     private var averageDailyIncome: Decimal {
         let total = incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
         guard daysInMonth > 0 else { return .zero }
@@ -90,8 +81,12 @@ struct ExpenseCalendarView: View {
         return totals
     }
 
-    private var daysWithExpenses: Set<Int> {
-        Set(dailyTotals.keys)
+    private var heatMapData: CalendarHeatMapData {
+        CalendarHeatMapData(
+            dailyTotals: dailyTotals,
+            dailyTotalsByCurrency: dailyTotalsByCurrency,
+            averageDailyIncome: averageDailyIncome
+        )
     }
 
     // MARK: - Body
@@ -114,11 +109,7 @@ struct ExpenseCalendarView: View {
                     ExpenseCalendarGrid(
                         filter: filter,
                         defaultCurrency: defaultCurrency,
-                        dailyTotalsByCurrency: dailyTotalsByCurrency,
-                        dailyTotals: dailyTotals,
-                        maxDailyTotal: maxDailyTotal,
-                        averageDailyIncome: averageDailyIncome,
-                        daysWithExpenses: daysWithExpenses
+                        data: heatMapData
                     )
                     .padding(.horizontal)
                 }

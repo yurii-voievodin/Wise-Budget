@@ -22,13 +22,8 @@ struct ExpenseCalendarDayCellView: View {
                 }
 
             if !currencyTotals.isEmpty {
-                let sorted = currencyTotals.sorted { a, b in
-                    if a.key == defaultCurrency { return true }
-                    if b.key == defaultCurrency { return false }
-                    return a.key < b.key
-                }
-                ForEach(sorted, id: \.key) { currency, amount in
-                    Text("\(Self.formattedAmount(amount)) \(currency)")
+                ForEach(currencyTotals.sortedWithDefaultFirst(defaultCurrency), id: \.key) { currency, amount in
+                    Text("\(formattedCalendarAmount(amount)) \(currency)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -44,9 +39,6 @@ struct ExpenseCalendarDayCellView: View {
         }
     }
 
-    static func formattedAmount(_ value: Decimal) -> String {
-        value.formatted(.number.precision(.fractionLength(0)))
-    }
 }
 
 #Preview {
