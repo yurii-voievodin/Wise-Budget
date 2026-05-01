@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var askAIToastTask: Task<Void, Never>?
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
+    @State private var hasKeychainTokens = false
     @State private var selectedTab: DashboardTab = .overview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -126,10 +127,7 @@ struct DashboardView: View {
     }
 
     private var hasConnectedBank: Bool {
-        !monobankConnectedName.isEmpty
-            || !wiseConnectedName.isEmpty
-            || KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
-            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+        !monobankConnectedName.isEmpty || !wiseConnectedName.isEmpty || hasKeychainTokens
     }
 
     private var isCurrentMonthEmpty: Bool {
@@ -215,6 +213,9 @@ struct DashboardView: View {
     private func checkForAnyTransactions() {
         hasAnyExpenses = ((try? modelContext.fetchCount(FetchDescriptor<Expense>())) ?? 0) > 0
         hasAnyIncomes = ((try? modelContext.fetchCount(FetchDescriptor<Income>())) ?? 0) > 0
+        hasKeychainTokens =
+            KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
     private func presentAskAIToast(provider: AIProvider) {

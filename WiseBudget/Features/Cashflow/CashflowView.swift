@@ -117,18 +117,19 @@ struct CashflowView: View {
                 }
 
                 ForEach(activeMonths, id: \.month) { totals in
+                    let scale = max(totals.income, totals.expenses)
                     Section(totals.month.fullLabel) {
                         CashflowBarRow(
                             label: "Income",
                             amount: totals.income,
-                            maxValue: max(totals.income, totals.expenses),
+                            maxValue: scale,
                             tint: .income,
                             currency: defaultCurrency
                         )
                         CashflowBarRow(
                             label: "Expenses",
                             amount: totals.expenses,
-                            maxValue: max(totals.income, totals.expenses),
+                            maxValue: scale,
                             tint: .expense,
                             currency: defaultCurrency
                         )
