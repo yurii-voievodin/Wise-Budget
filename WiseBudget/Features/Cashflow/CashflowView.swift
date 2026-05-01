@@ -20,19 +20,11 @@ struct CashflowView: View {
     // MARK: - Month Range
 
     private var monthRange: [MonthKey] {
-        let calendar = Calendar.current
         switch timeRange {
         case .sixMonths:
-            let current = MonthKey(year: filter.year, month: filter.month)
-            return (0..<6).reversed().compactMap { offset in
-                let comps = DateComponents(year: current.year, month: current.month - offset)
-                guard let date = calendar.date(from: comps),
-                      let year = calendar.dateComponents([.year, .month], from: date).year,
-                      let month = calendar.dateComponents([.year, .month], from: date).month else { return nil }
-                return MonthKey(year: year, month: month)
-            }
+            return MonthKey.recent(6, endingAt: MonthKey(year: filter.year, month: filter.month))
         case .year:
-            return (1...12).map { MonthKey(year: filter.year, month: $0) }
+            return MonthKey.allMonths(of: filter.year)
         }
     }
 
@@ -75,7 +67,6 @@ struct CashflowView: View {
             expenses[key, default: 0] += item.convertedAmount(to: defaultCurrency) ?? .zero
         }
 
-        // Reverse so the most recent month is first.
         return monthRange.reversed().map { key in
             MonthlyTotals(month: key, income: income[key] ?? 0, expenses: expenses[key] ?? 0)
         }
@@ -108,17 +99,17 @@ struct CashflowView: View {
 
                 Section(periodLabel) {
                     LabeledContent("Income") {
-                        Text("\(periodIncome, format: .number.precision(.fractionLength(0))) \(defaultCurrency)")
+                        Text(amount: periodIncome, currency: defaultCurrency, precision: 0)
                             .monospacedDigit()
                             .foregroundStyle(.income)
                     }
                     LabeledContent("Expenses") {
-                        Text("\(periodExpenses, format: .number.precision(.fractionLength(0))) \(defaultCurrency)")
+                        Text(amount: periodExpenses, currency: defaultCurrency, precision: 0)
                             .monospacedDigit()
                             .foregroundStyle(.expense)
                     }
                     LabeledContent("Balance") {
-                        Text("\(periodBalance >= .zero ? "+" : "")\(periodBalance, format: .number.precision(.fractionLength(0))) \(defaultCurrency)")
+                        Text(amount: periodBalance, currency: defaultCurrency, signed: true, precision: 0)
                             .monospacedDigit()
                             .fontWeight(.semibold)
                             .foregroundStyle(periodBalance >= .zero ? .income : .expense)
@@ -142,7 +133,7 @@ struct CashflowView: View {
                             currency: defaultCurrency
                         )
                         LabeledContent("Balance") {
-                            Text("\(totals.balance >= .zero ? "+" : "")\(totals.balance, format: .number.precision(.fractionLength(0))) \(defaultCurrency)")
+                            Text(amount: totals.balance, currency: defaultCurrency, signed: true, precision: 0)
                                 .monospacedDigit()
                                 .fontWeight(.semibold)
                                 .foregroundStyle(totals.balance >= .zero ? .income : .expense)

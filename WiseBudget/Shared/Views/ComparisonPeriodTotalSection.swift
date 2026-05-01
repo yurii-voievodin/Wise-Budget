@@ -7,7 +7,7 @@ struct ComparisonPeriodTotalSection: View {
     var body: some View {
         Section("Period Total") {
             LabeledContent("Total") {
-                Text("\(Decimal(total), format: .number.precision(.fractionLength(0))) \(currency)")
+                Text(amount: Decimal(total), currency: currency, precision: 0)
                     .monospacedDigit()
                     .fontWeight(.semibold)
             }

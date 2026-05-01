@@ -22,20 +22,13 @@ struct ExpenseComparisonView: View {
     // MARK: - Filtered Months
 
     private var monthRange: [MonthKey] {
-        let calendar = Calendar.current
         switch timeRange {
         case .sixMonths:
-            let current = MonthKey(year: filter.year, month: filter.month)
-            return (0..<6).reversed().compactMap { offset in
-                let comps = DateComponents(year: current.year, month: current.month - offset)
-                guard let date = calendar.date(from: comps),
-                      let year = calendar.dateComponents([.year, .month], from: date).year,
-                      let month = calendar.dateComponents([.year, .month], from: date).month else { return nil }
-                return MonthKey(year: year, month: month)
-            }
+            return MonthKey.recent(6, endingAt: MonthKey(year: filter.year, month: filter.month))
         case .year:
-            return (1...12).map { MonthKey(year: filter.year, month: $0) }
+            return MonthKey.allMonths(of: filter.year)
         case .lifetime:
+            let calendar = Calendar.current
             let keys = Set(allExpenses.compactMap { expense -> MonthKey? in
                 let c = calendar.dateComponents([.year, .month], from: expense.date)
                 guard let year = c.year, let month = c.month else { return nil }

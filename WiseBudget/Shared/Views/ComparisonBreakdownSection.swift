@@ -8,7 +8,7 @@ struct ComparisonBreakdownSection: View {
         Section("Monthly Totals") {
             ForEach(monthTotals.filter { $0.total > 0 }, id: \.month) { item in
                 LabeledContent(item.month.fullLabel) {
-                    Text("\(Decimal(item.total), format: .number.precision(.fractionLength(0))) \(currency)")
+                    Text(amount: Decimal(item.total), currency: currency, precision: 0)
                         .monospacedDigit()
                 }
             }
