@@ -12,7 +12,7 @@ struct DashboardMonthSummarySection: View {
                 Label("Income", systemImage: "arrow.down.circle.fill")
                     .foregroundStyle(.income)
                 Spacer()
-                Text("\(totalIncome, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: totalIncome, currency: currency)
                     .monospacedDigit()
                     .foregroundStyle(.income)
             }
@@ -20,7 +20,7 @@ struct DashboardMonthSummarySection: View {
                 Label("Expenses", systemImage: "arrow.up.circle.fill")
                     .foregroundStyle(.expense)
                 Spacer()
-                Text("\(totalExpenses, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: totalExpenses, currency: currency)
                     .monospacedDigit()
                     .foregroundStyle(.expense)
             }
@@ -29,7 +29,7 @@ struct DashboardMonthSummarySection: View {
                     .bold()
                     .foregroundStyle(balance >= .zero ? .income : .expense)
                 Spacer()
-                Text("\(balance >= .zero ? "+" : "")\(balance, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: balance, currency: currency, signed: true)
                     .font(.title3)
                     .bold()
                     .monospacedDigit()

@@ -12,7 +12,7 @@ struct DashboardDailyAveragesSection: View {
                 Label("Income", systemImage: "arrow.down.circle")
                     .foregroundStyle(.income)
                 Spacer()
-                Text("\(incomeDailyAverage, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: incomeDailyAverage, currency: currency)
                     .monospacedDigit()
                     .foregroundStyle(.income)
             }
@@ -20,7 +20,7 @@ struct DashboardDailyAveragesSection: View {
                 Label("Expenses", systemImage: "arrow.up.circle")
                     .foregroundStyle(.expense)
                 Spacer()
-                Text("\(expenseDailyAverage, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: expenseDailyAverage, currency: currency)
                     .monospacedDigit()
                     .foregroundStyle(.expense)
             }
@@ -29,7 +29,7 @@ struct DashboardDailyAveragesSection: View {
                     .bold()
                     .foregroundStyle(dailyBalance >= .zero ? .income : .expense)
                 Spacer()
-                Text("\(dailyBalance >= .zero ? "+" : "")\(dailyBalance, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: dailyBalance, currency: currency, signed: true)
                     .bold()
                     .monospacedDigit()
                     .foregroundStyle(dailyBalance >= .zero ? .income : .expense)

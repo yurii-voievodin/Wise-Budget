@@ -62,16 +62,10 @@ struct DashboardView: View {
     // MARK: - Computed
 
     private var metrics: DashboardMetrics {
-        let calendar = Calendar.current
-        let daysInMonth = calendar.range(of: .day, in: .month, for: monthFilter.startOfMonth)?.count ?? 30
-        let now = calendar.dateComponents([.year, .month], from: Date.now)
-        let isCurrentMonth = monthFilter.year == now.year && monthFilter.month == now.month
-        return DashboardMetrics(
+        DashboardMetrics(
+            monthFilter: monthFilter,
             totalIncome: incomes.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
-            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
-            daysInMonth: daysInMonth,
-            daysElapsedInMonth: isCurrentMonth ? calendar.component(.day, from: Date.now) : 0,
-            isCurrentMonth: isCurrentMonth
+            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
         )
     }
 
@@ -153,8 +147,6 @@ struct DashboardView: View {
             }
         }
         .onAppear { checkForAnyTransactions() }
-        .onChange(of: expenses.count) { checkForAnyTransactions() }
-        .onChange(of: incomes.count) { checkForAnyTransactions() }
     }
 
     private var emptyStateView: some View {

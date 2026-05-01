@@ -19,7 +19,7 @@ struct DashboardBudgetPacingSection: View {
                     .foregroundStyle(.orange)
                     .bold()
                 Spacer()
-                Text("\(dailyAllowance, format: .number.precision(.fractionLength(2))) \(currency)")
+                Text(amount: dailyAllowance, currency: currency)
                     .font(.title3)
                     .bold()
                     .monospacedDigit()
