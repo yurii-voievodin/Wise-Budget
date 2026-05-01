@@ -115,23 +115,11 @@ final class SpendingInsightsService {
 
         let prompt = summary.encodedAsPrompt()
         let hash = InsightsCache.hash(prompt)
+        let cacheKey = CacheKey(kind: .monthSummary, scopeKey: scopeKey, currency: summary.currency)
 
         if forceRefresh {
-            InsightsCache.invalidate(
-                in: context,
-                kind: .monthSummary,
-                scopeKey: scopeKey,
-                currency: summary.currency,
-                localeIdentifier: "en"
-            )
-        } else if let cached = InsightsCache.lookup(
-            in: context,
-            kind: .monthSummary,
-            scopeKey: scopeKey,
-            currency: summary.currency,
-            localeIdentifier: "en",
-            dataHash: hash
-        ) {
+            InsightsCache.invalidate(in: context, key: cacheKey)
+        } else if let cached = InsightsCache.lookup(in: context, key: cacheKey, dataHash: hash) {
             logger.debug("Cache hit for scope=\(scopeKey, privacy: .public)")
             state = .ready(Self.decodeCachedHints(cached))
             return
@@ -164,15 +152,7 @@ final class SpendingInsightsService {
                 return
             }
             let encoded = hints.joined(separator: "\n")
-            InsightsCache.upsert(
-                in: context,
-                kind: .monthSummary,
-                scopeKey: scopeKey,
-                currency: summary.currency,
-                localeIdentifier: "en",
-                dataHash: hash,
-                content: encoded
-            )
+            InsightsCache.upsert(in: context, key: cacheKey, dataHash: hash, content: encoded)
             logger.debug("Received \(hints.count) hints:\n\(encoded, privacy: .public)")
             state = .ready(hints)
         } catch is CancellationError {

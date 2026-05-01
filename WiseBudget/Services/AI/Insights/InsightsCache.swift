@@ -2,6 +2,22 @@ import Foundation
 import CryptoKit
 import SwiftData
 
+/// Composite key identifying a single cache row. `localeIdentifier` defaults to
+/// `"en"` since prompts and hints are English-only today.
+struct CacheKey: Equatable, Sendable {
+    let kind: CachedInsightKind
+    let scopeKey: String
+    let currency: String
+    let localeIdentifier: String
+
+    init(kind: CachedInsightKind, scopeKey: String, currency: String, localeIdentifier: String = "en") {
+        self.kind = kind
+        self.scopeKey = scopeKey
+        self.currency = currency
+        self.localeIdentifier = localeIdentifier
+    }
+}
+
 /// Thin helper around `ModelContext` for reading/writing `CachedInsight` rows.
 /// All lookups match on the full composite key except `dataHash`, which is the
 /// invalidation signal: a row with the same scope but a stale hash is replaced.
@@ -11,58 +27,27 @@ enum InsightsCache {
     /// and the stored content is non-empty. Returns `nil` on cache miss,
     /// stale hash, or empty content (which may have been written by a
     /// cancelled generation and should be regenerated).
-    static func lookup(
-        in context: ModelContext,
-        kind: CachedInsightKind,
-        scopeKey: String,
-        currency: String,
-        localeIdentifier: String,
-        dataHash: String
-    ) -> String? {
-        guard let existing = fetch(
-            in: context,
-            kind: kind,
-            scopeKey: scopeKey,
-            currency: currency,
-            localeIdentifier: localeIdentifier
-        ) else {
-            return nil
-        }
-        guard existing.dataHash == dataHash, !existing.content.isEmpty else {
-            return nil
-        }
+    static func lookup(in context: ModelContext, key: CacheKey, dataHash: String) -> String? {
+        guard let existing = fetch(in: context, key: key) else { return nil }
+        guard existing.dataHash == dataHash, !existing.content.isEmpty else { return nil }
         return existing.content
     }
 
     /// Creates or replaces the cached content for the given scope.
-    /// Keeps at most one row per `(kind, scopeKey, currency, localeIdentifier)`.
-    /// Empty content is ignored — callers may cancel mid-stream with no text yet.
-    static func upsert(
-        in context: ModelContext,
-        kind: CachedInsightKind,
-        scopeKey: String,
-        currency: String,
-        localeIdentifier: String,
-        dataHash: String,
-        content: String
-    ) {
+    /// Keeps at most one row per `CacheKey`. Empty content is ignored —
+    /// callers may cancel mid-stream with no text yet.
+    static func upsert(in context: ModelContext, key: CacheKey, dataHash: String, content: String) {
         guard !content.isEmpty else { return }
-        if let existing = fetch(
-            in: context,
-            kind: kind,
-            scopeKey: scopeKey,
-            currency: currency,
-            localeIdentifier: localeIdentifier
-        ) {
+        if let existing = fetch(in: context, key: key) {
             existing.dataHash = dataHash
             existing.content = content
             existing.createdAt = .now
         } else {
             let row = CachedInsight(
-                kind: kind,
-                scopeKey: scopeKey,
-                currency: currency,
-                localeIdentifier: localeIdentifier,
+                kind: key.kind,
+                scopeKey: key.scopeKey,
+                currency: key.currency,
+                localeIdentifier: key.localeIdentifier,
                 dataHash: dataHash,
                 content: content
             )
@@ -74,42 +59,24 @@ enum InsightsCache {
     /// Deletes the cached row for the given scope, if any. Used by "Regenerate"
     /// to force the next `generate(...)` call to hit the model instead of
     /// returning the previously stored content.
-    static func invalidate(
-        in context: ModelContext,
-        kind: CachedInsightKind,
-        scopeKey: String,
-        currency: String,
-        localeIdentifier: String
-    ) {
-        if let existing = fetch(
-            in: context,
-            kind: kind,
-            scopeKey: scopeKey,
-            currency: currency,
-            localeIdentifier: localeIdentifier
-        ) {
+    static func invalidate(in context: ModelContext, key: CacheKey) {
+        if let existing = fetch(in: context, key: key) {
             context.delete(existing)
             try? context.save()
         }
     }
 
-    private static func fetch(
-        in context: ModelContext,
-        kind: CachedInsightKind,
-        scopeKey: String,
-        currency: String,
-        localeIdentifier: String
-    ) -> CachedInsight? {
-        let kindRaw = kind.rawValue
+    private static func fetch(in context: ModelContext, key: CacheKey) -> CachedInsight? {
+        let kindRaw = key.kind.rawValue
         // Note: SwiftData #Predicate currently crashes on multi-field equality
         // captured from local variables (FB14…). Filter in memory instead —
         // the cache table stays small (one row per scope).
         let all = (try? context.fetch(FetchDescriptor<CachedInsight>())) ?? []
         return all.first { row in
             row.kindRaw == kindRaw
-                && row.scopeKey == scopeKey
-                && row.currency == currency
-                && row.localeIdentifier == localeIdentifier
+                && row.scopeKey == key.scopeKey
+                && row.currency == key.currency
+                && row.localeIdentifier == key.localeIdentifier
         }
     }
 

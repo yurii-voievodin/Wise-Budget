@@ -179,6 +179,8 @@ struct SpendingSummary: Codable, Sendable {
 }
 
 extension SpendingSummary {
+    private static let uncategorizedName = "Uncategorized"
+
     /// Builds a summary from raw expenses and incomes (grouping happens here).
     /// Used by the Dashboard, unit tests, and any caller that has the raw
     /// transactions on hand.
@@ -192,7 +194,7 @@ extension SpendingSummary {
         let totalIncome = incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: currency) ?? .zero) }
         let totalExpenses = expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: currency) ?? .zero) }
 
-        let grouped = Dictionary(grouping: expenses) { $0.category?.name ?? "Uncategorized" }
+        let grouped = Dictionary(grouping: expenses) { $0.category?.name ?? uncategorizedName }
         let slices: [CategoryChartSlice] = grouped.compactMap { name, items in
             let sum = items.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: currency) ?? .zero) }
             guard sum > .zero else { return nil }
@@ -204,7 +206,7 @@ extension SpendingSummary {
             guard amount > 0 else { return nil }
             return LineItem(
                 amount: amount,
-                category: income.category?.name ?? "Uncategorized",
+                category: income.category?.name ?? uncategorizedName,
                 label: trimmedLabel(income.source, fallback: income.descriptionText)
             )
         }
@@ -214,7 +216,7 @@ extension SpendingSummary {
             guard amount > 0 else { return nil }
             return LineItem(
                 amount: amount,
-                category: expense.category?.name ?? "Uncategorized",
+                category: expense.category?.name ?? uncategorizedName,
                 label: trimmedLabel(expense.destination, fallback: expense.descriptionText)
             )
         }
