@@ -57,7 +57,9 @@ struct ExpenseListView: View {
                     }
                 }
             }
-            BankSyncToolbar(syncService: syncService, filter: filter)
+            if selectedTab != .comparison {
+                BankSyncToolbar(syncService: syncService, filter: filter)
+            }
         }
         .sheet(isPresented: $isAddingExpense) {
             ExpenseFormSheet { result in

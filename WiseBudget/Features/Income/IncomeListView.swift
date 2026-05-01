@@ -47,7 +47,9 @@ struct IncomeListView: View {
                     categories: incomeCategories.map { ($0.name, $0.displayIconName) }
                 )
             }
-            BankSyncToolbar(syncService: syncService, filter: filter)
+            if selectedTab != .comparison {
+                BankSyncToolbar(syncService: syncService, filter: filter)
+            }
             if selectedTab == .income {
                 ToolbarItem {
                     Button(action: { isAddingIncome = true }) {
