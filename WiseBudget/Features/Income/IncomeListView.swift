@@ -16,7 +16,7 @@ struct IncomeListView: View {
 
     enum IncomeTab: Hashable {
         case income
-        case statistics
+        case comparison
     }
 
     var body: some View {
@@ -32,8 +32,8 @@ struct IncomeListView: View {
                 )
                 .id(filter)
             }
-            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
-                IncomeStatisticsView(filter: filter, syncService: syncService)
+            Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
+                IncomeComparisonView(filter: filter)
                     .id(filter)
             }
         }
@@ -47,7 +47,9 @@ struct IncomeListView: View {
                     categories: incomeCategories.map { ($0.name, $0.displayIconName) }
                 )
             }
-            BankSyncToolbar(syncService: syncService, filter: filter)
+            if selectedTab != .comparison {
+                BankSyncToolbar(syncService: syncService, filter: filter)
+            }
             if selectedTab == .income {
                 ToolbarItem {
                     Button(action: { isAddingIncome = true }) {

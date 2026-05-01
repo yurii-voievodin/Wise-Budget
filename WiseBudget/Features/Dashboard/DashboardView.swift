@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var askAIToastTask: Task<Void, Never>?
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
+    @State private var hasKeychainTokens = false
     @State private var selectedTab: DashboardTab = .overview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -61,70 +62,12 @@ struct DashboardView: View {
 
     // MARK: - Computed
 
-    private var totalExpenses: Decimal {
-        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
-    }
-
-    private var totalIncome: Decimal {
-        incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
-    }
-
-    private var balance: Decimal {
-        totalIncome - totalExpenses
-    }
-
-    private var daysInMonth: Int {
-        Calendar.current.range(of: .day, in: .month, for: monthFilter.startOfMonth)?.count ?? 30
-    }
-
-    private var expenseDailyAverage: Decimal {
-        guard daysInMonth > 0 else { return .zero }
-        return totalExpenses / Decimal(daysInMonth)
-    }
-
-    private var incomeDailyAverage: Decimal {
-        guard daysInMonth > 0 else { return .zero }
-        return totalIncome / Decimal(daysInMonth)
-    }
-
-    private var dailyBalance: Decimal {
-        incomeDailyAverage - expenseDailyAverage
-    }
-
-    private var isCurrentMonth: Bool {
-        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
-        return monthFilter.year == now.year && monthFilter.month == now.month
-    }
-
-    private var daysElapsedInMonth: Int {
-        guard isCurrentMonth else { return 0 }
-        return Calendar.current.component(.day, from: Date.now)
-    }
-
-    private var daysRemainingInMonth: Int {
-        guard isCurrentMonth else { return 0 }
-        return max(daysInMonth - daysElapsedInMonth + 1, 0)
-    }
-
-    private var remainingBudget: Decimal {
-        totalIncome - totalExpenses
-    }
-
-    private var dailyAllowance: Decimal {
-        guard daysRemainingInMonth > 0 else { return .zero }
-        return remainingBudget / Decimal(daysRemainingInMonth)
-    }
-
-    private var currentSpendPace: Decimal {
-        guard daysElapsedInMonth > 0 else { return .zero }
-        return totalExpenses / Decimal(daysElapsedInMonth)
-    }
-
-    private var shouldShowBudgetPacing: Bool {
-        isCurrentMonth
-            && remainingBudget > .zero
-            && daysRemainingInMonth > 0
-            && currentSpendPace > dailyAllowance
+    private var metrics: DashboardMetrics {
+        DashboardMetrics(
+            monthFilter: monthFilter,
+            totalIncome: incomes.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
+            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
+        )
     }
 
     private var expenseSlices: [CategoryChartSlice] {
@@ -184,10 +127,7 @@ struct DashboardView: View {
     }
 
     private var hasConnectedBank: Bool {
-        !monobankConnectedName.isEmpty
-            || !wiseConnectedName.isEmpty
-            || KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
-            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+        !monobankConnectedName.isEmpty || !wiseConnectedName.isEmpty || hasKeychainTokens
     }
 
     private var isCurrentMonthEmpty: Bool {
@@ -205,8 +145,6 @@ struct DashboardView: View {
             }
         }
         .onAppear { checkForAnyTransactions() }
-        .onChange(of: expenses.count) { checkForAnyTransactions() }
-        .onChange(of: incomes.count) { checkForAnyTransactions() }
     }
 
     private var emptyStateView: some View {
@@ -222,16 +160,8 @@ struct DashboardView: View {
             Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
                 DashboardOverviewTab(
                     summary: spendingSummary,
+                    metrics: metrics,
                     scopeKey: insightsScopeKey,
-                    shouldShowBudgetPacing: shouldShowBudgetPacing,
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
-                    totalIncome: totalIncome,
-                    totalExpenses: totalExpenses,
-                    balance: balance,
-                    incomeDailyAverage: incomeDailyAverage,
-                    expenseDailyAverage: expenseDailyAverage,
-                    dailyBalance: dailyBalance,
                     currency: defaultCurrency,
                     recentTransactions: recentTransactions,
                     onSelectTransaction: handleTransactionSelection
@@ -283,6 +213,9 @@ struct DashboardView: View {
     private func checkForAnyTransactions() {
         hasAnyExpenses = ((try? modelContext.fetchCount(FetchDescriptor<Expense>())) ?? 0) > 0
         hasAnyIncomes = ((try? modelContext.fetchCount(FetchDescriptor<Income>())) ?? 0) > 0
+        hasKeychainTokens =
+            KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
     private func presentAskAIToast(provider: AIProvider) {

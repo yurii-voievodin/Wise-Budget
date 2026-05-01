@@ -11,7 +11,7 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
                 Section("Overview") {
-                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .comparison], id: \.self) { item in
+                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .cashflow], id: \.self) { item in
                         Label(item.rawValue, systemImage: item.systemImage)
                             .tag(item)
                     }
@@ -51,8 +51,8 @@ struct ContentView: View {
                 ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $expenseCategoryFilter, selectedTab: $expenseListTab)
             case .income:
                 IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem)
-            case .comparison:
-                ExpenseComparisonView(filter: monthFilter)
+            case .cashflow:
+                CashflowView(filter: monthFilter)
                     .toolbar {
                         MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
                     }
