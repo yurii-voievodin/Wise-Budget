@@ -99,41 +99,6 @@ struct ExpenseComparisonView: View {
         }
     }
 
-    // MARK: - Trends Insights
-
-    private var trendsRangeLabel: String {
-        switch timeRange {
-        case .sixMonths: "Last 6 months"
-        case .year: "\(filter.year)"
-        case .lifetime: "Lifetime"
-        }
-    }
-
-    private var trendsKind: CachedInsightKind? {
-        switch timeRange {
-        case .sixMonths: .trends6m
-        case .year: .trendsYear
-        case .lifetime: nil
-        }
-    }
-
-    private var trendsScopeKey: String {
-        switch timeRange {
-        case .sixMonths: MonthScopeKey.make(year: filter.year, month: filter.month)
-        case .year: "\(filter.year)"
-        case .lifetime: "lifetime"
-        }
-    }
-
-    private var trendsSummary: TrendsSummary {
-        TrendsSummary.build(
-            rangeLabel: trendsRangeLabel,
-            currency: defaultCurrency,
-            months: monthRange,
-            expenses: allExpenses
-        )
-    }
-
     // MARK: - Body
 
     var body: some View {
@@ -144,8 +109,7 @@ struct ExpenseComparisonView: View {
                         Text(range.rawValue).tag(range)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                .pickerStyle(.menu)
             }
 
             if chartData.isEmpty {
@@ -154,13 +118,6 @@ struct ExpenseComparisonView: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                if let kind = trendsKind {
-                    TrendsInsightsCard(
-                        summary: trendsSummary,
-                        kind: kind,
-                        scopeKey: trendsScopeKey
-                    )
-                }
                 ExpenseComparisonChartSection(
                     chartData: chartData,
                     xDomain: xDomain,

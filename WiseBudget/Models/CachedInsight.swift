@@ -3,8 +3,6 @@ import SwiftData
 
 nonisolated enum CachedInsightKind: String, Sendable {
     case monthSummary
-    case trends6m
-    case trendsYear
 }
 
 @Model
