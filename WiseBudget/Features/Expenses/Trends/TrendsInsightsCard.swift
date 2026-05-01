@@ -15,7 +15,12 @@ struct TrendsInsightsCard: View {
             Section {
                 TrendsStateView(state: service.state, summary: summary, onGenerate: generate)
             } header: {
-                TrendsSectionHeader()
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                    Text("Trends Insights")
+                }
             }
             .task(id: scopeKey, loadCached)
             .onAppear { service.prewarm() }
