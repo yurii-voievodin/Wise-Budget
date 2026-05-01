@@ -2,16 +2,8 @@ import SwiftUI
 
 struct DashboardOverviewTab: View {
     let summary: SpendingSummary
+    let metrics: DashboardMetrics
     let scopeKey: String
-    let shouldShowBudgetPacing: Bool
-    let daysRemainingInMonth: Int
-    let dailyAllowance: Decimal
-    let totalIncome: Decimal
-    let totalExpenses: Decimal
-    let balance: Decimal
-    let incomeDailyAverage: Decimal
-    let expenseDailyAverage: Decimal
-    let dailyBalance: Decimal
     let currency: String
     let recentTransactions: [DashboardRecentTransaction]
     let onSelectTransaction: (DashboardRecentTransaction) -> Void
@@ -19,23 +11,23 @@ struct DashboardOverviewTab: View {
     var body: some View {
         Form {
             MonthlyInsightsCard(summary: summary, scopeKey: scopeKey)
-            if shouldShowBudgetPacing {
+            if metrics.shouldShowBudgetPacing {
                 DashboardBudgetPacingSection(
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
+                    daysRemainingInMonth: metrics.daysRemainingInMonth,
+                    dailyAllowance: metrics.dailyAllowance,
                     currency: currency
                 )
             }
             DashboardMonthSummarySection(
-                totalIncome: totalIncome,
-                totalExpenses: totalExpenses,
-                balance: balance,
+                totalIncome: metrics.totalIncome,
+                totalExpenses: metrics.totalExpenses,
+                balance: metrics.balance,
                 currency: currency
             )
             DashboardDailyAveragesSection(
-                incomeDailyAverage: incomeDailyAverage,
-                expenseDailyAverage: expenseDailyAverage,
-                dailyBalance: dailyBalance,
+                incomeDailyAverage: metrics.incomeDailyAverage,
+                expenseDailyAverage: metrics.expenseDailyAverage,
+                dailyBalance: metrics.dailyBalance,
                 currency: currency
             )
             DashboardRecentTransactionsSection(

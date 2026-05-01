@@ -61,70 +61,18 @@ struct DashboardView: View {
 
     // MARK: - Computed
 
-    private var totalExpenses: Decimal {
-        expenses.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
-    }
-
-    private var totalIncome: Decimal {
-        incomes.reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
-    }
-
-    private var balance: Decimal {
-        totalIncome - totalExpenses
-    }
-
-    private var daysInMonth: Int {
-        Calendar.current.range(of: .day, in: .month, for: monthFilter.startOfMonth)?.count ?? 30
-    }
-
-    private var expenseDailyAverage: Decimal {
-        guard daysInMonth > 0 else { return .zero }
-        return totalExpenses / Decimal(daysInMonth)
-    }
-
-    private var incomeDailyAverage: Decimal {
-        guard daysInMonth > 0 else { return .zero }
-        return totalIncome / Decimal(daysInMonth)
-    }
-
-    private var dailyBalance: Decimal {
-        incomeDailyAverage - expenseDailyAverage
-    }
-
-    private var isCurrentMonth: Bool {
-        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
-        return monthFilter.year == now.year && monthFilter.month == now.month
-    }
-
-    private var daysElapsedInMonth: Int {
-        guard isCurrentMonth else { return 0 }
-        return Calendar.current.component(.day, from: Date.now)
-    }
-
-    private var daysRemainingInMonth: Int {
-        guard isCurrentMonth else { return 0 }
-        return max(daysInMonth - daysElapsedInMonth + 1, 0)
-    }
-
-    private var remainingBudget: Decimal {
-        totalIncome - totalExpenses
-    }
-
-    private var dailyAllowance: Decimal {
-        guard daysRemainingInMonth > 0 else { return .zero }
-        return remainingBudget / Decimal(daysRemainingInMonth)
-    }
-
-    private var currentSpendPace: Decimal {
-        guard daysElapsedInMonth > 0 else { return .zero }
-        return totalExpenses / Decimal(daysElapsedInMonth)
-    }
-
-    private var shouldShowBudgetPacing: Bool {
-        isCurrentMonth
-            && remainingBudget > .zero
-            && daysRemainingInMonth > 0
-            && currentSpendPace > dailyAllowance
+    private var metrics: DashboardMetrics {
+        let calendar = Calendar.current
+        let daysInMonth = calendar.range(of: .day, in: .month, for: monthFilter.startOfMonth)?.count ?? 30
+        let now = calendar.dateComponents([.year, .month], from: Date.now)
+        let isCurrentMonth = monthFilter.year == now.year && monthFilter.month == now.month
+        return DashboardMetrics(
+            totalIncome: incomes.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
+            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
+            daysInMonth: daysInMonth,
+            daysElapsedInMonth: isCurrentMonth ? calendar.component(.day, from: Date.now) : 0,
+            isCurrentMonth: isCurrentMonth
+        )
     }
 
     private var expenseSlices: [CategoryChartSlice] {
@@ -222,16 +170,8 @@ struct DashboardView: View {
             Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
                 DashboardOverviewTab(
                     summary: spendingSummary,
+                    metrics: metrics,
                     scopeKey: insightsScopeKey,
-                    shouldShowBudgetPacing: shouldShowBudgetPacing,
-                    daysRemainingInMonth: daysRemainingInMonth,
-                    dailyAllowance: dailyAllowance,
-                    totalIncome: totalIncome,
-                    totalExpenses: totalExpenses,
-                    balance: balance,
-                    incomeDailyAverage: incomeDailyAverage,
-                    expenseDailyAverage: expenseDailyAverage,
-                    dailyBalance: dailyBalance,
                     currency: defaultCurrency,
                     recentTransactions: recentTransactions,
                     onSelectTransaction: handleTransactionSelection

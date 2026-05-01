@@ -15,7 +15,12 @@ struct MonthlyInsightsCard: View {
                 InsightsStateView(state: service.state, summary: summary, onRegenerate: regenerate)
             } header: {
                 HStack {
-                    InsightsSectionHeader()
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.tint)
+                            .accessibilityHidden(true)
+                        Text("Monthly Insights")
+                    }
                     Spacer()
                     if isReady {
                         Button("Regenerate insights", systemImage: "arrow.clockwise", action: regenerate)
