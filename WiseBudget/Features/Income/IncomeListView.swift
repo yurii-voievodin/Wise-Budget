@@ -16,7 +16,7 @@ struct IncomeListView: View {
 
     enum IncomeTab: Hashable {
         case income
-        case statistics
+        case comparison
     }
 
     var body: some View {
@@ -32,8 +32,8 @@ struct IncomeListView: View {
                 )
                 .id(filter)
             }
-            Tab("Statistics", systemImage: "chart.pie", value: .statistics) {
-                IncomeStatisticsView(filter: filter, syncService: syncService)
+            Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
+                IncomeComparisonView(filter: filter)
                     .id(filter)
             }
         }

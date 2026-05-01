@@ -1,20 +1,23 @@
 import SwiftUI
 import Charts
 
-struct ExpenseComparisonChartDataPoint: Identifiable {
+struct ComparisonChartDataPoint: Identifiable {
     let id = UUID()
     let monthKey: MonthKey
     let categoryName: String
     let total: Double
 }
 
-struct ExpenseComparisonChartSection: View {
-    let chartData: [ExpenseComparisonChartDataPoint]
+struct ComparisonChartSection: View {
+    let title: LocalizedStringKey
+    let chartData: [ComparisonChartDataPoint]
     let xDomain: [String]
     let useCompactLabels: Bool
+    let colorDomain: [String]
+    let colorRange: [Color]
 
     var body: some View {
-        Section("Expenses by Category") {
+        Section(title) {
             Chart(chartData) { point in
                 BarMark(
                     x: .value("Month", point.monthKey.chartLabel(compact: useCompactLabels)),
@@ -22,7 +25,7 @@ struct ExpenseComparisonChartSection: View {
                 )
                 .foregroundStyle(by: .value("Category", point.categoryName))
             }
-            .chartForegroundStyleScale(domain: DefaultExpenseCategory.chartColorDomain, range: DefaultExpenseCategory.chartColorRange)
+            .chartForegroundStyleScale(domain: colorDomain, range: colorRange)
             .chartXScale(domain: xDomain)
             .chartXAxis {
                 AxisMarks(values: .automatic) { _ in

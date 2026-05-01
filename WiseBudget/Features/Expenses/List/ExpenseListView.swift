@@ -17,6 +17,7 @@ struct ExpenseListView: View {
     enum ExpenseTab: Hashable {
         case expenses
         case calendar
+        case comparison
     }
 
     var body: some View {
@@ -35,6 +36,10 @@ struct ExpenseListView: View {
                     syncService: syncService
                 )
                 .id(filter)
+            }
+            Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
+                ExpenseComparisonView(filter: filter)
+                    .id(filter)
             }
         }
         .navigationTitle("")

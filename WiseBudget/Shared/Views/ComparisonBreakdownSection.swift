@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ExpenseComparisonBreakdownSection: View {
+struct ComparisonBreakdownSection: View {
     let monthTotals: [(month: MonthKey, total: Double)]
     let currency: String
 

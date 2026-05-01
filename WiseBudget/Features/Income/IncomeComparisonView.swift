@@ -2,9 +2,9 @@ import SwiftUI
 import SwiftData
 import Charts
 
-struct ExpenseComparisonView: View {
+struct IncomeComparisonView: View {
     // Internal transfers stay in history but are excluded from every comparison surface.
-    @Query(filter: #Predicate<Expense> { !$0.isInternalTransfer }, sort: \Expense.date) private var allExpenses: [Expense]
+    @Query(filter: #Predicate<Income> { !$0.isInternalTransfer }, sort: \Income.date) private var allIncomes: [Income]
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
@@ -36,8 +36,8 @@ struct ExpenseComparisonView: View {
         case .year:
             return (1...12).map { MonthKey(year: filter.year, month: $0) }
         case .lifetime:
-            let keys = Set(allExpenses.compactMap { expense -> MonthKey? in
-                let c = calendar.dateComponents([.year, .month], from: expense.date)
+            let keys = Set(allIncomes.compactMap { income -> MonthKey? in
+                let c = calendar.dateComponents([.year, .month], from: income.date)
                 guard let year = c.year, let month = c.month else { return nil }
                 return MonthKey(year: year, month: month)
             })
@@ -59,19 +59,19 @@ struct ExpenseComparisonView: View {
         let calendar = Calendar.current
         let validMonths = Set(monthRange)
 
-        let filtered = allExpenses.filter { expense in
-            let c = calendar.dateComponents([.year, .month], from: expense.date)
+        let filtered = allIncomes.filter { income in
+            let c = calendar.dateComponents([.year, .month], from: income.date)
             guard let year = c.year, let month = c.month else { return false }
             return validMonths.contains(MonthKey(year: year, month: month))
         }
 
         var grouped: [MonthKey: [String: Double]] = [:]
-        for expense in filtered {
-            let c = calendar.dateComponents([.year, .month], from: expense.date)
+        for income in filtered {
+            let c = calendar.dateComponents([.year, .month], from: income.date)
             guard let year = c.year, let month = c.month else { continue }
             let key = MonthKey(year: year, month: month)
-            let cat = expense.category?.name ?? "Uncategorized"
-            let amount = NSDecimalNumber(decimal: expense.convertedAmount(to: defaultCurrency) ?? .zero).doubleValue
+            let cat = income.category?.name ?? "Uncategorized"
+            let amount = NSDecimalNumber(decimal: income.convertedAmount(to: defaultCurrency) ?? .zero).doubleValue
             grouped[key, default: [:]][cat, default: 0] += amount
         }
 
@@ -85,7 +85,7 @@ struct ExpenseComparisonView: View {
             if $0.monthKey != $1.monthKey {
                 return $0.monthKey < $1.monthKey
             }
-            return DefaultExpenseCategory.sortIndex(for: $0.categoryName) < DefaultExpenseCategory.sortIndex(for: $1.categoryName)
+            return DefaultIncomeCategory.sortIndex(for: $0.categoryName) < DefaultIncomeCategory.sortIndex(for: $1.categoryName)
         }
     }
 
@@ -118,17 +118,17 @@ struct ExpenseComparisonView: View {
 
             if chartData.isEmpty {
                 Section {
-                    Text("No expense data for this period")
+                    Text("No income data for this period")
                         .foregroundStyle(.secondary)
                 }
             } else {
                 ComparisonChartSection(
-                    title: "Expenses by Category",
+                    title: "Income by Category",
                     chartData: chartData,
                     xDomain: xDomain,
                     useCompactLabels: useCompactLabels,
-                    colorDomain: DefaultExpenseCategory.chartColorDomain,
-                    colorRange: DefaultExpenseCategory.chartColorRange
+                    colorDomain: DefaultIncomeCategory.chartColorDomain,
+                    colorRange: DefaultIncomeCategory.chartColorRange
                 )
                 ComparisonPeriodTotalSection(
                     total: periodTotal,
@@ -145,7 +145,7 @@ struct ExpenseComparisonView: View {
 }
 
 #Preview {
-    ExpenseComparisonView(filter: MonthFilter(year: 2026, month: 3))
-        .modelContainer(for: [Expense.self, ExpenseCategory.self], inMemory: true)
+    IncomeComparisonView(filter: MonthFilter(year: 2026, month: 3))
+        .modelContainer(for: [Income.self, IncomeCategory.self], inMemory: true)
         .frame(width: 600, height: 500)
 }

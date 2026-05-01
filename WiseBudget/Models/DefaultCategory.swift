@@ -116,6 +116,14 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
         return map
     }
 
+    static var chartColorDomain: [String] {
+        Self.allCases.map(\.rawValue) + ["Uncategorized"]
+    }
+
+    static var chartColorRange: [Color] {
+        Self.allCases.map(\.chartColor) + [Color(red: 178/255, green: 190/255, blue: 195/255)]
+    }
+
     static func sortIndex(for name: String) -> Int {
         Self.allCases.firstIndex { $0.rawValue == name }.map { Int($0) } ?? Self.allCases.count
     }
