@@ -7,6 +7,7 @@ enum CategoryChartSortOrder: String {
 }
 
 struct CategoryChartSection: View {
+    let title: LocalizedStringKey
     let slices: [CategoryChartSlice]
     let currency: String
     let emptyText: String
@@ -20,6 +21,7 @@ struct CategoryChartSection: View {
     @AppStorage private var sortOrder: CategoryChartSortOrder
 
     init(
+        title: LocalizedStringKey = "By Category",
         slices: [CategoryChartSlice],
         currency: String,
         emptyText: String,
@@ -29,6 +31,7 @@ struct CategoryChartSection: View {
         defaultSortOrder: CategoryChartSortOrder = .bySpending,
         onSelect: ((String) -> Void)? = nil
     ) {
+        self.title = title
         self.slices = slices
         self.currency = currency
         self.emptyText = emptyText
@@ -104,7 +107,7 @@ struct CategoryChartSection: View {
             }
         } header: {
             HStack {
-                Text("By Category")
+                Text(title)
                 Spacer()
                 if sortIndex != nil && !slices.isEmpty {
                     sortMenu

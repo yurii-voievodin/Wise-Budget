@@ -1,0 +1,42 @@
+import SwiftUI
+
+struct LifetimeKPISection: View {
+    let totalIncome: Double
+    let totalExpenses: Double
+    let net: Double
+    let span: String
+    let currency: String
+
+    var body: some View {
+        Section("Lifetime Totals") {
+            HStack(alignment: .top, spacing: 16) {
+                kpi("Income", value: totalIncome, color: .green)
+                kpi("Expenses", value: totalExpenses, color: .red)
+                kpi("Net", value: net, color: net >= 0 ? .green : .red)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Time span")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(span)
+                        .font(.title3.bold())
+                        .monospacedDigit()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func kpi(_ title: LocalizedStringKey, value: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("\(Decimal(value), format: .number.precision(.fractionLength(0))) \(currency)")
+                .font(.title3.bold())
+                .foregroundStyle(color)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

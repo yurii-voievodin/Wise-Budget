@@ -48,6 +48,12 @@ struct ExpenseComparisonView: View {
 
     // MARK: - Chart Data
 
+    private static let totalSeriesName = "Total"
+
+    private var aggregatesTotalsOnly: Bool {
+        timeRange == .lifetime
+    }
+
     private var chartData: [ComparisonChartDataPoint] {
         let calendar = Calendar.current
         let validMonths = Set(monthRange)
@@ -63,7 +69,7 @@ struct ExpenseComparisonView: View {
             let c = calendar.dateComponents([.year, .month], from: expense.date)
             guard let year = c.year, let month = c.month else { continue }
             let key = MonthKey(year: year, month: month)
-            let cat = expense.category?.name ?? "Uncategorized"
+            let cat = aggregatesTotalsOnly ? Self.totalSeriesName : (expense.category?.name ?? "Uncategorized")
             let amount = NSDecimalNumber(decimal: expense.convertedAmount(to: defaultCurrency) ?? .zero).doubleValue
             grouped[key, default: [:]][cat, default: 0] += amount
         }
@@ -80,6 +86,14 @@ struct ExpenseComparisonView: View {
             }
             return DefaultExpenseCategory.sortIndex(for: $0.categoryName) < DefaultExpenseCategory.sortIndex(for: $1.categoryName)
         }
+    }
+
+    private var chartColorDomain: [String] {
+        aggregatesTotalsOnly ? [Self.totalSeriesName] : DefaultExpenseCategory.chartColorDomain
+    }
+
+    private var chartColorRange: [Color] {
+        aggregatesTotalsOnly ? [.accentColor] : DefaultExpenseCategory.chartColorRange
     }
 
     private var monthTotals: [(month: MonthKey, total: Double)] {
@@ -116,12 +130,13 @@ struct ExpenseComparisonView: View {
                 }
             } else {
                 ComparisonChartSection(
-                    title: "Expenses by Category",
+                    title: aggregatesTotalsOnly ? "Expense Totals" : "Expenses by Category",
                     chartData: chartData,
                     xMonths: monthRange,
                     labelStyle: labelStyle,
-                    colorDomain: DefaultExpenseCategory.chartColorDomain,
-                    colorRange: DefaultExpenseCategory.chartColorRange
+                    colorDomain: chartColorDomain,
+                    colorRange: chartColorRange,
+                    hidesLegend: aggregatesTotalsOnly
                 )
                 ComparisonPeriodTotalSection(
                     total: periodTotal,

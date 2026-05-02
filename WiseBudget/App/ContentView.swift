@@ -15,7 +15,7 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
                 Section("Overview") {
-                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .cashflow], id: \.self) { item in
+                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .cashflow, .lifetime], id: \.self) { item in
                         Label(item.rawValue, systemImage: item.systemImage)
                             .tag(item)
                     }
@@ -60,6 +60,8 @@ struct ContentView: View {
                     .toolbar {
                         MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
                     }
+            case .lifetime:
+                LifetimeView()
             case .bankConnections:
                 BankConnectionsView()
             }

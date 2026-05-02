@@ -15,6 +15,7 @@ struct ComparisonChartSection: View {
     let labelStyle: MonthKey.ChartLabelStyle
     let colorDomain: [String]
     let colorRange: [Color]
+    var hidesLegend: Bool = false
 
     private var xDomain: [String] {
         xMonths.map { $0.chartLabel(labelStyle) }
@@ -69,6 +70,7 @@ struct ComparisonChartSection: View {
                     }
                 }
             }
+            .chartLegend(hidesLegend ? .hidden : .visible)
             .frame(minHeight: 250)
             .padding(.vertical, 8)
         }
