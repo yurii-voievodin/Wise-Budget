@@ -1,6 +1,10 @@
 import SwiftUI
 import SwiftData
 
+extension FocusedValues {
+    @Entry var selectedMonthFilter: MonthFilter? = nil
+}
+
 struct ContentView: View {
     @State private var selectedSidebarItem: SidebarItem = .dashboard
     @State private var monthFilter: MonthFilter = .currentMonth()
@@ -60,6 +64,7 @@ struct ContentView: View {
                 BankConnectionsView()
             }
         }
+        .focusedSceneValue(\.selectedMonthFilter, monthFilter)
         .onChange(of: selectedSidebarItem) { oldValue, newValue in
             if oldValue == .expenses || oldValue == .income {
                 monthFilter.foreignOnly = false

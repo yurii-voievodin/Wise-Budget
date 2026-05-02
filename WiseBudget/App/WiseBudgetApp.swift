@@ -27,6 +27,7 @@ struct WiseBudgetApp: App {
     }()
 
     @FocusedValue(\.resetBudgetPlan) private var resetBudgetPlan
+    @FocusedValue(\.selectedMonthFilter) private var selectedMonthFilter
 
     @State private var importResult: ImportResult?
     @State private var importError: String?
@@ -99,8 +100,8 @@ struct WiseBudgetApp: App {
                 Button("Export Data to CSV...") {
                     exportDataCSV()
                 }
-                Button("Export Current Month to CSV...") {
-                    exportCurrentMonthCSV()
+                Button("Export Selected Month to CSV...") {
+                    exportSelectedMonthCSV()
                 }
                 Divider()
                 Button("Import Data from CSV...") {
@@ -142,13 +143,14 @@ struct WiseBudgetApp: App {
         }
     }
 
-    private func exportCurrentMonthCSV() {
-        guard let monthInterval = Calendar.current.dateInterval(of: .month, for: .now) else { return }
+    private func exportSelectedMonthCSV() {
+        let filter = selectedMonthFilter ?? .currentMonth()
+        let dateRange = DateInterval(start: filter.startOfMonth, end: filter.startOfNextMonth)
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM"
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        let monthLabel = formatter.string(from: monthInterval.start)
+        let monthLabel = formatter.string(from: dateRange.start)
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.commaSeparatedText]
@@ -159,7 +161,7 @@ struct WiseBudgetApp: App {
         do {
             let csvString = try CSVExporter.exportCSV(
                 from: sharedModelContainer.mainContext,
-                dateRange: monthInterval
+                dateRange: dateRange
             )
             try csvString.write(to: url, atomically: true, encoding: .utf8)
             exportError = nil
