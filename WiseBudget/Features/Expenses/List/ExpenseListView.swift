@@ -39,8 +39,7 @@ struct ExpenseListView: View {
             }
             Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
                 ExpenseComparisonView(filter: filter) { month in
-                    filter.year = month.year
-                    filter.month = month.month
+                    filter = filter.with(monthKey: month)
                     selectedTab = .expenses
                 }
                 .id(filter)

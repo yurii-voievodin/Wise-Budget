@@ -17,6 +17,13 @@ nonisolated struct MonthFilter: Hashable {
         return MonthFilter(year: newComps.year ?? year, month: newComps.month ?? month)
     }
 
+    func with(monthKey: MonthKey) -> MonthFilter {
+        var copy = self
+        copy.year = monthKey.year
+        copy.month = monthKey.month
+        return copy
+    }
+
     var isFutureMonth: Bool {
         let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
         let currentYear = now.year ?? 0
