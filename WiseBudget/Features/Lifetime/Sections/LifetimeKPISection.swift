@@ -32,7 +32,7 @@ struct LifetimeKPISection: View {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("\(Decimal(value), format: .number.precision(.fractionLength(0))) \(currency)")
+            Text(amount: Decimal(value), currency: currency, precision: 0)
                 .font(.title3.bold())
                 .foregroundStyle(color)
                 .monospacedDigit()
