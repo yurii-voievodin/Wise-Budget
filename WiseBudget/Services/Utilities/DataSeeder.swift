@@ -83,6 +83,12 @@ enum DataSeeder {
         ensureExpenseCategory(.gifts, flagKey: "didAddGiftsCategory", in: context)
     }
 
+    static func prepopulateImportCategories(in context: ModelContext) {
+        ensureExpenseCategory(.charity, flagKey: "didAddCharityCategory", in: context)
+        ensureExpenseCategory(.family, flagKey: "didAddFamilyCategory", in: context)
+        ensureExpenseCategory(.loans, flagKey: "didAddLoansCategory", in: context)
+    }
+
     /// Inserts a default expense category once, gated by a UserDefaults flag.
     /// Used to back-fill new defaults for existing users without touching ones
     /// they may have renamed or deleted intentionally.

@@ -1,0 +1,5 @@
+venv/
+*.csv
+structure-survey.txt
+__pycache__/
+*.pyc

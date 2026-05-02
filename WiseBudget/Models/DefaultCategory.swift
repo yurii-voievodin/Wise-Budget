@@ -4,10 +4,13 @@ import SwiftUI
 nonisolated enum DefaultExpenseCategory: String, CaseIterable {
     case auto = "Auto"
     case cafes = "Cafes"
+    case charity = "Благодійність"
     case entertainment = "Entertainment"
+    case family = "Family"
     case gifts = "Gifts"
     case groceries = "Groceries"
     case home = "Home"
+    case loans = "Loans"
     case medical = "Medical"
     case other = "Other"
     case personalItems = "Personal Items"
@@ -21,10 +24,13 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         switch self {
         case .auto: "car"
         case .cafes: "cup.and.saucer"
+        case .charity: "heart"
         case .entertainment: "film"
+        case .family: "person.2"
         case .gifts: "gift"
         case .groceries: "cart"
         case .home: "house"
+        case .loans: "creditcard"
         case .medical: "cross.case"
         case .other: "ellipsis.circle"
         case .personalItems: "bag"
@@ -40,10 +46,13 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         switch self {
         case .auto:          Color(red: 74/255, green: 144/255, blue: 217/255)  // #4A90D9 steel blue
         case .cafes:         Color(red: 232/255, green: 131/255, blue: 58/255)  // #E8833A warm orange
+        case .charity:       Color(red: 235/255, green: 87/255, blue: 87/255)   // #EB5757 soft red
         case .entertainment: Color(red: 155/255, green: 89/255, blue: 182/255)  // #9B59B6 rich purple
+        case .family:        Color(red: 255/255, green: 159/255, blue: 67/255)  // #FF9F43 warm tangerine
         case .gifts:         Color(red: 194/255, green: 24/255, blue: 91/255)   // #C2185B deep rose
         case .groceries:     Color(red: 46/255, green: 204/255, blue: 113/255)  // #2ECC71 fresh green
         case .home:          Color(red: 244/255, green: 197/255, blue: 66/255)  // #F4C542 golden yellow
+        case .loans:         Color(red: 52/255, green: 73/255, blue: 94/255)    // #34495E dark navy
         case .medical:       Color(red: 231/255, green: 76/255, blue: 60/255)   // #E74C3C red
         case .other:         Color(red: 121/255, green: 134/255, blue: 203/255) // #7986CB soft indigo
         case .personalItems: Color(red: 232/255, green: 67/255, blue: 147/255)  // #E84393 magenta pink

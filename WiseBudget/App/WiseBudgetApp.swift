@@ -36,6 +36,10 @@ struct WiseBudgetApp: App {
     @State private var showingExportAlert = false
     @State private var exportError: String?
     @State private var localAIAppDetector = LocalAIAppDetector()
+    @State private var backfillRunning = false
+    @State private var backfillResult: BaseCurrencyBackfillService.Result?
+    @State private var backfillError: String?
+    @State private var showingBackfillAlert = false
 
     init() {
         try? Tips.configure([.displayFrequency(.monthly), .datastoreLocation(.applicationDefault)])
@@ -53,6 +57,7 @@ struct WiseBudgetApp: App {
                     DataSeeder.migrateCategoryIcons(in: context)
                     DataSeeder.prepopulateSubscriptionCategory(in: context)
                     DataSeeder.prepopulateGiftsCategory(in: context)
+                    DataSeeder.prepopulateImportCategories(in: context)
                     Task { await BankSyncService.requestNotificationPermission() }
                     disableFullScreen()
                 }
@@ -71,6 +76,23 @@ struct WiseBudgetApp: App {
                         Text("Export failed: \(error)")
                     } else {
                         Text("Data exported successfully.")
+                    }
+                }
+                .alert("Backfill Base Currency", isPresented: $showingBackfillAlert) {
+                    Button("OK") {}
+                } message: {
+                    if let error = backfillError {
+                        Text("Backfill failed: \(error)")
+                    } else if let r = backfillResult {
+                        let perCurrency = r.perCurrencyConverted
+                            .sorted(by: { $0.value > $1.value })
+                            .map { "\($0.key): \($0.value)" }
+                            .joined(separator: ", ")
+                        Text("""
+                        Converted \(r.convertedCount) expenses (\(r.ratesFetched) rates fetched).
+                        Already had base: \(r.alreadyHadBase). Same currency: \(r.sameCurrency). Failed: \(r.failedRateFetches).
+                        \(perCurrency.isEmpty ? "" : "By currency — \(perCurrency).")
+                        """)
                     }
                 }
                 .alert("Import Complete", isPresented: $showingImportAlert) {
@@ -114,6 +136,11 @@ struct WiseBudgetApp: App {
                 Button("Import from Monobank CSV...") {
                     importMonobankCSV()
                 }
+                Divider()
+                Button("Backfill Base Currency for Selected Month...") {
+                    backfillSelectedMonthBaseCurrency()
+                }
+                .disabled(backfillRunning)
             }
             CommandGroup(after: .pasteboard) {
                 Divider()
@@ -238,6 +265,31 @@ struct WiseBudgetApp: App {
             importResult = nil
             importError = error.localizedDescription
             showingImportAlert = true
+        }
+    }
+
+    private func backfillSelectedMonthBaseCurrency() {
+        let filter = selectedMonthFilter ?? .currentMonth()
+        let dateRange = DateInterval(start: filter.startOfMonth, end: filter.startOfNextMonth)
+        let baseCurrency = DefaultCurrency.resolve()
+        let context = sharedModelContainer.mainContext
+
+        backfillRunning = true
+        Task { @MainActor in
+            defer { backfillRunning = false }
+            do {
+                let result = try await BaseCurrencyBackfillService.backfill(
+                    in: dateRange,
+                    baseCurrency: baseCurrency,
+                    context: context
+                )
+                backfillResult = result
+                backfillError = nil
+            } catch {
+                backfillResult = nil
+                backfillError = error.localizedDescription
+            }
+            showingBackfillAlert = true
         }
     }
 

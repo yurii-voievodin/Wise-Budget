@@ -1,5 +1,8 @@
 import Foundation
+import OSLog
 import SwiftData
+
+private let logger = Logger(subsystem: "com.wisebudget", category: "AppDataCSVImporter")
 
 final class AppDataCSVImporter {
 
@@ -99,17 +102,69 @@ final class AppDataCSVImporter {
 
     // MARK: - Import into ModelContext
 
+    /// Stable fingerprint of a row used to detect re-imports of the same CSV.
+    /// Includes everything that meaningfully identifies a transaction: type,
+    /// date, amount, currency, category name, description, destination.
+    /// Two rows with the same fingerprint are treated as the same transaction.
+    private static func fingerprint(type: String, date: Date, amount: Decimal,
+                                     currency: String, category: String,
+                                     description: String?, destination: String?) -> String {
+        let dateStr = dateFormatter.string(from: date)
+        let amountStr = NSDecimalNumber(decimal: amount).stringValue
+        return "\(type)|\(dateStr)|\(amountStr)|\(currency)|\(category)|\(description ?? "")|\(destination ?? "")"
+    }
+
     @discardableResult
     static func importRows(_ rows: [ParsedRow], into context: ModelContext) throws -> ImportResult {
+        logger.info("Starting import of \(rows.count) parsed rows")
+
         let existingExpenseCategories = try context.fetch(FetchDescriptor<ExpenseCategory>())
         let existingIncomeCategories = try context.fetch(FetchDescriptor<IncomeCategory>())
 
         var expenseCategoryMap = Dictionary(uniqueKeysWithValues: existingExpenseCategories.map { ($0.name, $0) })
         var incomeCategoryMap = Dictionary(uniqueKeysWithValues: existingIncomeCategories.map { ($0.name, $0) })
 
+        // Build fingerprint set of existing transactions so a re-import of the
+        // same CSV is idempotent. Category is part of the fingerprint, so a
+        // category rename/alias change will NOT match — re-import after rename
+        // would create duplicates under the new name.
+        var existingFingerprints = Set<String>()
+        let existingExpenses = try context.fetch(FetchDescriptor<Expense>())
+        for e in existingExpenses {
+            existingFingerprints.insert(fingerprint(
+                type: "Expense", date: e.date, amount: e.amount, currency: e.currency,
+                category: e.category?.name ?? "", description: e.descriptionText,
+                destination: e.destination
+            ))
+        }
+        let existingIncomes = try context.fetch(FetchDescriptor<Income>())
+        for i in existingIncomes {
+            existingFingerprints.insert(fingerprint(
+                type: "Income", date: i.date, amount: i.amount, currency: i.currency,
+                category: i.category?.name ?? "", description: i.descriptionText,
+                destination: i.source
+            ))
+        }
+
         var result = ImportResult()
+        var newExpenseCategories: [String] = []
+        var newIncomeCategories: [String] = []
+        var expenseCounts: [String: Int] = [:]
+        var incomeCounts: [String: Int] = [:]
+        var expenseTotals: [String: Decimal] = [:]
+        var incomeTotals: [String: Decimal] = [:]
 
         for row in rows {
+            let fp = fingerprint(
+                type: row.type, date: row.date, amount: row.amount, currency: row.currency,
+                category: row.category, description: row.description, destination: row.destination
+            )
+            if existingFingerprints.contains(fp) {
+                result.duplicatesSkipped += 1
+                continue
+            }
+            existingFingerprints.insert(fp)
+
             if row.type == "Expense" {
                 let category: ExpenseCategory
                 if let existing = expenseCategoryMap[row.category] {
@@ -118,6 +173,7 @@ final class AppDataCSVImporter {
                     let newCategory = ExpenseCategory(name: row.category)
                     context.insert(newCategory)
                     expenseCategoryMap[row.category] = newCategory
+                    newExpenseCategories.append(row.category)
                     category = newCategory
                 }
 
@@ -133,6 +189,8 @@ final class AppDataCSVImporter {
                 )
                 context.insert(expense)
                 result.expensesImported += 1
+                expenseCounts[row.category, default: 0] += 1
+                expenseTotals[row.category, default: 0] += row.amount
 
             } else if row.type == "Income" {
                 let category: IncomeCategory
@@ -142,6 +200,7 @@ final class AppDataCSVImporter {
                     let newCategory = IncomeCategory(name: row.category)
                     context.insert(newCategory)
                     incomeCategoryMap[row.category] = newCategory
+                    newIncomeCategories.append(row.category)
                     category = newCategory
                 }
 
@@ -157,9 +216,47 @@ final class AppDataCSVImporter {
                 )
                 context.insert(income)
                 result.incomesImported += 1
+                incomeCounts[row.category, default: 0] += 1
+                incomeTotals[row.category, default: 0] += row.amount
             }
         }
 
+        logImportSummary(
+            result: result,
+            newExpenseCategories: newExpenseCategories,
+            newIncomeCategories: newIncomeCategories,
+            expenseCounts: expenseCounts,
+            incomeCounts: incomeCounts,
+            expenseTotals: expenseTotals,
+            incomeTotals: incomeTotals
+        )
+
         return result
+    }
+
+    private static func logImportSummary(
+        result: ImportResult,
+        newExpenseCategories: [String],
+        newIncomeCategories: [String],
+        expenseCounts: [String: Int],
+        incomeCounts: [String: Int],
+        expenseTotals: [String: Decimal],
+        incomeTotals: [String: Decimal]
+    ) {
+        logger.info("Imported \(result.expensesImported) expenses, \(result.incomesImported) incomes")
+        if !newExpenseCategories.isEmpty {
+            logger.info("New ExpenseCategory created (\(newExpenseCategories.count)): \(newExpenseCategories.joined(separator: ", "))")
+        }
+        if !newIncomeCategories.isEmpty {
+            logger.info("New IncomeCategory created (\(newIncomeCategories.count)): \(newIncomeCategories.joined(separator: ", "))")
+        }
+        for (cat, n) in expenseCounts.sorted(by: { $0.value > $1.value }) {
+            let total = expenseTotals[cat] ?? 0
+            logger.info("  Expense [\(cat)]: \(n) rows, total \(total.description)")
+        }
+        for (cat, n) in incomeCounts.sorted(by: { $0.value > $1.value }) {
+            let total = incomeTotals[cat] ?? 0
+            logger.info("  Income  [\(cat)]: \(n) rows, total \(total.description)")
+        }
     }
 }
