@@ -8,6 +8,7 @@ struct IncomeComparisonView: View {
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
+    var onSelectMonth: ((MonthKey) -> Void)? = nil
 
     enum TimeRange: String, CaseIterable, Identifiable {
         case sixMonths = "6 Months"
@@ -129,7 +130,8 @@ struct IncomeComparisonView: View {
                 )
                 ComparisonBreakdownSection(
                     monthTotals: monthTotals,
-                    currency: defaultCurrency
+                    currency: defaultCurrency,
+                    onSelect: onSelectMonth
                 )
             }
         }

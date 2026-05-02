@@ -38,8 +38,12 @@ struct ExpenseListView: View {
                 .id(filter)
             }
             Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
-                ExpenseComparisonView(filter: filter)
-                    .id(filter)
+                ExpenseComparisonView(filter: filter) { month in
+                    filter.year = month.year
+                    filter.month = month.month
+                    selectedTab = .expenses
+                }
+                .id(filter)
             }
         }
         .navigationTitle("")

@@ -33,8 +33,12 @@ struct IncomeListView: View {
                 .id(filter)
             }
             Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
-                IncomeComparisonView(filter: filter)
-                    .id(filter)
+                IncomeComparisonView(filter: filter) { month in
+                    filter.year = month.year
+                    filter.month = month.month
+                    selectedTab = .income
+                }
+                .id(filter)
             }
         }
         .navigationTitle("")
