@@ -160,11 +160,13 @@ private struct CashflowBarRow: View {
                 Text(label)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(amount, format: .number.precision(.fractionLength(0)))
-                    .monospacedDigit()
-                    .foregroundStyle(tint)
-                + Text(" \(currency)")
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(amount, format: .number.precision(.fractionLength(0)))
+                        .monospacedDigit()
+                        .foregroundStyle(tint)
+                    Text(currency)
+                        .foregroundStyle(.secondary)
+                }
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
