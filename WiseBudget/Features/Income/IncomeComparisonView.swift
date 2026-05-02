@@ -38,12 +38,12 @@ struct IncomeComparisonView: View {
         }
     }
 
-    private var useCompactLabels: Bool {
-        timeRange == .year
-    }
-
-    private var xDomain: [String] {
-        monthRange.map { $0.chartLabel(compact: useCompactLabels) }
+    private var labelStyle: MonthKey.ChartLabelStyle {
+        switch timeRange {
+        case .sixMonths: .monthYear
+        case .year:      .month
+        case .lifetime:  .yearAtJanuary
+        }
     }
 
     // MARK: - Chart Data
@@ -118,8 +118,8 @@ struct IncomeComparisonView: View {
                 ComparisonChartSection(
                     title: "Income by Category",
                     chartData: chartData,
-                    xDomain: xDomain,
-                    useCompactLabels: useCompactLabels,
+                    xMonths: monthRange,
+                    labelStyle: labelStyle,
                     colorDomain: DefaultIncomeCategory.chartColorDomain,
                     colorRange: DefaultIncomeCategory.chartColorRange
                 )

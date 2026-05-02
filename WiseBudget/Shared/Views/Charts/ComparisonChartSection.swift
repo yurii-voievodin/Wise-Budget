@@ -11,16 +11,30 @@ struct ComparisonChartDataPoint: Identifiable {
 struct ComparisonChartSection: View {
     let title: LocalizedStringKey
     let chartData: [ComparisonChartDataPoint]
-    let xDomain: [String]
-    let useCompactLabels: Bool
+    let xMonths: [MonthKey]
+    let labelStyle: MonthKey.ChartLabelStyle
     let colorDomain: [String]
     let colorRange: [Color]
+
+    private var xDomain: [String] {
+        xMonths.map { $0.chartLabel(labelStyle) }
+    }
+
+    private var januaryTickValues: [String] {
+        xMonths.filter { $0.month == 1 }.map { $0.chartLabel(labelStyle) }
+    }
+
+    private var januaryYearByLabel: [String: String] {
+        Dictionary(uniqueKeysWithValues: xMonths.filter { $0.month == 1 }.map {
+            ($0.chartLabel(labelStyle), $0.yearLabel)
+        })
+    }
 
     var body: some View {
         Section(title) {
             Chart(chartData) { point in
                 BarMark(
-                    x: .value("Month", point.monthKey.chartLabel(compact: useCompactLabels)),
+                    x: .value("Month", point.monthKey.chartLabel(labelStyle)),
                     y: .value("Amount", point.total)
                 )
                 .foregroundStyle(by: .value("Category", point.categoryName))
@@ -28,9 +42,21 @@ struct ComparisonChartSection: View {
             .chartForegroundStyleScale(domain: colorDomain, range: colorRange)
             .chartXScale(domain: xDomain)
             .chartXAxis {
-                AxisMarks(values: .automatic) { _ in
-                    AxisGridLine()
-                    AxisValueLabel()
+                switch labelStyle {
+                case .yearAtJanuary:
+                    AxisMarks(values: januaryTickValues) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let s = value.as(String.self), let year = januaryYearByLabel[s] {
+                                Text(year)
+                            }
+                        }
+                    }
+                default:
+                    AxisMarks(values: .automatic) { _ in
+                        AxisGridLine()
+                        AxisValueLabel()
+                    }
                 }
             }
             .chartYAxis {

@@ -6,6 +6,8 @@ struct MonthKey: Hashable, Comparable {
     let year: Int
     let month: Int
 
+    enum ChartLabelStyle { case month, monthYear, yearAtJanuary }
+
     var shortLabel: String {
         let date = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) ?? Date.now
         return date.formatted(.dateTime.month(.abbreviated))
@@ -16,8 +18,14 @@ struct MonthKey: Hashable, Comparable {
         return date.formatted(.dateTime.month(.abbreviated).year())
     }
 
-    func chartLabel(compact: Bool) -> String {
-        compact ? shortLabel : fullLabel
+    var yearLabel: String { String(year) }
+
+    func chartLabel(_ style: ChartLabelStyle) -> String {
+        switch style {
+        case .month:         return shortLabel
+        case .monthYear:     return fullLabel
+        case .yearAtJanuary: return fullLabel
+        }
     }
 
     var sortValue: Int { year * 12 + month }

@@ -38,12 +38,12 @@ struct ExpenseComparisonView: View {
         }
     }
 
-    private var useCompactLabels: Bool {
-        timeRange == .year
-    }
-
-    private var xDomain: [String] {
-        monthRange.map { $0.chartLabel(compact: useCompactLabels) }
+    private var labelStyle: MonthKey.ChartLabelStyle {
+        switch timeRange {
+        case .sixMonths: .monthYear
+        case .year:      .month
+        case .lifetime:  .yearAtJanuary
+        }
     }
 
     // MARK: - Chart Data
@@ -118,8 +118,8 @@ struct ExpenseComparisonView: View {
                 ComparisonChartSection(
                     title: "Expenses by Category",
                     chartData: chartData,
-                    xDomain: xDomain,
-                    useCompactLabels: useCompactLabels,
+                    xMonths: monthRange,
+                    labelStyle: labelStyle,
                     colorDomain: DefaultExpenseCategory.chartColorDomain,
                     colorRange: DefaultExpenseCategory.chartColorRange
                 )
