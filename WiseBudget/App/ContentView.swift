@@ -7,7 +7,7 @@ extension FocusedValues {
 
 struct ContentView: View {
     @State private var selectedSidebarItem: SidebarItem = .dashboard
-    @State private var monthFilter: MonthFilter = .currentMonth()
+    @State private var monthFilter: MonthFilter = .stored
     @State private var expenseCategoryFilter: String?
     @State private var expenseListTab: ExpenseListView.ExpenseTab = .calendar
 
@@ -67,6 +67,9 @@ struct ContentView: View {
             }
         }
         .focusedSceneValue(\.selectedMonthFilter, monthFilter)
+        .onChange(of: monthFilter) { _, newValue in
+            newValue.persist()
+        }
         .onChange(of: selectedSidebarItem) { oldValue, newValue in
             if oldValue == .expenses || oldValue == .income {
                 monthFilter.foreignOnly = false

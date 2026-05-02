@@ -32,3 +32,28 @@ nonisolated struct MonthFilter: Hashable {
         Calendar.current.date(byAdding: .month, value: 1, to: startOfMonth) ?? Date.now
     }
 }
+
+extension MonthFilter {
+    private static let yearKey = "MonthFilter.year"
+    private static let monthKey = "MonthFilter.month"
+
+    /// Restores the user's last-viewed year/month, or falls back to the current month
+    /// on first launch. `foreignOnly` is intentionally not persisted — it's a per-session toggle.
+    static var stored: MonthFilter {
+        let defaults = UserDefaults.standard
+        guard
+            let year = defaults.object(forKey: yearKey) as? Int,
+            let month = defaults.object(forKey: monthKey) as? Int,
+            (1...12).contains(month)
+        else {
+            return .currentMonth()
+        }
+        return MonthFilter(year: year, month: month)
+    }
+
+    func persist() {
+        let defaults = UserDefaults.standard
+        defaults.set(year, forKey: Self.yearKey)
+        defaults.set(month, forKey: Self.monthKey)
+    }
+}
