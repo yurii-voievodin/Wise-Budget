@@ -13,8 +13,14 @@ final class WiseSyncService {
     }()
 
     /// Syncs Wise activities into the given model context for the specified date range.
-    static func sync(context: ModelContext, fromTimestamp: Double, toTimestamp: Double) async throws -> ImportResult {
+    static func sync(
+        context: ModelContext,
+        fromTimestamp: Double,
+        toTimestamp: Double,
+        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+    ) async throws -> ImportResult {
         logger.info("sync started")
+        onProgress?(SyncProgress(bank: "Wise", detail: "fetching activities", kind: .indeterminate))
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.wiseService) else {
             logger.warning("sync aborted: no token in Keychain")

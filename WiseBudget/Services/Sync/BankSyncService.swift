@@ -3,10 +3,22 @@ import SwiftData
 import Observation
 import UserNotifications
 
+struct SyncProgress: Sendable, Equatable {
+    enum Kind: Sendable, Equatable {
+        case indeterminate
+        case determinate(current: Int, total: Int)
+    }
+
+    let bank: String
+    let detail: String
+    let kind: Kind
+}
+
 @Observable
 final class BankSyncService {
     private(set) var isSyncing = false
     private(set) var syncResultMessage: String?
+    private(set) var progress: SyncProgress?
 
     private var lastSyncDate: Date?
     private var currentSyncTask: Task<Void, Never>?
@@ -31,8 +43,16 @@ final class BankSyncService {
         currentSyncTask = Task { [weak self] in
             defer {
                 self?.isSyncing = false
+                self?.progress = nil
                 self?.lastSyncDate = Date.now
                 self?.currentSyncTask = nil
+            }
+
+            let onProgress: @Sendable (SyncProgress) -> Void = { [weak self] p in
+                Task { @MainActor in
+                    guard let self, self.progress != p else { return }
+                    self.progress = p
+                }
             }
 
             var totalExpenses = 0
@@ -48,7 +68,8 @@ final class BankSyncService {
                     let result = try await MonobankSyncService.sync(
                         context: context,
                         fromTimestamp: syncFrom,
-                        toTimestamp: syncTo
+                        toTimestamp: syncTo,
+                        onProgress: onProgress
                     )
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported
@@ -66,7 +87,8 @@ final class BankSyncService {
                     let result = try await WiseSyncService.sync(
                         context: context,
                         fromTimestamp: syncFrom,
-                        toTimestamp: syncTo
+                        toTimestamp: syncTo,
+                        onProgress: onProgress
                     )
                     totalExpenses += result.expensesImported
                     totalIncomes += result.incomesImported

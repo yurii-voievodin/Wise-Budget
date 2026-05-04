@@ -27,7 +27,12 @@ final class MonobankSyncService {
     }()
 
     /// Syncs Monobank transactions into the given model context for the specified date range.
-    static func sync(context: ModelContext, fromTimestamp: Double, toTimestamp: Double) async throws -> ImportResult {
+    static func sync(
+        context: ModelContext,
+        fromTimestamp: Double,
+        toTimestamp: Double,
+        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+    ) async throws -> ImportResult {
         logger.info("sync started")
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.monobankService) else {
@@ -90,7 +95,8 @@ final class MonobankSyncService {
                     sleep: defaultSleep
                 )
             },
-            sleep: defaultSleep
+            sleep: defaultSleep,
+            onProgress: onProgress
         )
     }
 
@@ -102,7 +108,8 @@ final class MonobankSyncService {
         ownIbans: Set<String>,
         defaultCurrency: String,
         fetchStatements: FetchStatements,
-        sleep: Sleep
+        sleep: Sleep,
+        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
     ) async throws -> ImportResult {
         logger.debug("sync from: \(dateFormatter.string(from: from))")
         logger.debug("sync to: \(dateFormatter.string(from: to))")
@@ -122,6 +129,12 @@ final class MonobankSyncService {
             for (windowStart, windowEnd) in windows {
                 try Task.checkCancellation()
                 logger.debug("fetching statements: \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
+
+                onProgress?(SyncProgress(
+                    bank: "Monobank",
+                    detail: "\(currency) ····\(account.id.suffix(4))",
+                    kind: .determinate(current: requestCount + 1, total: totalRequests)
+                ))
 
                 let statements = try await fetchStatements(account.id, windowStart, windowEnd)
                 let transactions = statements.compactMap { statement -> CSVTransaction? in

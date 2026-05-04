@@ -46,6 +46,9 @@ struct ExpenseListView: View {
             }
         }
         .navigationTitle("")
+        .safeAreaInset(edge: .top, spacing: 0) {
+            BankSyncProgressBar(syncService: syncService)
+        }
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             if selectedTab == .expenses {
