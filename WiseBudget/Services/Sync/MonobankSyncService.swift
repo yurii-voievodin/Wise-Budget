@@ -13,10 +13,12 @@ final class MonobankSyncService {
     nonisolated private static let maxWindowSeconds: TimeInterval = 31 * 24 * 60 * 60
 
     /// Delay between consecutive API calls to respect rate limits.
-    private static let rateLimitDelay: TimeInterval = 3.0
+    private static let rateLimitDelay: TimeInterval = 8.0
 
-    /// Extra backoff delays after Monobank responds with HTTP 429.
-    private static let rateLimitRetryDelays: [TimeInterval] = [5.0, 10.0, 20.0]
+    /// Extra backoff delays after Monobank responds with HTTP 429. Monobank's
+    /// documented limit is 1 request per 60s per token, so the third attempt
+    /// waits past that window with margin.
+    private static let rateLimitRetryDelays: [TimeInterval] = [15.0, 45.0, 90.0]
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -130,6 +132,7 @@ final class MonobankSyncService {
                 let importResult = try CSVImporter.importTransactions(transactions, into: context)
                 try context.save()
                 merge(importResult, into: &totalResult)
+                logger.debug("saved window: +\(importResult.expensesImported) expenses, +\(importResult.incomesImported) incomes")
 
                 requestCount += 1
                 if requestCount < totalRequests {

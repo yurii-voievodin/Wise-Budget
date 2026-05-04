@@ -354,7 +354,7 @@ struct MonobankSyncServiceTests {
 
         let snapshot = await probe.snapshot()
         #expect(snapshot.attempts == 3)
-        #expect(snapshot.sleeps == [5.0, 10.0])
+        #expect(snapshot.sleeps == [15.0, 45.0])
         #expect(statements.count == 1)
         #expect(statements.first?.id == "retried-success")
     }
@@ -407,7 +407,7 @@ struct MonobankSyncServiceTests {
         #expect(snapshot.windows[0].1 == expectedWindows[0].1)
         #expect(snapshot.windows[1].0 == expectedWindows[1].0)
         #expect(snapshot.windows[1].1 == expectedWindows[1].1)
-        #expect(snapshot.sleeps == [3.0])
+        #expect(snapshot.sleeps == [8.0])
 
         let expenses = try context.fetch(FetchDescriptor<Expense>())
         #expect(expenses.count == 1)
