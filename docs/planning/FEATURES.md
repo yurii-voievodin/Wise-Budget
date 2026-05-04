@@ -6,7 +6,7 @@ Accepted candidate features in priority order. Items above the separator are the
 
 ## Widgets & Lock Screen
 
-macOS 26 widgets showing current month spend vs. budget, top category, and a small trends spark. Reuses Dashboard data.
+macOS 26 widgets showing current month spend vs. budget, top category, and a small trends spark. Reuses Dashboard data. Detailed v1 plan (medium size, App Group migration): [widgets-plan.md](widgets-plan.md).
 
 ## App Intents
 
