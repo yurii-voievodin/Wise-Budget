@@ -57,6 +57,62 @@ struct WiseSyncServiceTests {
         #expect(WiseSyncService.parseFormattedAmount("abc EUR") == nil)
     }
 
+    // MARK: - Locale-tolerant decimal parsing
+    //
+    // Regression: on a Ukrainian-locale device URLSession sets Accept-Language: uk
+    // and the Wise API responds with comma-decimal strings like "19,07 EUR".
+    // The old parser stripped commas as thousand separators, yielding 1907.
+
+    @Test func parseCommaDecimalAmount() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("19,07 EUR"))
+        #expect(result.0 == Decimal(string: "19.07"))
+        #expect(result.1 == "EUR")
+    }
+
+    @Test func parseCommaDecimalSingleFractionDigit() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("1,5 EUR"))
+        #expect(result.0 == Decimal(string: "1.5"))
+        #expect(result.1 == "EUR")
+    }
+
+    @Test func parseDotDecimalSingleFractionDigit() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("1.5 EUR"))
+        #expect(result.0 == Decimal(string: "1.5"))
+        #expect(result.1 == "EUR")
+    }
+
+    @Test func parseEuropeanThousandsAndCommaDecimal() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("1.234,56 EUR"))
+        #expect(result.0 == Decimal(string: "1234.56"))
+        #expect(result.1 == "EUR")
+    }
+
+    @Test func parseHTMLWrappedCommaDecimal() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("<positive>+ 3.754,76 EUR</positive>"))
+        #expect(result.0 == Decimal(string: "3754.76"))
+        #expect(result.1 == "EUR")
+    }
+
+    @Test func parseNegativeCommaDecimal() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("-25,50 GBP"))
+        #expect(result.0 == Decimal(string: "-25.50"))
+        #expect(result.1 == "GBP")
+    }
+
+    @Test func parseIntegerAmountNoSeparator() throws {
+        let result = try #require(WiseSyncService.parseFormattedAmount("100 JPY"))
+        #expect(result.0 == Decimal(string: "100"))
+        #expect(result.1 == "JPY")
+    }
+
+    @Test func parseLoneCommaWithThreeDigitsIsThousandSep() throws {
+        // "1,234" is ambiguous; we resolve it as 1234 (thousand sep), since real
+        // Wise card amounts almost always have 0 or 2 fraction digits, never 3.
+        let result = try #require(WiseSyncService.parseFormattedAmount("1,234 USD"))
+        #expect(result.0 == Decimal(string: "1234"))
+        #expect(result.1 == "USD")
+    }
+
     // MARK: - categoryForActivityType
 
     @Test(arguments: [

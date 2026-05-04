@@ -205,6 +205,12 @@ final class WiseAPIClient {
     // MARK: - Request Helpers
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        var request = request
+        // Pin response formatting to en-US so locale-formatted fields like
+        // `primaryAmount` ("19.07 EUR") use a dot decimal separator regardless
+        // of the device's preferred languages.
+        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
+
         // Log request details
         let method = request.httpMethod ?? "GET"
         let url = request.url?.absoluteString ?? "unknown"

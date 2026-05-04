@@ -152,30 +152,73 @@ final class WiseSyncService {
     }
 
     /// Parses a formatted amount string like "10.00 EUR", "-25.50 GBP", "1,234.56 USD",
-    /// or "<positive>+ 3,754.76 EUR</positive>".
+    /// or "<positive>+ 3,754.76 EUR</positive>". Tolerates either dot- or
+    /// comma-decimal styles ("19.07 EUR" and "19,07 EUR" both yield 19.07) so
+    /// the parser is not at the mercy of the device's `Accept-Language`.
     /// Returns (amount as Decimal, currency code) or nil if parsing fails.
     nonisolated static func parseFormattedAmount(_ formatted: String) -> (Decimal, String)? {
-        // Strip XML/HTML tags and trim
         let stripped = stripHTML(formatted).trimmingCharacters(in: .whitespaces)
         guard !stripped.isEmpty else { return nil }
 
-        // Split into components — the currency code is typically the last 3-letter word
         let parts = stripped.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         guard parts.count >= 2 else { return nil }
 
         let currencyCode = parts.last!
-        // Currency codes are 3 uppercase letters
         guard currencyCode.count == 3, currencyCode == currencyCode.uppercased() else { return nil }
 
-        // Everything before the currency is the number (may contain commas, +/- signs, etc.)
-        let numberParts = parts.dropLast()
-        let numberString = numberParts.joined()
-            .replacingOccurrences(of: ",", with: "") // Remove thousand separators
-            .replacingOccurrences(of: "+", with: "") // Remove leading plus sign
+        let raw = parts.dropLast().joined()
+            .replacingOccurrences(of: "+", with: "")
+        guard !raw.isEmpty else { return nil }
 
-        guard let amount = Decimal(string: numberString) else { return nil }
+        let normalized = normalizeDecimalString(raw)
+        guard let amount = Decimal(string: normalized) else { return nil }
 
         return (amount, currencyCode)
+    }
+
+    /// Resolves an ambiguous numeric string into a POSIX-style decimal that
+    /// `Decimal(string:)` can parse. Handles four shapes:
+    ///   "1,234.56"  → "1234.56"   (both seps, dot last → dot is decimal)
+    ///   "1.234,56"  → "1234.56"   (both seps, comma last → comma is decimal)
+    ///   "19,07"     → "19.07"     (lone comma with 1–2 trailing digits → decimal)
+    ///   "1,234"     → "1234"      (lone comma with 3 trailing digits → thousand sep)
+    nonisolated private static func normalizeDecimalString(_ raw: String) -> String {
+        let dot = scan(raw, for: ".")
+        let comma = scan(raw, for: ",")
+
+        switch (dot.count, comma.count) {
+        case (0, 0):
+            return raw
+        case (_, 0):
+            return dot.count == 1 && (1...2).contains(dot.trailing)
+                ? raw
+                : raw.replacingOccurrences(of: ".", with: "")
+        case (0, _):
+            return comma.count == 1 && (1...2).contains(comma.trailing)
+                ? raw.replacingOccurrences(of: ",", with: ".")
+                : raw.replacingOccurrences(of: ",", with: "")
+        default:
+            if dot.lastOffset > comma.lastOffset {
+                return raw.replacingOccurrences(of: ",", with: "")
+            } else {
+                var swapped = raw
+                swapped.removeAll(where: { $0 == "." })
+                return swapped.replacingOccurrences(of: ",", with: ".")
+            }
+        }
+    }
+
+    /// Single-pass tally of a separator: total occurrences, offset of the last
+    /// occurrence, and how many characters follow it.
+    nonisolated private static func scan(_ s: String, for separator: Character) -> (count: Int, lastOffset: Int, trailing: Int) {
+        var count = 0
+        var lastOffset = -1
+        for (i, c) in s.enumerated() where c == separator {
+            count += 1
+            lastOffset = i
+        }
+        let trailing = lastOffset < 0 ? 0 : s.count - lastOffset - 1
+        return (count, lastOffset, trailing)
     }
 
     nonisolated private static func parseDate(_ dateString: String) -> Date? {
