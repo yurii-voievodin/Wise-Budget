@@ -92,7 +92,7 @@ struct CashflowView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
-                        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .cardBackground()
                 } else {
                     let periodIncome = activeMonths.reduce(Decimal.zero) { $0 + $1.income }
                     let periodExpenses = activeMonths.reduce(Decimal.zero) { $0 + $1.expenses }
@@ -110,7 +110,7 @@ struct CashflowView: View {
                         )
                     }
                     .padding(12)
-                    .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .cardBackground()
 
                     LazyVGrid(columns: monthColumns, spacing: 16) {
                         ForEach(activeMonths, id: \.month) { totals in
@@ -226,7 +226,7 @@ private struct MonthCashflowCard: View {
             }
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .cardBackground()
     }
 }
 

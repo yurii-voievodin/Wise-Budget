@@ -102,8 +102,11 @@ private struct SidebarBottomSection: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
-                        .background(rowBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                        .foregroundStyle(isBankConnectionsSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                        .background(
+                            isBankConnectionsSelected ? Color.accentColor : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        )
+                        .foregroundStyle(isBankConnectionsSelected ? Color.white : Color.primary)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -117,12 +120,6 @@ private struct SidebarBottomSection: View {
 
     private var isBankConnectionsSelected: Bool {
         selectedSidebarItem == .bankConnections
-    }
-
-    private var rowBackground: AnyShapeStyle {
-        isBankConnectionsSelected
-            ? AnyShapeStyle(Color.accentColor)
-            : AnyShapeStyle(Color.clear)
     }
 }
 

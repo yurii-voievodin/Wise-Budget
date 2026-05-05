@@ -71,7 +71,7 @@ struct BudgetCategoryRow: View {
             }
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .cardBackground()
         .task(id: planned) {
             // Sync the draft from the source of truth when a different
             // category's value changes propagate, or on first appearance.
