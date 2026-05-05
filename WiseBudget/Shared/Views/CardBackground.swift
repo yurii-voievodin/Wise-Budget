@@ -10,12 +10,4 @@ extension View {
             in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         )
     }
-
-    /// Strips the row chrome off a `Form`/`List` row so an inner grid of
-    /// self-styled cards can float without an extra section background.
-    func flatListRow() -> some View {
-        listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-    }
 }

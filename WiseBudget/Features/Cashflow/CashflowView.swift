@@ -115,7 +115,7 @@ struct CashflowView: View {
                     LazyVGrid(columns: monthColumns, spacing: 16) {
                         ForEach(activeMonths, id: \.month) { totals in
                             MonthCashflowCard(
-                                title: totals.month.fullLabel,
+                                month: totals.month,
                                 income: totals.income,
                                 expenses: totals.expenses,
                                 balance: totals.balance,
@@ -183,7 +183,7 @@ struct CashflowView: View {
 }
 
 private struct MonthCashflowCard: View {
-    let title: String
+    let month: MonthKey
     let income: Decimal
     let expenses: Decimal
     let balance: Decimal
@@ -193,7 +193,7 @@ private struct MonthCashflowCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(month.fullLabel)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)

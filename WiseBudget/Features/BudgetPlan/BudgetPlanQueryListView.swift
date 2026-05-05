@@ -121,9 +121,7 @@ struct BudgetPlanQueryListView: View {
     }
 
     private var summaryTitle: String {
-        let comps = DateComponents(year: filter.year, month: filter.month, day: 1)
-        let date = Calendar.current.date(from: comps) ?? Date.now
-        return date.formatted(.dateTime.month(.abbreviated).year())
+        MonthKey(year: filter.year, month: filter.month).fullLabel
     }
 
     var body: some View {
