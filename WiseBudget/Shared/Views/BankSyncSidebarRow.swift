@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Sync action and inline progress in the sidebar, sitting just below the
 /// "Bank Connections" row. Hidden when no bank token exists.
