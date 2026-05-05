@@ -22,13 +22,8 @@ struct DashboardView: View {
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
     @State private var hasKeychainTokens = false
-    @State private var selectedTab: DashboardTab = .overview
+    @State private var showByCategoryPopover = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    enum DashboardTab: Hashable {
-        case overview
-        case byCategory
-    }
 
     init(
         monthFilter: Binding<MonthFilter>,
@@ -156,25 +151,14 @@ struct DashboardView: View {
     }
 
     private var dashboardContentView: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Overview", systemImage: "square.grid.2x2", value: DashboardTab.overview) {
-                DashboardOverviewTab(
-                    summary: spendingSummary,
-                    metrics: metrics,
-                    scopeKey: insightsScopeKey,
-                    currency: defaultCurrency,
-                    recentTransactions: recentTransactions,
-                    onSelectTransaction: handleTransactionSelection
-                )
-            }
-            Tab("By Category", systemImage: "chart.pie", value: DashboardTab.byCategory) {
-                DashboardByCategoryTab(
-                    expenseSlices: expenseSlices,
-                    currency: defaultCurrency,
-                    onSelectCategory: onSelectCategory
-                )
-            }
-        }
+        DashboardOverviewTab(
+            summary: spendingSummary,
+            metrics: metrics,
+            scopeKey: insightsScopeKey,
+            currency: defaultCurrency,
+            recentTransactions: recentTransactions,
+            onSelectTransaction: handleTransactionSelection
+        )
         .sheet(item: $expenseToEdit) { expense in
             ExpenseFormSheet(expense: expense) { result in
                 withAnimation { result.apply(to: expense) }
@@ -194,6 +178,25 @@ struct DashboardView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showByCategoryPopover.toggle()
+                } label: {
+                    Label("By Category", systemImage: "chart.pie")
+                }
+                .help("By Category")
+                .popover(isPresented: $showByCategoryPopover, arrowEdge: .top) {
+                    DashboardByCategoryTab(
+                        expenseSlices: expenseSlices,
+                        currency: defaultCurrency,
+                        onSelectCategory: { name in
+                            showByCategoryPopover = false
+                            onSelectCategory(name)
+                        }
+                    )
+                    .frame(minWidth: 420, minHeight: 480)
+                }
+            }
             AskAIToolbar(
                 filter: monthFilter,
                 expenseCount: expenses.count,

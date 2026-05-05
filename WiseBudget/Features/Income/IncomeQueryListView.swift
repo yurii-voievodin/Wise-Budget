@@ -61,6 +61,7 @@ struct IncomeQueryListView: View {
             descriptionText: { $0.descriptionText },
             categoryName: { $0.category?.name },
             categoryIcon: { $0.category?.displayIconName },
+            categoryColor: { $0.category.map { DefaultIncomeCategory.color(for: $0.name) } },
             extraField: { $0.source },
             amountTintColor: .income,
             onSelect: { incomeToEdit = $0 },

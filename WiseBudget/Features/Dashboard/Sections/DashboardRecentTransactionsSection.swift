@@ -33,6 +33,11 @@ struct DashboardRecentTransactionsSection: View {
                                 descriptionText: transaction.descriptionText,
                                 categoryName: transaction.categoryName,
                                 categoryIcon: transaction.categoryIcon,
+                                categoryColor: transaction.categoryName.map {
+                                    transaction.isExpense
+                                        ? DefaultExpenseCategory.color(for: $0)
+                                        : DefaultIncomeCategory.color(for: $0)
+                                },
                                 extraField: nil,
                                 item: transaction.item
                             )

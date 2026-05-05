@@ -1,9 +1,11 @@
 import SwiftData
+import SwiftUI
 
 protocol CategoryModel: PersistentModel {
     var name: String { get set }
     var displayIconName: String { get }
     init(name: String)
+    static func badgeColor(for name: String) -> Color
 
     /// Re-points every transaction owned by `self` onto `target`, then deletes `self`.
     /// Caller is responsible for saving the context.
@@ -13,6 +15,10 @@ protocol CategoryModel: PersistentModel {
 extension ExpenseCategory: CategoryModel {
     convenience init(name: String) {
         self.init(name: name, iconName: "folder")
+    }
+
+    static func badgeColor(for name: String) -> Color {
+        DefaultExpenseCategory.color(for: name)
     }
 
     func merge(into target: ExpenseCategory, in context: ModelContext) {
@@ -26,6 +32,10 @@ extension ExpenseCategory: CategoryModel {
 extension IncomeCategory: CategoryModel {
     convenience init(name: String) {
         self.init(name: name, iconName: "folder")
+    }
+
+    static func badgeColor(for name: String) -> Color {
+        DefaultIncomeCategory.color(for: name)
     }
 
     func merge(into target: IncomeCategory, in context: ModelContext) {

@@ -11,20 +11,30 @@ struct BudgetCategoryRow: View {
 
     @State private var draftPlanned: Decimal?
 
+    private var categoryLabel: some View {
+        HStack(spacing: 8) {
+            CategoryIconBadge(
+                systemName: categoryIcon,
+                color: DefaultExpenseCategory.color(for: categoryName),
+                size: 24
+            )
+            Text(categoryName)
+                .fontWeight(.medium)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if let onCategoryTap {
                     Button(action: onCategoryTap) {
-                        Label(categoryName, systemImage: categoryIcon)
-                            .fontWeight(.medium)
+                        categoryLabel
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show expenses for \(categoryName)")
                 } else {
-                    Label(categoryName, systemImage: categoryIcon)
-                        .fontWeight(.medium)
+                    categoryLabel
                 }
                 Spacer()
                 Text(actual, format: .number)

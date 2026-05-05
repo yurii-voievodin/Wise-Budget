@@ -81,6 +81,10 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         Self.allCases.map(\.chartColor) + [Color(red: 149/255, green: 165/255, blue: 166/255)]
     }
 
+    static func color(for name: String) -> Color {
+        chartColorMap[name] ?? Color(red: 149/255, green: 165/255, blue: 166/255)
+    }
+
     static func sortIndex(for name: String) -> Int {
         Self.allCases.firstIndex { $0.rawValue == name }.map { Int($0) } ?? Self.allCases.count
     }
@@ -131,6 +135,10 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
 
     static var chartColorRange: [Color] {
         Self.allCases.map(\.chartColor) + [Color(red: 178/255, green: 190/255, blue: 195/255)]
+    }
+
+    static func color(for name: String) -> Color {
+        chartColorMap[name] ?? Color(red: 178/255, green: 190/255, blue: 195/255)
     }
 
     static func sortIndex(for name: String) -> Int {

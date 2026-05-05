@@ -14,9 +14,11 @@ struct CategorySettingsContent<C: CategoryModel>: View {
             ForEach(categories) { category in
                 @Bindable var category = category
                 HStack {
-                    Image(systemName: category.displayIconName)
-                        .frame(width: 24)
-                        .foregroundStyle(.secondary)
+                    CategoryIconBadge(
+                        systemName: category.displayIconName,
+                        color: C.badgeColor(for: category.name),
+                        size: 28
+                    )
                     TextField("Category name", text: $category.name)
                     Menu {
                         Button("Merge into…") { mergeSource = category }
@@ -75,10 +77,12 @@ private struct MergeCategorySheet<C: CategoryModel>: View {
                 .foregroundStyle(.secondary)
 
             List(candidates, selection: $selectedID) { candidate in
-                HStack {
-                    Image(systemName: candidate.displayIconName)
-                        .frame(width: 24)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    CategoryIconBadge(
+                        systemName: candidate.displayIconName,
+                        color: C.badgeColor(for: candidate.name),
+                        size: 24
+                    )
                     Text(candidate.name)
                 }
                 .tag(candidate.id as C.ID?)
