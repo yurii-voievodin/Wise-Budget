@@ -70,7 +70,8 @@ struct BudgetCategoryRow: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .task(id: planned) {
             // Sync the draft from the source of truth when a different
             // category's value changes propagate, or on first appearance.

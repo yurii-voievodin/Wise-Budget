@@ -18,6 +18,10 @@ struct BudgetPlanListView: View {
     let onCategoryTap: (ExpenseCategory) -> Void
     let onResetPlan: () -> Void
 
+    private let categoryColumns = [
+        GridItem(.adaptive(minimum: 360), spacing: 16)
+    ]
+
     var body: some View {
         List {
             BudgetSummarySection(
@@ -32,17 +36,20 @@ struct BudgetPlanListView: View {
             )
 
             Section("Categories") {
-                ForEach(categories) { category in
-                    BudgetCategoryRow(
-                        categoryName: category.name,
-                        categoryIcon: category.displayIconName,
-                        actual: actualSpending(category),
-                        planned: plannedAmount(category),
-                        currency: planCurrency,
-                        onPlannedChange: { onPlannedChange(category, $0) },
-                        onCategoryTap: { onCategoryTap(category) }
-                    )
+                LazyVGrid(columns: categoryColumns, spacing: 12) {
+                    ForEach(categories) { category in
+                        BudgetCategoryRow(
+                            categoryName: category.name,
+                            categoryIcon: category.displayIconName,
+                            actual: actualSpending(category),
+                            planned: plannedAmount(category),
+                            currency: planCurrency,
+                            onPlannedChange: { onPlannedChange(category, $0) },
+                            onCategoryTap: { onCategoryTap(category) }
+                        )
+                    }
                 }
+                .padding(.vertical, 4)
             }
         }
         .focusedSceneValue(\.resetBudgetPlan, onResetPlan)

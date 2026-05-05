@@ -18,21 +18,21 @@ struct DashboardKPIGridSection: View {
     var body: some View {
         Section {
             LazyVGrid(columns: columns, spacing: 12) {
-                KPICell(
+                StatCard(
                     label: "Income",
                     icon: "arrow.down.circle.fill",
                     color: .income,
                     amount: totalIncome,
                     currency: currency
                 )
-                KPICell(
+                StatCard(
                     label: "Expenses",
                     icon: "arrow.up.circle.fill",
                     color: .expense,
                     amount: totalExpenses,
                     currency: currency
                 )
-                KPICell(
+                StatCard(
                     label: "Balance",
                     icon: balance >= .zero ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
                     color: balance >= .zero ? .income : .expense,
@@ -41,21 +41,21 @@ struct DashboardKPIGridSection: View {
                     signed: true,
                     bold: true
                 )
-                KPICell(
+                StatCard(
                     label: "Daily Income",
                     icon: "arrow.down.circle",
                     color: .income,
                     amount: incomeDailyAverage,
                     currency: currency
                 )
-                KPICell(
+                StatCard(
                     label: "Daily Expenses",
                     icon: "arrow.up.circle",
                     color: .expense,
                     amount: expenseDailyAverage,
                     currency: currency
                 )
-                KPICell(
+                StatCard(
                     label: "Daily Balance",
                     icon: dailyBalance >= .zero ? "checkmark.circle" : "exclamationmark.circle",
                     color: dailyBalance >= .zero ? .income : .expense,
@@ -67,32 +67,5 @@ struct DashboardKPIGridSection: View {
             }
             .padding(.vertical, 4)
         }
-    }
-}
-
-private struct KPICell: View {
-    let label: LocalizedStringKey
-    let icon: String
-    let color: Color
-    let amount: Decimal
-    let currency: String
-    var signed: Bool = false
-    var bold: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(label, systemImage: icon)
-                .font(.subheadline)
-                .foregroundStyle(color)
-                .lineLimit(1)
-            Text(amount: amount, currency: currency, signed: signed)
-                .font(.title3)
-                .monospacedDigit()
-                .bold(bold)
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
