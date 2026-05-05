@@ -12,13 +12,9 @@ struct BankConnectionsView: View {
     @State private var showConnectSheet = false
     @State private var showAccountsSheet = false
     @State private var showDisconnectConfirmation = false
-    @State private var isSyncing = false
-    @State private var syncResultMessage: String?
 
     @State private var showWiseConnectSheet = false
     @State private var showWiseDisconnectConfirmation = false
-    @State private var isWiseSyncing = false
-    @State private var wiseSyncResultMessage: String?
 
     private var isMonobankConnected: Bool {
         !monobankConnectedName.isEmpty
@@ -52,15 +48,6 @@ struct BankConnectionsView: View {
                     Spacer()
 
                     if isMonobankConnected {
-                        if isSyncing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Button("Sync Now") {
-                                syncMonobank()
-                            }
-                        }
-
                         Button("Accounts") {
                             showAccountsSheet = true
                         }
@@ -108,15 +95,6 @@ struct BankConnectionsView: View {
                     Spacer()
 
                     if isWiseConnected {
-                        if isWiseSyncing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Button("Sync Now") {
-                                syncWise()
-                            }
-                        }
-
                         Button("Disconnect", role: .destructive) {
                             showWiseDisconnectConfirmation = true
                         }
@@ -178,52 +156,12 @@ struct BankConnectionsView: View {
         }
     }
 
-    // MARK: - Sync Methods
-
-    private func syncMonobank() {
-        guard !isSyncing else { return }
-        isSyncing = true
-        Task {
-            defer { isSyncing = false }
-            let message: String
-            do {
-                let result = try await BankSyncService.syncMonobankIncremental(context: modelContext)
-                message = BankSyncService.formatResultMessage(result)
-            } catch is CancellationError {
-                return
-            } catch {
-                message = error.localizedDescription
-            }
-            syncResultMessage = message
-            await BankSyncService.postNotification(title: "Monobank Sync", message: message)
-        }
-    }
-
     private func disconnectMonobank() {
         try? KeychainHelper.deleteToken(service: KeychainHelper.monobankService)
         monobankConnectedName = ""
         monobankLastSync = 0
         UserDefaults.standard.removeObject(forKey: "monobankAccountDetails")
         UserDefaults.standard.removeObject(forKey: "monobankSelectedAccounts")
-    }
-
-    private func syncWise() {
-        guard !isWiseSyncing else { return }
-        isWiseSyncing = true
-        Task {
-            defer { isWiseSyncing = false }
-            let message: String
-            do {
-                let result = try await BankSyncService.syncWiseIncremental(context: modelContext)
-                message = BankSyncService.formatResultMessage(result)
-            } catch is CancellationError {
-                return
-            } catch {
-                message = error.localizedDescription
-            }
-            wiseSyncResultMessage = message
-            await BankSyncService.postNotification(title: "Wise Sync", message: message)
-        }
     }
 
     private func disconnectWise() {

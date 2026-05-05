@@ -23,17 +23,19 @@ struct BankSyncSidebarRow: View {
 
     private var syncButton: some View {
         Button(action: triggerSync) {
-            HStack(spacing: 8) {
-                if syncService.isSyncing {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 16)
-                } else {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .frame(width: 16)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    if syncService.isSyncing {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 16)
+                    } else {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .frame(width: 16)
+                    }
+                    Text(syncService.isSyncing ? "Syncing…" : "Sync \(monthLabel)")
+                    Spacer()
                 }
-                Text(syncService.isSyncing ? "Syncing…" : "Sync")
-                Spacer()
             }
             .contentShape(.rect)
         }
@@ -59,6 +61,10 @@ struct BankSyncSidebarRow: View {
         }
     }
 
+    private var monthLabel: String {
+        monthFilter.startOfMonth.formatted(.dateTime.month(.abbreviated).year())
+    }
+
     private var helpText: String {
         if monthFilter.isFutureMonth {
             return "Pick a current or past month to sync"
@@ -66,7 +72,7 @@ struct BankSyncSidebarRow: View {
         if syncService.isSyncCooldown {
             return "Sync available after 1 minute cooldown"
         }
-        return "Sync bank transactions for the selected month"
+        return "Sync bank transactions for \(monthLabel)"
     }
 
     private func triggerSync() {

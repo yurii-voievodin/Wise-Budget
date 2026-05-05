@@ -120,12 +120,19 @@ struct BudgetPlanQueryListView: View {
         monthlyBudget - totalPlanned
     }
 
+    private var summaryTitle: String {
+        let comps = DateComponents(year: filter.year, month: filter.month, day: 1)
+        let date = Calendar.current.date(from: comps) ?? Date.now
+        return date.formatted(.dateTime.month(.abbreviated).year())
+    }
+
     var body: some View {
         if let plan = currentPlan {
             BudgetPlanListView(
                 categories: categories,
                 plan: plan,
                 planCurrency: planCurrency,
+                summaryTitle: summaryTitle,
                 totalPlanned: totalPlanned,
                 totalActual: totalActual,
                 monthlyBudget: monthlyBudget,

@@ -98,7 +98,7 @@ struct CashflowView: View {
                     let periodExpenses = activeMonths.reduce(Decimal.zero) { $0 + $1.expenses }
                     let periodBalance = periodIncome - periodExpenses
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text(periodLabel)
                             .font(.subheadline)
                             .fontWeight(.semibold)
@@ -125,7 +125,8 @@ struct CashflowView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 16)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -178,7 +179,6 @@ struct CashflowView: View {
                 precision: 0
             )
         }
-        .padding(.vertical, 4)
     }
 }
 

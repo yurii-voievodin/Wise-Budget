@@ -5,6 +5,7 @@ struct BudgetPlanListView: View {
     let categories: [ExpenseCategory]
     let plan: BudgetPlan
     let planCurrency: String
+    let summaryTitle: String
     let totalPlanned: Decimal
     let totalActual: Decimal
     let monthlyBudget: Decimal
@@ -23,19 +24,20 @@ struct BudgetPlanListView: View {
     ]
 
     var body: some View {
-        List {
-            BudgetSummarySection(
-                monthlyBudget: monthlyBudget,
-                planCurrency: planCurrency,
-                totalPlanned: totalPlanned,
-                unplannedAmount: unplannedAmount,
-                totalActual: totalActual,
-                unconvertibleExpenseCount: unconvertibleExpenseCount,
-                onMonthlyBudgetChange: onMonthlyBudgetChange,
-                onShowForeignExpenses: onShowForeignExpenses
-            )
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                BudgetSummarySection(
+                    title: summaryTitle,
+                    monthlyBudget: monthlyBudget,
+                    planCurrency: planCurrency,
+                    totalPlanned: totalPlanned,
+                    unplannedAmount: unplannedAmount,
+                    totalActual: totalActual,
+                    unconvertibleExpenseCount: unconvertibleExpenseCount,
+                    onMonthlyBudgetChange: onMonthlyBudgetChange,
+                    onShowForeignExpenses: onShowForeignExpenses
+                )
 
-            Section("Categories") {
                 LazyVGrid(columns: categoryColumns, spacing: 12) {
                     ForEach(categories) { category in
                         BudgetCategoryRow(
@@ -49,8 +51,9 @@ struct BudgetPlanListView: View {
                         )
                     }
                 }
-                .padding(.vertical, 4)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 16)
         }
         .focusedSceneValue(\.resetBudgetPlan, onResetPlan)
     }

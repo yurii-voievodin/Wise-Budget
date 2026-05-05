@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BudgetSummarySection: View {
+    let title: String
     let monthlyBudget: Decimal
     let planCurrency: String
     let totalPlanned: Decimal
@@ -13,7 +14,7 @@ struct BudgetSummarySection: View {
     @State private var draftBudget: Decimal?
 
     private let columns = [
-        GridItem(.adaptive(minimum: 220), spacing: 12)
+        GridItem(.adaptive(minimum: 200), spacing: 12)
     ]
 
     private var remaining: Decimal { monthlyBudget - totalActual }
@@ -21,7 +22,12 @@ struct BudgetSummarySection: View {
     private var isOverBudget: Bool { remaining < 0 }
 
     var body: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
             HStack {
                 Label("Monthly Budget", systemImage: "wallet.bifold")
                     .font(.subheadline)
@@ -84,11 +90,9 @@ struct BudgetSummarySection: View {
                     )
                 }
             }
-            .padding(.vertical, 4)
 
             if totalActual > 0, totalPlanned > 0 {
                 BudgetProgressBar(spent: totalActual, planned: totalPlanned)
-                    .listRowSeparator(.hidden)
             }
 
             if unconvertibleExpenseCount > 0 {
@@ -103,6 +107,8 @@ struct BudgetSummarySection: View {
                 .buttonStyle(.plain)
             }
         }
+        .padding(12)
+        .cardBackground()
         .task(id: monthlyBudget) {
             if draftBudget != monthlyBudget {
                 draftBudget = monthlyBudget == .zero ? nil : monthlyBudget
@@ -112,8 +118,9 @@ struct BudgetSummarySection: View {
 }
 
 #Preview {
-    List {
+    ScrollView {
         BudgetSummarySection(
+            title: "May 2026",
             monthlyBudget: 1000,
             planCurrency: "USD",
             totalPlanned: 750,
@@ -123,6 +130,7 @@ struct BudgetSummarySection: View {
             onMonthlyBudgetChange: { _ in },
             onShowForeignExpenses: {}
         )
+        .padding()
     }
     .frame(width: 500, height: 400)
 }
