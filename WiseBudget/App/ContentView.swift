@@ -94,7 +94,10 @@ private struct SidebarBottomSection: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 12) {
+                BankSyncSidebarRow(syncService: syncService, monthFilter: monthFilter)
+                    .padding(.horizontal, 8)
+
                 Button {
                     selectedSidebarItem = .bankConnections
                 } label: {
@@ -110,9 +113,6 @@ private struct SidebarBottomSection: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-
-                BankSyncSidebarRow(syncService: syncService, monthFilter: monthFilter)
-                    .padding(.horizontal, 8)
             }
             .padding(8)
         }

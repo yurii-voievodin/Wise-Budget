@@ -11,6 +11,11 @@ struct BudgetCategoryRow: View {
 
     @State private var draftPlanned: Decimal?
 
+    private var percentText: String {
+        guard planned > 0, actual > 0 else { return "—" }
+        return (actual / planned).formatted(.percent.precision(.fractionLength(0)))
+    }
+
     private var categoryLabel: some View {
         HStack(spacing: 8) {
             CategoryIconBadge(
@@ -59,15 +64,13 @@ struct BudgetCategoryRow: View {
                 Text(currency)
                     .foregroundStyle(.secondary)
             }
-            if actual > 0, planned > 0 {
-                HStack {
-                    BudgetProgressBar(spent: actual, planned: planned)
-                    Text(actual / planned, format: .percent.precision(.fractionLength(0)))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
-                }
+            HStack {
+                BudgetProgressBar(spent: actual, planned: planned)
+                Text(percentText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(width: 44, alignment: .trailing)
             }
         }
         .padding(12)
