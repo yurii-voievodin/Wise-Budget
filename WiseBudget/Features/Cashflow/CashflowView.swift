@@ -17,6 +17,14 @@ struct CashflowView: View {
 
     @State private var timeRange: TimeRange = .sixMonths
 
+    private let statColumns = [
+        GridItem(.adaptive(minimum: 200), spacing: 12)
+    ]
+
+    private let monthColumns = [
+        GridItem(.adaptive(minimum: 320), spacing: 16)
+    ]
+
     // MARK: - Month Range
 
     private var monthRange: [MonthKey] {
@@ -75,75 +83,150 @@ struct CashflowView: View {
     // MARK: - Body
 
     var body: some View {
-        Form {
-            Section {
-                Picker("Time Range", selection: $timeRange) {
-                    ForEach(TimeRange.allCases) { range in
-                        Text(range.rawValue).tag(range)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
+        let activeMonths = monthlyTotals.filter(\.hasActivity)
 
-            let activeMonths = monthlyTotals.filter(\.hasActivity)
-
-            if activeMonths.isEmpty {
-                Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if activeMonths.isEmpty {
                     Text("No income or expenses for this period")
                         .foregroundStyle(.secondary)
-                }
-            } else {
-                let periodIncome = activeMonths.reduce(Decimal.zero) { $0 + $1.income }
-                let periodExpenses = activeMonths.reduce(Decimal.zero) { $0 + $1.expenses }
-                let periodBalance = periodIncome - periodExpenses
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                } else {
+                    let periodIncome = activeMonths.reduce(Decimal.zero) { $0 + $1.income }
+                    let periodExpenses = activeMonths.reduce(Decimal.zero) { $0 + $1.expenses }
+                    let periodBalance = periodIncome - periodExpenses
 
-                Section(periodLabel) {
-                    LabeledContent("Income") {
-                        Text(amount: periodIncome, currency: defaultCurrency, precision: 0)
-                            .monospacedDigit()
-                            .foregroundStyle(.income)
-                    }
-                    LabeledContent("Expenses") {
-                        Text(amount: periodExpenses, currency: defaultCurrency, precision: 0)
-                            .monospacedDigit()
-                            .foregroundStyle(.expense)
-                    }
-                    LabeledContent("Balance") {
-                        Text(amount: periodBalance, currency: defaultCurrency, signed: true, precision: 0)
-                            .monospacedDigit()
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(periodLabel)
+                            .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundStyle(periodBalance >= .zero ? .income : .expense)
+                            .foregroundStyle(.secondary)
+                        cashflowStatGrid(
+                            income: periodIncome,
+                            expenses: periodExpenses,
+                            balance: periodBalance
+                        )
                     }
-                }
+                    .padding(12)
+                    .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                ForEach(activeMonths, id: \.month) { totals in
-                    let scale = max(totals.income, totals.expenses)
-                    Section(totals.month.fullLabel) {
-                        CashflowBarRow(
-                            label: "Income",
-                            amount: totals.income,
-                            maxValue: scale,
-                            tint: .income,
-                            currency: defaultCurrency
-                        )
-                        CashflowBarRow(
-                            label: "Expenses",
-                            amount: totals.expenses,
-                            maxValue: scale,
-                            tint: .expense,
-                            currency: defaultCurrency
-                        )
-                        LabeledContent("Balance") {
-                            Text(amount: totals.balance, currency: defaultCurrency, signed: true, precision: 0)
-                                .monospacedDigit()
-                                .fontWeight(.semibold)
-                                .foregroundStyle(totals.balance >= .zero ? .income : .expense)
+                    LazyVGrid(columns: monthColumns, spacing: 16) {
+                        ForEach(activeMonths, id: \.month) { totals in
+                            MonthCashflowCard(
+                                title: totals.month.fullLabel,
+                                income: totals.income,
+                                expenses: totals.expenses,
+                                balance: totals.balance,
+                                currency: defaultCurrency
+                            )
                         }
                     }
                 }
             }
+            .padding(16)
         }
-        .formStyle(.grouped)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Time Range", selection: $timeRange) {
+                        ForEach(TimeRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    Image(systemName: "calendar")
+                }
+                .menuIndicator(.hidden)
+                .help("Time Range")
+                .accessibilityLabel("Time Range")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cashflowStatGrid(income: Decimal, expenses: Decimal, balance: Decimal) -> some View {
+        LazyVGrid(columns: statColumns, spacing: 12) {
+            StatCard(
+                label: "Income",
+                icon: "arrow.down.circle.fill",
+                color: .income,
+                amount: income,
+                currency: defaultCurrency,
+                bold: true,
+                precision: 0
+            )
+            StatCard(
+                label: "Expenses",
+                icon: "arrow.up.circle.fill",
+                color: .expense,
+                amount: expenses,
+                currency: defaultCurrency,
+                bold: true,
+                precision: 0
+            )
+            StatCard(
+                label: "Balance",
+                icon: balance >= .zero ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
+                color: balance >= .zero ? .income : .expense,
+                amount: balance,
+                currency: defaultCurrency,
+                signed: true,
+                bold: true,
+                precision: 0
+            )
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct MonthCashflowCard: View {
+    let title: String
+    let income: Decimal
+    let expenses: Decimal
+    let balance: Decimal
+    let currency: String
+
+    private var scale: Decimal { max(income, expenses) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            CashflowBarRow(
+                label: "Income",
+                amount: income,
+                maxValue: scale,
+                tint: .income,
+                currency: currency
+            )
+            CashflowBarRow(
+                label: "Expenses",
+                amount: expenses,
+                maxValue: scale,
+                tint: .expense,
+                currency: currency
+            )
+
+            Divider()
+
+            HStack {
+                Text("Balance")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(amount: balance, currency: currency, signed: true, precision: 0)
+                    .monospacedDigit()
+                    .fontWeight(.semibold)
+                    .foregroundStyle(balance >= .zero ? .income : .expense)
+            }
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -155,9 +238,10 @@ private struct CashflowBarRow: View {
     let currency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(label)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
                 HStack(spacing: 4) {
@@ -166,6 +250,7 @@ private struct CashflowBarRow: View {
                         .foregroundStyle(tint)
                     Text(currency)
                         .foregroundStyle(.secondary)
+                        .font(.subheadline)
                 }
             }
             GeometryReader { geo in
@@ -177,9 +262,8 @@ private struct CashflowBarRow: View {
                         .frame(width: geo.size.width * widthRatio)
                 }
             }
-            .frame(height: 8)
+            .frame(height: 6)
         }
-        .padding(.vertical, 2)
     }
 
     private var widthRatio: Double {

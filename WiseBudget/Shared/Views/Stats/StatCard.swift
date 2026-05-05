@@ -10,6 +10,7 @@ struct StatCard: View {
     let currency: String
     var signed: Bool = false
     var bold: Bool = false
+    var precision: Int = 2
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -17,7 +18,7 @@ struct StatCard: View {
                 .font(.subheadline)
                 .foregroundStyle(color)
                 .lineLimit(1)
-            Text(amount: amount, currency: currency, signed: signed)
+            Text(amount: amount, currency: currency, signed: signed, precision: precision)
                 .font(.title3)
                 .monospacedDigit()
                 .bold(bold)
