@@ -9,10 +9,10 @@ struct IncomeListView: View {
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
     @State private var selectedTab: IncomeTab = .income
-    @State private var syncService = BankSyncService()
     @State private var selectedCategoryName: String?
     @Binding var filter: MonthFilter
     @Binding var selectedSidebarItem: SidebarItem
+    @Bindable var syncService: BankSyncService
 
     enum IncomeTab: Hashable {
         case income
@@ -41,9 +41,6 @@ struct IncomeListView: View {
             }
         }
         .navigationTitle("")
-        .safeAreaInset(edge: .top, spacing: 0) {
-            BankSyncProgressBar(syncService: syncService)
-        }
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             if selectedTab == .income {
@@ -52,11 +49,6 @@ struct IncomeListView: View {
                     selectedCategoryName: $selectedCategoryName,
                     categories: incomeCategories.map { ($0.name, $0.displayIconName) }
                 )
-            }
-            if selectedTab != .comparison {
-                BankSyncToolbar(syncService: syncService, filter: filter)
-            }
-            if selectedTab == .income {
                 ToolbarItem {
                     Button(action: { isAddingIncome = true }) {
                         Label("Add Income", systemImage: "plus")
@@ -82,7 +74,7 @@ struct IncomeListView: View {
 #Preview {
     @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
     @Previewable @State var selectedSidebarItem: SidebarItem = .income
-    IncomeListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem)
+    IncomeListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, syncService: BankSyncService())
         .modelContainer(PreviewSampleData.container)
         .frame(width: 700, height: 500)
 }
