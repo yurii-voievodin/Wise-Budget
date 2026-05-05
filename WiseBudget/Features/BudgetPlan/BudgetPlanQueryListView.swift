@@ -120,12 +120,17 @@ struct BudgetPlanQueryListView: View {
         monthlyBudget - totalPlanned
     }
 
+    private var summaryTitle: String {
+        MonthKey(year: filter.year, month: filter.month).fullLabel
+    }
+
     var body: some View {
         if let plan = currentPlan {
             BudgetPlanListView(
                 categories: categories,
                 plan: plan,
                 planCurrency: planCurrency,
+                summaryTitle: summaryTitle,
                 totalPlanned: totalPlanned,
                 totalActual: totalActual,
                 monthlyBudget: monthlyBudget,

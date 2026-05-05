@@ -11,20 +11,35 @@ struct BudgetCategoryRow: View {
 
     @State private var draftPlanned: Decimal?
 
+    private var percentText: String {
+        guard planned > 0, actual > 0 else { return "—" }
+        return (actual / planned).formatted(.percent.precision(.fractionLength(0)))
+    }
+
+    private var categoryLabel: some View {
+        HStack(spacing: 8) {
+            CategoryIconBadge(
+                systemName: categoryIcon,
+                color: DefaultExpenseCategory.color(for: categoryName),
+                size: 24
+            )
+            Text(categoryName)
+                .fontWeight(.medium)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if let onCategoryTap {
                     Button(action: onCategoryTap) {
-                        Label(categoryName, systemImage: categoryIcon)
-                            .fontWeight(.medium)
+                        categoryLabel
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show expenses for \(categoryName)")
                 } else {
-                    Label(categoryName, systemImage: categoryIcon)
-                        .fontWeight(.medium)
+                    categoryLabel
                 }
                 Spacer()
                 Text(actual, format: .number)
@@ -49,18 +64,17 @@ struct BudgetCategoryRow: View {
                 Text(currency)
                     .foregroundStyle(.secondary)
             }
-            if actual > 0, planned > 0 {
-                HStack {
-                    BudgetProgressBar(spent: actual, planned: planned)
-                    Text(actual / planned, format: .percent.precision(.fractionLength(0)))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
-                }
+            HStack {
+                BudgetProgressBar(spent: actual, planned: planned)
+                Text(percentText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(width: 44, alignment: .trailing)
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .cardBackground()
         .task(id: planned) {
             // Sync the draft from the source of truth when a different
             // category's value changes propagate, or on first appearance.

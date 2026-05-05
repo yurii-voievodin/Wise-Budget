@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BudgetSummarySection: View {
+    let title: String
     let monthlyBudget: Decimal
     let planCurrency: String
     let totalPlanned: Decimal
@@ -12,10 +13,25 @@ struct BudgetSummarySection: View {
 
     @State private var draftBudget: Decimal?
 
+    private let columns = [
+        GridItem(.adaptive(minimum: 200), spacing: 12)
+    ]
+
+    private var remaining: Decimal { monthlyBudget - totalActual }
+    private var isOverPlanned: Bool { totalActual > totalPlanned && totalPlanned > 0 }
+    private var isOverBudget: Bool { remaining < 0 }
+
     var body: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
             HStack {
-                Text("Monthly Budget")
+                Label("Monthly Budget", systemImage: "wallet.bifold")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 TextField("0", value: $draftBudget, format: .number)
                     .textFieldStyle(.roundedBorder)
@@ -35,53 +51,48 @@ struct BudgetSummarySection: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack {
-                Text("Total Planned")
-                Spacer()
-                Text("\(totalPlanned, format: .number) \(planCurrency)")
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-            }
-
-            if monthlyBudget > 0 {
-                HStack {
-                    Text("Unplanned")
-                    Spacer()
-                    Text("\(unplannedAmount, format: .number) \(planCurrency)")
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                        .foregroundStyle(unplannedAmount < 0 ? .expense : .secondary)
+            LazyVGrid(columns: columns, spacing: 12) {
+                StatCard(
+                    label: "Total Planned",
+                    icon: "list.bullet.rectangle",
+                    color: .accentColor,
+                    amount: totalPlanned,
+                    currency: planCurrency,
+                    bold: true
+                )
+                if monthlyBudget > 0 {
+                    StatCard(
+                        label: "Unplanned",
+                        icon: "questionmark.circle",
+                        color: unplannedAmount < 0 ? .expense : .secondary,
+                        amount: unplannedAmount,
+                        currency: planCurrency,
+                        signed: true
+                    )
                 }
-            }
-
-            HStack {
-                Text("Total Spent")
-                Spacer()
-                Text("\(totalActual, format: .number) \(planCurrency)")
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-                    .foregroundStyle(totalActual > totalPlanned && totalPlanned > 0 ? .expense : .primary)
-            }
-
-            if monthlyBudget > 0 {
-                let remaining = monthlyBudget - totalActual
-                HStack {
-                    Text("Remaining")
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Image(systemName: remaining >= 0 ? "checkmark.circle" : "exclamationmark.triangle")
-                            .font(.caption)
-                        Text("\(remaining, format: .number) \(planCurrency)")
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                    }
-                    .foregroundStyle(remaining < 0 ? .expense : .income)
+                StatCard(
+                    label: "Total Spent",
+                    icon: "creditcard",
+                    color: isOverPlanned ? .expense : .primary,
+                    amount: totalActual,
+                    currency: planCurrency,
+                    bold: true
+                )
+                if monthlyBudget > 0 {
+                    StatCard(
+                        label: "Remaining",
+                        icon: isOverBudget ? "exclamationmark.triangle.fill" : "checkmark.circle.fill",
+                        color: isOverBudget ? .expense : .income,
+                        amount: remaining,
+                        currency: planCurrency,
+                        signed: true,
+                        bold: true
+                    )
                 }
             }
 
             if totalActual > 0, totalPlanned > 0 {
                 BudgetProgressBar(spent: totalActual, planned: totalPlanned)
-                    .listRowSeparator(.hidden)
             }
 
             if unconvertibleExpenseCount > 0 {
@@ -96,6 +107,8 @@ struct BudgetSummarySection: View {
                 .buttonStyle(.plain)
             }
         }
+        .padding(12)
+        .cardBackground()
         .task(id: monthlyBudget) {
             if draftBudget != monthlyBudget {
                 draftBudget = monthlyBudget == .zero ? nil : monthlyBudget
@@ -105,8 +118,9 @@ struct BudgetSummarySection: View {
 }
 
 #Preview {
-    List {
+    ScrollView {
         BudgetSummarySection(
+            title: "May 2026",
             monthlyBudget: 1000,
             planCurrency: "USD",
             totalPlanned: 750,
@@ -116,6 +130,7 @@ struct BudgetSummarySection: View {
             onMonthlyBudgetChange: { _ in },
             onShowForeignExpenses: {}
         )
+        .padding()
     }
     .frame(width: 500, height: 400)
 }

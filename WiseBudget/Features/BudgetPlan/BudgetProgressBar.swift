@@ -19,6 +19,7 @@ struct BudgetProgressBar: View {
 
     private var barColor: Color {
         switch ratio {
+        case ...0: .clear
         case ..<Self.thresholdLow: .income
         case Self.thresholdLow..<Self.thresholdMedium: .yellow
         case Self.thresholdMedium..<Self.thresholdHigh: .orange

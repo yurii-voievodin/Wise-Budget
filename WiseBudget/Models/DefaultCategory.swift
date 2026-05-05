@@ -64,21 +64,21 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         }
     }
 
-    static var chartColorMap: [String: Color] {
+    static let chartColorMap: [String: Color] = {
         var map: [String: Color] = [:]
         for category in Self.allCases {
             map[category.rawValue] = category.chartColor
         }
         map["Uncategorized"] = Color(red: 149/255, green: 165/255, blue: 166/255)
         return map
-    }
+    }()
 
-    static var chartColorDomain: [String] {
-        Self.allCases.map(\.rawValue) + ["Uncategorized"]
-    }
+    static let chartColorDomain: [String] = Self.allCases.map(\.rawValue) + ["Uncategorized"]
 
-    static var chartColorRange: [Color] {
-        Self.allCases.map(\.chartColor) + [Color(red: 149/255, green: 165/255, blue: 166/255)]
+    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [Color(red: 149/255, green: 165/255, blue: 166/255)]
+
+    static func color(for name: String) -> Color {
+        chartColorMap[name] ?? Color(red: 149/255, green: 165/255, blue: 166/255)
     }
 
     static func sortIndex(for name: String) -> Int {
@@ -116,21 +116,21 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
         }
     }
 
-    static var chartColorMap: [String: Color] {
+    static let chartColorMap: [String: Color] = {
         var map: [String: Color] = [:]
         for category in Self.allCases {
             map[category.rawValue] = category.chartColor
         }
         map["Uncategorized"] = Color(red: 178/255, green: 190/255, blue: 195/255)
         return map
-    }
+    }()
 
-    static var chartColorDomain: [String] {
-        Self.allCases.map(\.rawValue) + ["Uncategorized"]
-    }
+    static let chartColorDomain: [String] = Self.allCases.map(\.rawValue) + ["Uncategorized"]
 
-    static var chartColorRange: [Color] {
-        Self.allCases.map(\.chartColor) + [Color(red: 178/255, green: 190/255, blue: 195/255)]
+    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [Color(red: 178/255, green: 190/255, blue: 195/255)]
+
+    static func color(for name: String) -> Color {
+        chartColorMap[name] ?? Color(red: 178/255, green: 190/255, blue: 195/255)
     }
 
     static func sortIndex(for name: String) -> Int {

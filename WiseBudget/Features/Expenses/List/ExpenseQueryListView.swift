@@ -61,6 +61,7 @@ struct ExpenseQueryListView: View {
             descriptionText: { $0.descriptionText },
             categoryName: { $0.category?.name },
             categoryIcon: { $0.category?.displayIconName },
+            categoryColor: { $0.category.map { DefaultExpenseCategory.color(for: $0.name) } },
             extraField: { $0.destination },
             onSelect: { expenseToEdit = $0 },
             onAdd: { isAddingExpense = true },

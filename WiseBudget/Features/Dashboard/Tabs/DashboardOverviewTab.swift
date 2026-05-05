@@ -18,13 +18,10 @@ struct DashboardOverviewTab: View {
                     currency: currency
                 )
             }
-            DashboardMonthSummarySection(
+            DashboardKPIGridSection(
                 totalIncome: metrics.totalIncome,
                 totalExpenses: metrics.totalExpenses,
                 balance: metrics.balance,
-                currency: currency
-            )
-            DashboardDailyAveragesSection(
                 incomeDailyAverage: metrics.incomeDailyAverage,
                 expenseDailyAverage: metrics.expenseDailyAverage,
                 dailyBalance: metrics.dailyBalance,

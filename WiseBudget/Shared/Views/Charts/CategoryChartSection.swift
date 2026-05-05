@@ -118,11 +118,13 @@ struct CategoryChartSection: View {
 
     @ViewBuilder
     private func sliceRow(_ slice: CategoryChartSlice) -> some View {
-        HStack {
-            Circle()
-                .fill(colorMap[slice.name] ?? .gray)
-                .frame(width: 12, height: 12)
-            Label(slice.name, systemImage: slice.iconName)
+        HStack(spacing: 8) {
+            CategoryIconBadge(
+                systemName: slice.iconName,
+                color: colorMap[slice.name] ?? .gray,
+                size: 24
+            )
+            Text(slice.name)
             Spacer()
             let pct = slice.total / grandTotal * 100
             Text("\(pct, format: .number.precision(.fractionLength(1)))%")

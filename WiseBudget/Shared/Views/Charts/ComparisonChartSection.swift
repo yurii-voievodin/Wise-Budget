@@ -31,6 +31,20 @@ struct ComparisonChartSection: View {
         })
     }
 
+    /// Charts traps when chart data contains a category not present in the
+    /// foreground-style domain. Extend the domain with any stray categories
+    /// and pad the range with a fallback color.
+    private var resolvedColorScale: (domain: [String], range: [Color]) {
+        let known = Set(colorDomain)
+        var seen: Set<String> = []
+        let extras = chartData.compactMap { point -> String? in
+            guard !known.contains(point.categoryName), seen.insert(point.categoryName).inserted else { return nil }
+            return point.categoryName
+        }
+        guard !extras.isEmpty else { return (colorDomain, colorRange) }
+        return (colorDomain + extras, colorRange + Array(repeating: .gray, count: extras.count))
+    }
+
     var body: some View {
         Section(title) {
             Chart(chartData) { point in
@@ -40,7 +54,7 @@ struct ComparisonChartSection: View {
                 )
                 .foregroundStyle(by: .value("Category", point.categoryName))
             }
-            .chartForegroundStyleScale(domain: colorDomain, range: colorRange)
+            .chartForegroundStyleScale(domain: resolvedColorScale.domain, range: resolvedColorScale.range)
             .chartXScale(domain: xDomain)
             .chartXAxis {
                 switch labelStyle {

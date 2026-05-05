@@ -100,8 +100,8 @@ struct ExpenseCalendarView: View {
                 syncService: syncService
             )
         } else {
-            ScrollView {
-                VStack(spacing: 16) {
+            Form {
+                Section {
                     ExpenseCalendarTotalHeader(
                         totals: monthTotalsByCurrency,
                         defaultCurrency: defaultCurrency
@@ -111,10 +111,9 @@ struct ExpenseCalendarView: View {
                         defaultCurrency: defaultCurrency,
                         data: heatMapData
                     )
-                    .padding(.horizontal)
                 }
-                .padding(.vertical)
             }
+            .formStyle(.grouped)
         }
     }
 }

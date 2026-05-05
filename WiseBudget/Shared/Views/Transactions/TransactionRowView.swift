@@ -4,6 +4,7 @@ struct TransactionRowView: View {
     let descriptionText: String?
     let categoryName: String?
     let categoryIcon: String?
+    var categoryColor: Color? = nil
     let extraField: String?
     let item: CurrencyConvertible
     var amountTintColor: Color?
@@ -28,9 +29,12 @@ struct TransactionRowView: View {
                         .accessibilityLabel("Internal transfer")
                 }
                 if let name = categoryName, let icon = categoryIcon {
-                    Label(name, systemImage: icon)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        CategoryIconBadge(systemName: icon, color: categoryColor ?? .secondary, size: 22)
+                        Text(name)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 if let extra = extraField {
                     Text(extra)

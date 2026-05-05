@@ -17,6 +17,7 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     let descriptionText: (T) -> String?
     let categoryName: (T) -> String?
     let categoryIcon: (T) -> String?
+    var categoryColor: (T) -> Color? = { _ in nil }
     let extraField: (T) -> String?
     var amountTintColor: Color?
     var onSelect: (T) -> Void
@@ -52,6 +53,7 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                                         descriptionText: descriptionText(item),
                                         categoryName: categoryName(item),
                                         categoryIcon: categoryIcon(item),
+                                        categoryColor: categoryColor(item),
                                         extraField: extraField(item),
                                         item: item,
                                         amountTintColor: amountTintColor

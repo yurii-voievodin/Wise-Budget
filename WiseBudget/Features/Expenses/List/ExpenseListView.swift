@@ -7,12 +7,12 @@ struct ExpenseListView: View {
     @Binding var selectedSidebarItem: SidebarItem
     @Binding var selectedCategoryName: String?
     @Binding var selectedTab: ExpenseTab
+    @Bindable var syncService: BankSyncService
 
     @Query(sort: \ExpenseCategory.name) private var expenseCategories: [ExpenseCategory]
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
-    @State private var syncService = BankSyncService()
 
     enum ExpenseTab: Hashable {
         case expenses
@@ -46,9 +46,6 @@ struct ExpenseListView: View {
             }
         }
         .navigationTitle("")
-        .safeAreaInset(edge: .top, spacing: 0) {
-            BankSyncProgressBar(syncService: syncService)
-        }
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
             if selectedTab == .expenses {
@@ -62,9 +59,6 @@ struct ExpenseListView: View {
                         Label("Add Expense", systemImage: "plus")
                     }
                 }
-            }
-            if selectedTab != .comparison {
-                BankSyncToolbar(syncService: syncService, filter: filter)
             }
         }
         .sheet(isPresented: $isAddingExpense) {
@@ -87,7 +81,7 @@ struct ExpenseListView: View {
     @Previewable @State var selectedSidebarItem: SidebarItem = .expenses
     @Previewable @State var selectedCategoryName: String? = nil
     @Previewable @State var selectedTab: ExpenseListView.ExpenseTab = .calendar
-    ExpenseListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $selectedCategoryName, selectedTab: $selectedTab)
+    ExpenseListView(filter: $filter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $selectedCategoryName, selectedTab: $selectedTab, syncService: BankSyncService())
         .modelContainer(PreviewSampleData.container)
         .frame(width: 700, height: 500)
 }

@@ -48,7 +48,7 @@ struct WiseBudgetApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 750, maxWidth: 1400, minHeight: 400)
+                .frame(minWidth: 750, maxWidth: 1000, minHeight: 400)
                 .environment(localAIAppDetector)
                 .onAppear {
                     let context = sharedModelContainer.mainContext
