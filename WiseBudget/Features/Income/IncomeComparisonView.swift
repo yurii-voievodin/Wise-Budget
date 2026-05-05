@@ -101,15 +101,6 @@ struct IncomeComparisonView: View {
 
     var body: some View {
         Form {
-            Section {
-                Picker("Time Range", selection: $timeRange) {
-                    ForEach(TimeRange.allCases) { range in
-                        Text(range.rawValue).tag(range)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
-
             if chartData.isEmpty {
                 Section {
                     Text("No income data for this period")
@@ -136,6 +127,23 @@ struct IncomeComparisonView: View {
             }
         }
         .formStyle(.grouped)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Time Range", selection: $timeRange) {
+                        ForEach(TimeRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    Image(systemName: "calendar")
+                }
+                .menuIndicator(.hidden)
+                .help("Time Range")
+                .accessibilityLabel("Time Range")
+            }
+        }
     }
 }
 
