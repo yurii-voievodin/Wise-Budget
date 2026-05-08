@@ -40,6 +40,9 @@ struct WiseBudgetApp: App {
     @State private var backfillResult: BaseCurrencyBackfillService.Result?
     @State private var backfillError: String?
     @State private var showingBackfillAlert = false
+    @State private var showOnboarding = false
+
+    @AppStorage(OnboardingFlowView.completedKey) private var hasCompletedOnboarding: Bool = false
 
     init() {
         try? Tips.configure([.displayFrequency(.monthly), .datastoreLocation(.applicationDefault)])
@@ -60,6 +63,13 @@ struct WiseBudgetApp: App {
                     DataSeeder.prepopulateImportCategories(in: context)
                     Task { await BankSyncService.requestNotificationPermission() }
                     disableFullScreen()
+                    if !hasCompletedOnboarding {
+                        showOnboarding = true
+                    }
+                }
+                .sheet(isPresented: $showOnboarding) {
+                    OnboardingFlowView()
+                        .environment(localAIAppDetector)
                 }
                 .alert("Delete Budget Plan", isPresented: $showResetPlanConfirmation) {
                     Button("Delete", role: .destructive) {
@@ -148,6 +158,11 @@ struct WiseBudgetApp: App {
                     showResetPlanConfirmation = true
                 }
                 .disabled(resetBudgetPlan == nil)
+            }
+            CommandGroup(replacing: .help) {
+                Button("Show Onboarding") {
+                    showOnboarding = true
+                }
             }
         }
     }

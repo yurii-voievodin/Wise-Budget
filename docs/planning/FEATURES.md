@@ -16,17 +16,6 @@ Donate `App Intents` for "Log expense", "What did I spend on groceries this week
 
 Run the `swiftui-pro` skill's accessibility references across the whole Views layer — confirm Dynamic Type scales, icon-only buttons have labels, Reduce Motion is respected, and color is never the sole differentiator. Wanted as soon as possible.
 
-## Onboarding Flow
-
-A first-launch sequence that walks new users through the essentials before they land on an empty Dashboard. Four screens for the initial cut:
-
-1. **Default currency** — pick the base currency used for totals and conversions. Writes `DefaultCurrency.userDefaultsKey`; defaults to the locale fallback so the user can just confirm.
-2. **Bank connections** — connect Wise and/or Monobank by pasting an API token; tokens land in Keychain via `KeychainHelper`. Both are skippable for users who only want manual / CSV entry.
-3. **Apple Intelligence** — checks `SystemLanguageModel.default.availability` and, when supported on the device, invites the user to flip on the opt-in toggle in Settings → AI Insights. On unsupported devices / languages this step is skipped entirely.
-4. **First budget** — suggest enabling budgeting and offer to auto-populate the current month's `BudgetPlan` from prior-month spending (or sensible defaults when no data yet). User can edit before saving or skip.
-
-Whole flow is skippable and revisit-able later from Settings (Help → Show Onboarding).
-
 ---
 
 ## Savings Goals with AI-Suggested Contributions
