@@ -3,6 +3,7 @@ import SwiftData
 
 struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let groups: [TransactionGroup<T>]
     let hasAnyItems: Bool
@@ -69,13 +70,15 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                                 }
                             }
                         } header: {
-                            HStack {
+                            HStack(spacing: 4) {
                                 Text(group.date, format: Date.FormatStyle(date: .long))
                                     .fontWeight(.semibold)
                                 Spacer()
-                                Text(dayTotal(for: group.items), format: .number)
+                                Text(dayTotal(for: group.items), format: .number.precision(.fractionLength(0)))
                                     .fontWeight(.medium)
                                     .monospacedDigit()
+                                Text(defaultCurrency)
+                                    .foregroundStyle(.secondary)
                             }
                             .font(.subheadline)
                         }
@@ -88,6 +91,6 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     private func dayTotal(for items: [T]) -> Decimal {
         items
             .filter { !$0.isInternalTransfer }
-            .reduce(Decimal.zero) { $0 + $1.amount }
+            .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
     }
 }

@@ -30,7 +30,9 @@ struct CashflowView: View {
     @State private var selectedTab: CashflowTab = .overview
 
     private let statColumns = [
-        GridItem(.adaptive(minimum: 200), spacing: 12)
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
 
     private let monthColumns = [
@@ -170,9 +172,8 @@ struct CashflowView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(periodLabel)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
                         cashflowStatGrid(
                             income: periodIncome,
                             expenses: periodExpenses,
@@ -244,12 +245,27 @@ private struct MonthCashflowCard: View {
 
     private var scale: Decimal { max(income, expenses) }
 
+    private var savingsRate: Double? {
+        guard income > 0 else { return nil }
+        let value = NSDecimalNumber(decimal: balance / income).doubleValue
+        return value
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(month.fullLabel)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                Text(month.fullLabel)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let rate = savingsRate {
+                    Text("\(rate * 100, format: .number.precision(.fractionLength(0)))% saved")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(rate >= 0 ? Color.income : Color.expense)
+                }
+            }
 
             CashflowBarRow(
                 label: "Income",

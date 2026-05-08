@@ -22,7 +22,7 @@ struct PreviewSampleData {
         // Income categories
         let salary = IncomeCategory(name: "Salary")
         let freelance = IncomeCategory(name: "Freelance")
-        let dividends = IncomeCategory(name: "Dividends")
+        let dividends = IncomeCategory(name: "Dividends", iconName: "chart.line.uptrend.xyaxis")
         for cat in [salary, freelance, dividends] {
             context.insert(cat)
         }

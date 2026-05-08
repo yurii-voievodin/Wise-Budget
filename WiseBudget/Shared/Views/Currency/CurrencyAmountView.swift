@@ -9,20 +9,21 @@ struct CurrencyAmountView: View {
     var body: some View {
         VStack(alignment: .trailing) {
             HStack(spacing: 4) {
-                if item.currency != defaultCurrency {
-                    Image(systemName: "globe")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Text("\(item.amount, format: .number) \(item.currency)")
+                Text(item.amount, format: .number)
                     .font(.headline)
                     .foregroundStyle(tintColor ?? .primary)
+                Text(item.currency)
+                    .font(.headline)
+                    .foregroundStyle(item.currency == defaultCurrency ? (tintColor ?? .primary) : .secondary)
             }
             if let baseAmount = item.baseCurrencyAmount,
                let baseCur = item.baseCurrency {
-                Text("\(baseAmount, format: .number) \(baseCur)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(baseAmount, format: .number)
+                    Text(baseCur)
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
         }
     }

@@ -60,6 +60,6 @@ struct LifetimeView: View {
 
 #Preview {
     LifetimeView()
-        .modelContainer(for: [Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self], inMemory: true)
+        .modelContainer(PreviewSampleData.container)
         .frame(width: 700, height: 800)
 }
