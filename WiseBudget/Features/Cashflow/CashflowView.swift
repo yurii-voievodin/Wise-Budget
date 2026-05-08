@@ -7,7 +7,8 @@ struct CashflowView: View {
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
-    var onSelectMonth: ((MonthKey) -> Void)? = nil
+    var onSelectExpenseMonth: ((MonthKey) -> Void)? = nil
+    var onSelectIncomeMonth: ((MonthKey) -> Void)? = nil
 
     enum TimeRange: String, CaseIterable, Identifiable {
         case sixMonths = "6 Months"
@@ -19,6 +20,7 @@ struct CashflowView: View {
     enum CashflowTab: Hashable {
         case overview
         case expenses
+        case income
     }
 
     @State private var timeRange: TimeRange = .sixMonths
@@ -96,7 +98,12 @@ struct CashflowView: View {
                 overviewContent
             case .expenses:
                 ExpenseComparisonView(filter: filter) { month in
-                    onSelectMonth?(month)
+                    onSelectExpenseMonth?(month)
+                }
+                .id(filter)
+            case .income:
+                IncomeComparisonView(filter: filter) { month in
+                    onSelectIncomeMonth?(month)
                 }
                 .id(filter)
             }
@@ -105,7 +112,8 @@ struct CashflowView: View {
             ToolbarItem {
                 Picker("Section", selection: $selectedTab) {
                     Label("Overview", systemImage: "chart.bar.fill").tag(CashflowTab.overview)
-                    Label("Expenses", systemImage: "chart.bar.xaxis").tag(CashflowTab.expenses)
+                    Label("Expenses", systemImage: "arrow.up.circle.fill").tag(CashflowTab.expenses)
+                    Label("Income", systemImage: "arrow.down.circle.fill").tag(CashflowTab.income)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()

@@ -8,59 +8,32 @@ struct IncomeListView: View {
 
     @State private var isAddingIncome = false
     @State private var incomeToEdit: Income?
-    @State private var selectedTab: IncomeTab = .income
     @State private var selectedCategoryName: String?
     @Binding var filter: MonthFilter
     @Binding var selectedSidebarItem: SidebarItem
     @Bindable var syncService: BankSyncService
 
-    enum IncomeTab: Hashable {
-        case income
-        case comparison
-    }
-
     var body: some View {
-        Group {
-            switch selectedTab {
-            case .income:
-                IncomeQueryListView(
-                    filter: filter,
-                    selectedCategoryName: selectedCategoryName,
-                    incomeToEdit: $incomeToEdit,
-                    isAddingIncome: $isAddingIncome,
-                    selectedSidebarItem: $selectedSidebarItem,
-                    syncService: syncService
-                )
-                .id(filter)
-            case .comparison:
-                IncomeComparisonView(filter: filter) { month in
-                    filter = filter.with(monthKey: month)
-                    selectedTab = .income
-                }
-                .id(filter)
-            }
-        }
+        IncomeQueryListView(
+            filter: filter,
+            selectedCategoryName: selectedCategoryName,
+            incomeToEdit: $incomeToEdit,
+            isAddingIncome: $isAddingIncome,
+            selectedSidebarItem: $selectedSidebarItem,
+            syncService: syncService
+        )
+        .id(filter)
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
+            ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            CategoryFilterToolbar(
+                selectedCategoryName: $selectedCategoryName,
+                categories: incomeCategories.map { ($0.name, $0.displayIconName) }
+            )
             ToolbarItem {
-                Picker("Section", selection: $selectedTab) {
-                    Label("Income", systemImage: "list.bullet").tag(IncomeTab.income)
-                    Label("Comparison", systemImage: "chart.bar.xaxis").tag(IncomeTab.comparison)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-            if selectedTab == .income {
-                ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
-                CategoryFilterToolbar(
-                    selectedCategoryName: $selectedCategoryName,
-                    categories: incomeCategories.map { ($0.name, $0.displayIconName) }
-                )
-                ToolbarItem {
-                    Button(action: { isAddingIncome = true }) {
-                        Label("Add Income", systemImage: "plus")
-                    }
+                Button(action: { isAddingIncome = true }) {
+                    Label("Add Income", systemImage: "plus")
                 }
             }
         }

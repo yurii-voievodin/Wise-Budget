@@ -60,11 +60,18 @@ struct ContentView: View {
             case .income:
                 IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, syncService: syncService)
             case .cashflow:
-                CashflowView(filter: monthFilter, onSelectMonth: { month in
-                    monthFilter = monthFilter.with(monthKey: month)
-                    expenseListTab = .expenses
-                    selectedSidebarItem = .expenses
-                })
+                CashflowView(
+                    filter: monthFilter,
+                    onSelectExpenseMonth: { month in
+                        monthFilter = monthFilter.with(monthKey: month)
+                        expenseListTab = .expenses
+                        selectedSidebarItem = .expenses
+                    },
+                    onSelectIncomeMonth: { month in
+                        monthFilter = monthFilter.with(monthKey: month)
+                        selectedSidebarItem = .income
+                    }
+                )
                     .toolbar {
                         MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
                     }
