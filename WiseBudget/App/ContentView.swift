@@ -50,6 +50,7 @@ struct ContentView: View {
                     }
                 )
                 .id(monthFilter)
+                .navigationTitle("")
                 .toolbar {
                     MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
                 }

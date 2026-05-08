@@ -21,6 +21,11 @@ struct MonthNavigationBar: View {
 
     private var monthSymbols: [String] { Calendar.current.monthSymbols }
 
+    private var isOnCurrentMonth: Bool {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
+        return now.year == year && now.month == month
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             Button("Previous Month", systemImage: "chevron.left") {
@@ -77,7 +82,9 @@ struct MonthNavigationBar: View {
             }
 
             HStack {
-                Button("Current Month", action: goToCurrentMonth)
+                if !isOnCurrentMonth {
+                    Button("Current Month", action: goToCurrentMonth)
+                }
 
                 Button("Go", action: applyPickedDate)
                     .buttonStyle(.borderedProminent)
@@ -131,6 +138,11 @@ struct MonthNavigationToolbar: ToolbarContent {
         Calendar.current.monthSymbols
     }
 
+    private var isOnCurrentMonth: Bool {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
+        return now.year == year && now.month == month
+    }
+
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
             Button("Previous Month", systemImage: "chevron.left") {
@@ -179,7 +191,9 @@ struct MonthNavigationToolbar: ToolbarContent {
             }
 
             HStack {
-                Button("Current Month", action: goToCurrentMonth)
+                if !isOnCurrentMonth {
+                    Button("Current Month", action: goToCurrentMonth)
+                }
 
                 Button("Go", action: applyPickedDate)
                     .buttonStyle(.borderedProminent)
