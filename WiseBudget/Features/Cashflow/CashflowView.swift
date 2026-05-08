@@ -7,6 +7,7 @@ struct CashflowView: View {
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
+    var onSelectMonth: ((MonthKey) -> Void)? = nil
 
     enum TimeRange: String, CaseIterable, Identifiable {
         case sixMonths = "6 Months"
@@ -15,7 +16,13 @@ struct CashflowView: View {
         var id: Self { self }
     }
 
+    enum CashflowTab: Hashable {
+        case overview
+        case expenses
+    }
+
     @State private var timeRange: TimeRange = .sixMonths
+    @State private var selectedTab: CashflowTab = .overview
 
     private let statColumns = [
         GridItem(.adaptive(minimum: 200), spacing: 12)
@@ -83,6 +90,38 @@ struct CashflowView: View {
     // MARK: - Body
 
     var body: some View {
+        TabView(selection: $selectedTab) {
+            Tab("Overview", systemImage: "chart.bar.fill", value: .overview) {
+                overviewContent
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Menu {
+                                Picker("Time Range", selection: $timeRange) {
+                                    ForEach(TimeRange.allCases) { range in
+                                        Text(range.rawValue).tag(range)
+                                    }
+                                }
+                                .pickerStyle(.inline)
+                            } label: {
+                                Image(systemName: "calendar")
+                            }
+                            .menuIndicator(.hidden)
+                            .help("Time Range")
+                            .accessibilityLabel("Time Range")
+                        }
+                    }
+            }
+            Tab("Expenses", systemImage: "chart.bar.xaxis", value: .expenses) {
+                ExpenseComparisonView(filter: filter) { month in
+                    onSelectMonth?(month)
+                }
+                .id(filter)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var overviewContent: some View {
         let activeMonths = monthlyTotals.filter(\.hasActivity)
 
         ScrollView {
@@ -127,23 +166,6 @@ struct CashflowView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 16)
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Picker("Time Range", selection: $timeRange) {
-                        ForEach(TimeRange.allCases) { range in
-                            Text(range.rawValue).tag(range)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                } label: {
-                    Image(systemName: "calendar")
-                }
-                .menuIndicator(.hidden)
-                .help("Time Range")
-                .accessibilityLabel("Time Range")
-            }
         }
     }
 
