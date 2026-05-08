@@ -11,6 +11,7 @@ struct StatCard: View {
     var signed: Bool = false
     var bold: Bool = false
     var precision: Int = 2
+    var subtitle: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -25,6 +26,13 @@ struct StatCard: View {
                 .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -4,35 +4,48 @@ import SwiftData
 struct MonthlyInsightsCard: View {
     let summary: SpendingSummary
     let scopeKey: String
-    @Environment(\.modelContext) private var modelContext
     @AppStorage(SpendingInsightsService.userPreferenceKey) private var aiInsightsEnabled: Bool = SpendingInsightsService.userPreferenceDefault
+
+    var body: some View {
+        if aiInsightsEnabled {
+            // The service is held inside a child view so its initializer
+            // (which depends on FoundationModels) only runs when the user
+            // has actually opted in. Keeps Xcode previews and machines
+            // without Apple Intelligence from paying any cost.
+            MonthlyInsightsContent(summary: summary, scopeKey: scopeKey)
+        }
+    }
+}
+
+private struct MonthlyInsightsContent: View {
+    let summary: SpendingSummary
+    let scopeKey: String
+    @Environment(\.modelContext) private var modelContext
     @State private var service = SpendingInsightsService()
     @State private var regenerateTask: Task<Void, Never>?
 
     var body: some View {
-        if aiInsightsEnabled {
-            Section {
-                InsightsStateView(state: service.state, summary: summary, onRegenerate: regenerate)
-            } header: {
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.tint)
-                        .accessibilityHidden(true)
-                    Text("Monthly Insights")
-                    Spacer()
-                    if isReady {
-                        Button("Regenerate insights", systemImage: "arrow.clockwise", action: regenerate)
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(.borderless)
-                            .controlSize(.small)
-                            .help("Regenerate insights")
-                    }
+        Section {
+            InsightsStateView(state: service.state, summary: summary, onRegenerate: regenerate)
+        } header: {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+                Text("Monthly Insights")
+                Spacer()
+                if isReady {
+                    Button("Regenerate insights", systemImage: "arrow.clockwise", action: regenerate)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .help("Regenerate insights")
                 }
-                .textCase(nil)
             }
-            .task(id: scopeKey, autoGenerate)
-            .onAppear { service.prewarm() }
+            .textCase(nil)
         }
+        .task(id: scopeKey, autoGenerate)
+        .onAppear { service.prewarm() }
     }
 
     private var isReady: Bool {

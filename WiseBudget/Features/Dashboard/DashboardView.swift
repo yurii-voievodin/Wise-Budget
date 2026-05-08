@@ -254,6 +254,7 @@ private struct AIHandoffCopiedToast: View {
     @Previewable @State var filter = MonthFilter(year: 2026, month: 3)
     DashboardView(monthFilter: $filter)
         .modelContainer(PreviewSampleData.container)
+        .environment(LocalAIAppDetector())
         .frame(width: 600, height: 600)
 }
 
@@ -261,5 +262,6 @@ private struct AIHandoffCopiedToast: View {
     @Previewable @State var filter = MonthFilter.currentMonth()
     DashboardView(monthFilter: $filter)
         .modelContainer(PreviewSampleData.overspendingPaceContainer)
+        .environment(LocalAIAppDetector())
         .frame(width: 600, height: 700)
 }

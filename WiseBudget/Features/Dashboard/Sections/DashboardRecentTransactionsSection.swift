@@ -24,25 +24,20 @@ struct DashboardRecentTransactionsSection: View {
                     Button {
                         onTap(transaction)
                     } label: {
-                        HStack {
-                            Image(systemName: transaction.isExpense ? "arrow.up.circle" : "arrow.down.circle")
-                                .foregroundStyle(transaction.isExpense ? .expense : .income)
-                                .frame(width: 20)
-                                .accessibilityHidden(true)
-                            TransactionRowView(
-                                descriptionText: transaction.descriptionText,
-                                categoryName: transaction.categoryName,
-                                categoryIcon: transaction.categoryIcon,
-                                categoryColor: transaction.categoryName.map {
-                                    transaction.isExpense
-                                        ? DefaultExpenseCategory.color(for: $0)
-                                        : DefaultIncomeCategory.color(for: $0)
-                                },
-                                extraField: nil,
-                                item: transaction.item
-                            )
-                        }
-                        .contentShape(.rect)
+                        TransactionRowView(
+                            descriptionText: transaction.descriptionText ?? transaction.categoryName,
+                            categoryName: transaction.descriptionText == nil ? nil : transaction.categoryName,
+                            categoryIcon: transaction.descriptionText == nil ? nil : transaction.categoryIcon,
+                            categoryColor: transaction.categoryName.map {
+                                transaction.isExpense
+                                    ? DefaultExpenseCategory.color(for: $0)
+                                    : DefaultIncomeCategory.color(for: $0)
+                            },
+                            extraField: transaction.date.formatted(.dateTime.day().month(.abbreviated)),
+                            item: transaction.item,
+                            amountTintColor: transaction.isExpense ? .expense : .income
+                        )
+                        .accessibilityLabel(transaction.isExpense ? "Expense" : "Income")
                     }
                     .buttonStyle(.plain)
                 }

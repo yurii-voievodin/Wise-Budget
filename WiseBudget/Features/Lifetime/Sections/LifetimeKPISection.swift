@@ -10,9 +10,9 @@ struct LifetimeKPISection: View {
     var body: some View {
         Section("Lifetime Totals") {
             HStack(alignment: .top, spacing: 16) {
-                kpi("Income", value: totalIncome, color: .green)
-                kpi("Expenses", value: totalExpenses, color: .red)
-                kpi("Net", value: net, color: net >= 0 ? .green : .red)
+                kpi("Income", value: totalIncome, color: .income)
+                kpi("Expenses", value: totalExpenses, color: .expense)
+                kpi("Net", value: net, color: net >= 0 ? .income : .expense)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Time span")
                         .font(.caption)

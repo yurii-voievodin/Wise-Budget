@@ -28,7 +28,7 @@ struct YearlyDualBarSection: View {
             }
             .chartForegroundStyleScale(
                 domain: [Self.incomeSeries, Self.expenseSeries],
-                range: [.green, .red]
+                range: [.income, .expense]
             )
             .chartYAxis {
                 AxisMarks { value in

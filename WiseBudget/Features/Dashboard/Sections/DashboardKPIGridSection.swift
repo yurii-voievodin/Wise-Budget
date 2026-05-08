@@ -23,14 +23,16 @@ struct DashboardKPIGridSection: View {
                     icon: "arrow.down.circle.fill",
                     color: .income,
                     amount: totalIncome,
-                    currency: currency
+                    currency: currency,
+                    subtitle: dailyLabel(amount: incomeDailyAverage)
                 )
                 StatCard(
                     label: "Expenses",
                     icon: "arrow.up.circle.fill",
                     color: .expense,
                     amount: totalExpenses,
-                    currency: currency
+                    currency: currency,
+                    subtitle: dailyLabel(amount: expenseDailyAverage)
                 )
                 StatCard(
                     label: "Balance",
@@ -39,33 +41,21 @@ struct DashboardKPIGridSection: View {
                     amount: balance,
                     currency: currency,
                     signed: true,
-                    bold: true
-                )
-                StatCard(
-                    label: "Daily Income",
-                    icon: "arrow.down.circle",
-                    color: .income,
-                    amount: incomeDailyAverage,
-                    currency: currency
-                )
-                StatCard(
-                    label: "Daily Expenses",
-                    icon: "arrow.up.circle",
-                    color: .expense,
-                    amount: expenseDailyAverage,
-                    currency: currency
-                )
-                StatCard(
-                    label: "Daily Balance",
-                    icon: dailyBalance >= .zero ? "checkmark.circle" : "exclamationmark.circle",
-                    color: dailyBalance >= .zero ? .income : .expense,
-                    amount: dailyBalance,
-                    currency: currency,
-                    signed: true,
-                    bold: true
+                    bold: true,
+                    subtitle: dailyLabel(amount: dailyBalance, signed: true)
                 )
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private func dailyLabel(amount: Decimal, signed: Bool = false) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
+        if signed { formatter.positivePrefix = "+" }
+        let raw = formatter.string(from: amount as NSDecimalNumber) ?? ""
+        return "\(raw) \(currency) / day"
     }
 }
