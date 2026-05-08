@@ -8,17 +8,18 @@ struct ExpenseComparisonView: View {
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
+    @Binding var timeRange: CashflowTimeRange
     var onSelectMonth: ((MonthKey) -> Void)? = nil
 
-    enum TimeRange: String, CaseIterable, Identifiable {
-        case sixMonths = "6 Months"
-        case year = "Year"
-        case lifetime = "Lifetime"
-
-        var id: Self { self }
+    init(
+        filter: MonthFilter,
+        timeRange: Binding<CashflowTimeRange> = .constant(.sixMonths),
+        onSelectMonth: ((MonthKey) -> Void)? = nil
+    ) {
+        self.filter = filter
+        self._timeRange = timeRange
+        self.onSelectMonth = onSelectMonth
     }
-
-    @State private var timeRange: TimeRange = .sixMonths
 
     // MARK: - Filtered Months
 
@@ -27,7 +28,7 @@ struct ExpenseComparisonView: View {
         case .sixMonths:
             return MonthKey.recent(6, endingAt: MonthKey(year: filter.year, month: filter.month))
         case .year:
-            return MonthKey.allMonths(of: filter.year)
+            return MonthKey.recent(12, endingAt: MonthKey(year: filter.year, month: filter.month))
         case .lifetime:
             let calendar = Calendar.current
             let keys = Set(allExpenses.compactMap { expense -> MonthKey? in
@@ -42,7 +43,7 @@ struct ExpenseComparisonView: View {
     private var labelStyle: MonthKey.ChartLabelStyle {
         switch timeRange {
         case .sixMonths: .monthYear
-        case .year:      .month
+        case .year:      .monthYear
         case .lifetime:  .yearAtJanuary
         }
     }
@@ -142,23 +143,6 @@ struct ExpenseComparisonView: View {
             }
         }
         .formStyle(.grouped)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Picker("Time Range", selection: $timeRange) {
-                        ForEach(TimeRange.allCases) { range in
-                            Text(range.rawValue).tag(range)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                } label: {
-                    Image(systemName: "calendar")
-                }
-                .menuIndicator(.hidden)
-                .help("Time Range")
-                .accessibilityLabel("Time Range")
-            }
-        }
     }
 }
 

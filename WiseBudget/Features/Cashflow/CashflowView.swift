@@ -1,21 +1,25 @@
 import SwiftUI
 import SwiftData
 
+enum CashflowTimeRange: String, CaseIterable, Identifiable {
+    case sixMonths = "6 Months"
+    case year = "Year"
+    case lifetime = "Lifetime"
+
+    var id: Self { self }
+
+    static let storageKey = "cashflow.timeRange"
+}
+
 struct CashflowView: View {
     @Query(filter: #Predicate<Expense> { !$0.isInternalTransfer }, sort: \Expense.date) private var allExpenses: [Expense]
     @Query(filter: #Predicate<Income> { !$0.isInternalTransfer }, sort: \Income.date) private var allIncomes: [Income]
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
+    @AppStorage(CashflowTimeRange.storageKey) private var timeRange: CashflowTimeRange = .sixMonths
 
     let filter: MonthFilter
     var onSelectExpenseMonth: ((MonthKey) -> Void)? = nil
     var onSelectIncomeMonth: ((MonthKey) -> Void)? = nil
-
-    enum TimeRange: String, CaseIterable, Identifiable {
-        case sixMonths = "6 Months"
-        case year = "Year"
-
-        var id: Self { self }
-    }
 
     enum CashflowTab: Hashable {
         case overview
@@ -23,7 +27,6 @@ struct CashflowView: View {
         case income
     }
 
-    @State private var timeRange: TimeRange = .sixMonths
     @State private var selectedTab: CashflowTab = .overview
 
     private let statColumns = [
@@ -41,7 +44,19 @@ struct CashflowView: View {
         case .sixMonths:
             return MonthKey.recent(6, endingAt: MonthKey(year: filter.year, month: filter.month))
         case .year:
-            return MonthKey.allMonths(of: filter.year)
+            return MonthKey.recent(12, endingAt: MonthKey(year: filter.year, month: filter.month))
+        case .lifetime:
+            let calendar = Calendar.current
+            var keys = Set<MonthKey>()
+            for item in allExpenses {
+                let c = calendar.dateComponents([.year, .month], from: item.date)
+                if let y = c.year, let m = c.month { keys.insert(MonthKey(year: y, month: m)) }
+            }
+            for item in allIncomes {
+                let c = calendar.dateComponents([.year, .month], from: item.date)
+                if let y = c.year, let m = c.month { keys.insert(MonthKey(year: y, month: m)) }
+            }
+            return keys.sorted()
         }
     }
 
@@ -97,12 +112,12 @@ struct CashflowView: View {
             case .overview:
                 overviewContent
             case .expenses:
-                ExpenseComparisonView(filter: filter) { month in
+                ExpenseComparisonView(filter: filter, timeRange: $timeRange) { month in
                     onSelectExpenseMonth?(month)
                 }
                 .id(filter)
             case .income:
-                IncomeComparisonView(filter: filter) { month in
+                IncomeComparisonView(filter: filter, timeRange: $timeRange) { month in
                     onSelectIncomeMonth?(month)
                 }
                 .id(filter)
@@ -118,22 +133,20 @@ struct CashflowView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            if selectedTab == .overview {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Picker("Time Range", selection: $timeRange) {
-                            ForEach(TimeRange.allCases) { range in
-                                Text(range.rawValue).tag(range)
-                            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Time Range", selection: $timeRange) {
+                        ForEach(CashflowTimeRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
                         }
-                        .pickerStyle(.inline)
-                    } label: {
-                        Image(systemName: "calendar")
                     }
-                    .menuIndicator(.hidden)
-                    .help("Time Range")
-                    .accessibilityLabel("Time Range")
+                    .pickerStyle(.inline)
+                } label: {
+                    Image(systemName: "calendar")
                 }
+                .menuIndicator(.hidden)
+                .help("Time Range")
+                .accessibilityLabel("Time Range")
             }
         }
     }
