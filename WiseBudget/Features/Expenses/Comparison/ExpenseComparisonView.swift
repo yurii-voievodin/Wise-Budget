@@ -112,6 +112,28 @@ struct ExpenseComparisonView: View {
         monthTotals.reduce(0) { $0 + $1.total }
     }
 
+    private var categorySlices: [CategoryChartSlice] {
+        let calendar = Calendar.current
+        let validMonths = Set(monthRange)
+
+        var totals: [String: Double] = [:]
+        for expense in allExpenses {
+            let c = calendar.dateComponents([.year, .month], from: expense.date)
+            guard let year = c.year, let month = c.month else { continue }
+            guard validMonths.contains(MonthKey(year: year, month: month)) else { continue }
+            let name = expense.category?.name ?? "Uncategorized"
+            let amount = NSDecimalNumber(decimal: expense.convertedAmount(to: defaultCurrency) ?? .zero).doubleValue
+            totals[name, default: 0] += amount
+        }
+        return totals.map { name, total in
+            CategoryChartSlice(
+                name: name,
+                iconName: DefaultExpenseCategory(rawValue: name)?.iconName ?? "ellipsis.circle",
+                total: total
+            )
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -140,6 +162,17 @@ struct ExpenseComparisonView: View {
                     currency: defaultCurrency,
                     onSelect: onSelectMonth
                 )
+                if timeRange != .lifetime {
+                    CategoryChartSection(
+                        title: "Top Expense Categories",
+                        slices: categorySlices,
+                        currency: defaultCurrency,
+                        emptyText: "No expenses yet",
+                        colorMap: DefaultExpenseCategory.chartColorMap,
+                        sortOrderStorageKey: "cashflowExpenseCategorySortOrder",
+                        hidesChart: true
+                    )
+                }
             }
         }
         .formStyle(.grouped)
