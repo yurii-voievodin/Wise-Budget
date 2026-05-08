@@ -27,97 +27,55 @@ struct BankConnectionsView: View {
     }
 
     var body: some View {
-        List {
-            Section("Monobank") {
-                HStack {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(isMonobankConnected ? .green : Color.secondary.opacity(0.3))
-                            .frame(width: 10, height: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(isMonobankConnected ? "Connected" : "Not connected")
-                                .fontWeight(.medium)
-                            if isMonobankConnected {
-                                Text(monobankConnectedName)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+        Form {
+            Section {
+                Text("Connect Monobank or Wise to import transactions automatically. Tokens are stored in your macOS Keychain — never on a server.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
 
-                    Spacer()
-
+            Section {
+                BankConnectionRow(
+                    title: "Monobank",
+                    iconSystemName: "creditcard.fill",
+                    iconColor: .pink,
+                    isConnected: isMonobankConnected,
+                    connectedName: monobankConnectedName,
+                    lastSync: monobankLastSync
+                ) {
                     if isMonobankConnected {
-                        Button("Accounts") {
-                            showAccountsSheet = true
-                        }
-
+                        Button("Accounts") { showAccountsSheet = true }
                         Button("Disconnect", role: .destructive) {
                             showDisconnectConfirmation = true
                         }
                     } else {
-                        Button("Connect") {
-                            showConnectSheet = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                        Button("Connect") { showConnectSheet = true }
+                            .buttonStyle(.borderedProminent)
                     }
-                }
-
-                if isMonobankConnected && monobankLastSync > 0 {
-                    Label {
-                        Text("Last sync: \(Date(timeIntervalSince1970: monobankLastSync), style: .relative)")
-                    } icon: {
-                        Image(systemName: "clock")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
                 }
             }
 
-            Section("Wise") {
-                HStack {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(isWiseConnected ? .green : Color.secondary.opacity(0.3))
-                            .frame(width: 10, height: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(isWiseConnected ? "Connected" : "Not connected")
-                                .fontWeight(.medium)
-                            if isWiseConnected {
-                                Text(wiseConnectedName)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
-                    Spacer()
-
+            Section {
+                BankConnectionRow(
+                    title: "Wise",
+                    iconSystemName: "globe",
+                    iconColor: .blue,
+                    isConnected: isWiseConnected,
+                    connectedName: wiseConnectedName,
+                    lastSync: wiseLastSync
+                ) {
                     if isWiseConnected {
                         Button("Disconnect", role: .destructive) {
                             showWiseDisconnectConfirmation = true
                         }
                     } else {
-                        Button("Connect") {
-                            showWiseConnectSheet = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                        Button("Connect") { showWiseConnectSheet = true }
+                            .buttonStyle(.borderedProminent)
                     }
-                }
-
-                if isWiseConnected && wiseLastSync > 0 {
-                    Label {
-                        Text("Last sync: \(Date(timeIntervalSince1970: wiseLastSync), style: .relative)")
-                    } icon: {
-                        Image(systemName: "clock")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
                 }
             }
         }
+        .formStyle(.grouped)
 
         .sheet(isPresented: $showConnectSheet) {
             MonobankConnectSheet { name in

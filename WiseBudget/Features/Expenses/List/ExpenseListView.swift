@@ -19,11 +19,20 @@ struct ExpenseListView: View {
     enum ExpenseTab: Hashable {
         case expenses
         case calendar
+        case table
+    }
+
+    private var supportsSearch: Bool {
+        selectedTab == .expenses || selectedTab == .table
+    }
+
+    private var supportsListFilters: Bool {
+        selectedTab == .expenses || selectedTab == .table
     }
 
     @ViewBuilder
     var body: some View {
-        if selectedTab == .expenses {
+        if supportsSearch {
             tabContent
                 .searchable(
                     text: $searchText,
@@ -57,6 +66,14 @@ struct ExpenseListView: View {
                     syncService: syncService
                 )
                 .id(filter)
+            case .table:
+                ExpenseTableView(
+                    filter: filter,
+                    selectedCategoryName: selectedCategoryName,
+                    searchText: searchText,
+                    expenseToEdit: $expenseToEdit
+                )
+                .id(filter)
             }
         }
         .navigationTitle("")
@@ -66,11 +83,12 @@ struct ExpenseListView: View {
                 Picker("Section", selection: $selectedTab) {
                     Label("Calendar", systemImage: "calendar").tag(ExpenseTab.calendar)
                     Label("Expenses", systemImage: "list.bullet").tag(ExpenseTab.expenses)
+                    Label("Table", systemImage: "tablecells").tag(ExpenseTab.table)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            if selectedTab == .expenses {
+            if supportsListFilters {
                 ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
                 CategoryFilterToolbar(
                     selectedCategoryName: $selectedCategoryName,

@@ -40,6 +40,7 @@ struct PreviewSampleData {
             Expense(amount: 85.50, currency: "USD", date: date(year: 2026, month: 3, day: 14), category: utilities),
             Expense(amount: 34.99, currency: "USD", date: date(year: 2026, month: 3, day: 12), category: groceries),
             Expense(amount: 9.75, currency: "EUR", date: date(year: 2026, month: 3, day: 10), category: transport),
+            Expense(amount: 500.00, currency: "USD", date: date(year: 2026, month: 3, day: 13), category: nil, descriptionText: "Move to savings", isInternalTransfer: true),
             Expense(amount: 250.00, currency: "USD", date: date(year: 2026, month: 2, day: 28), category: entertainment),
             Expense(amount: 42.00, currency: "USD", date: date(year: 2026, month: 2, day: 20), category: groceries),
         ]
