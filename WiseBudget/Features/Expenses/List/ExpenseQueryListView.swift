@@ -10,14 +10,16 @@ struct ExpenseQueryListView: View {
 
     let filter: MonthFilter
     let selectedCategoryName: String?
+    let searchText: String
     @Binding var expenseToEdit: Expense?
     @Binding var isAddingExpense: Bool
     @Binding var selectedSidebarItem: SidebarItem
     @Bindable var syncService: BankSyncService
 
-    init(filter: MonthFilter, selectedCategoryName: String?, expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
+    init(filter: MonthFilter, selectedCategoryName: String?, searchText: String = "", expenseToEdit: Binding<Expense?>, isAddingExpense: Binding<Bool>, selectedSidebarItem: Binding<SidebarItem>, syncService: BankSyncService) {
         self.filter = filter
         self.selectedCategoryName = selectedCategoryName
+        self.searchText = searchText
         self._expenseToEdit = expenseToEdit
         self._isAddingExpense = isAddingExpense
         self._selectedSidebarItem = selectedSidebarItem
@@ -42,6 +44,18 @@ struct ExpenseQueryListView: View {
         }
         if let categoryName = selectedCategoryName {
             result = result.filter { $0.category?.name == categoryName }
+        }
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            let needle = trimmed.lowercased()
+            result = result.filter { expense in
+                if expense.descriptionText?.lowercased().contains(needle) == true { return true }
+                if expense.destination?.lowercased().contains(needle) == true { return true }
+                if expense.category?.name.lowercased().contains(needle) == true { return true }
+                if "\(expense.amount)".contains(needle) { return true }
+                if let base = expense.baseCurrencyAmount, "\(base)".contains(needle) { return true }
+                return false
+            }
         }
         return result
     }

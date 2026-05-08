@@ -20,8 +20,9 @@ struct IncomeListView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Income", systemImage: "list.bullet", value: .income) {
+        Group {
+            switch selectedTab {
+            case .income:
                 IncomeQueryListView(
                     filter: filter,
                     selectedCategoryName: selectedCategoryName,
@@ -31,8 +32,7 @@ struct IncomeListView: View {
                     syncService: syncService
                 )
                 .id(filter)
-            }
-            Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
+            case .comparison:
                 IncomeComparisonView(filter: filter) { month in
                     filter = filter.with(monthKey: month)
                     selectedTab = .income
@@ -43,6 +43,14 @@ struct IncomeListView: View {
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
+            ToolbarItem {
+                Picker("Section", selection: $selectedTab) {
+                    Label("Income", systemImage: "list.bullet").tag(IncomeTab.income)
+                    Label("Comparison", systemImage: "chart.bar.xaxis").tag(IncomeTab.comparison)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
             if selectedTab == .income {
                 ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
                 CategoryFilterToolbar(

@@ -13,23 +13,44 @@ struct ExpenseListView: View {
 
     @State private var isAddingExpense = false
     @State private var expenseToEdit: Expense?
+    @State private var searchText: String = ""
+    @State private var isSearchPresented: Bool = false
 
     enum ExpenseTab: Hashable {
         case expenses
         case calendar
-        case comparison
     }
 
+    @ViewBuilder
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Calendar", systemImage: "calendar", value: .calendar) {
+        if selectedTab == .expenses {
+            tabContent
+                .searchable(
+                    text: $searchText,
+                    isPresented: $isSearchPresented,
+                    placement: .toolbar,
+                    prompt: "Search expenses"
+                )
+        } else {
+            tabContent
+                .onAppear {
+                    isSearchPresented = false
+                    searchText = ""
+                }
+        }
+    }
+
+    private var tabContent: some View {
+        Group {
+            switch selectedTab {
+            case .calendar:
                 ExpenseCalendarView(filter: filter, syncService: syncService)
                     .id(filter)
-            }
-            Tab("Expenses", systemImage: "list.bullet", value: .expenses) {
+            case .expenses:
                 ExpenseQueryListView(
                     filter: filter,
                     selectedCategoryName: selectedCategoryName,
+                    searchText: searchText,
                     expenseToEdit: $expenseToEdit,
                     isAddingExpense: $isAddingExpense,
                     selectedSidebarItem: $selectedSidebarItem,
@@ -37,17 +58,18 @@ struct ExpenseListView: View {
                 )
                 .id(filter)
             }
-            Tab("Comparison", systemImage: "chart.bar.xaxis", value: .comparison) {
-                ExpenseComparisonView(filter: filter) { month in
-                    filter = filter.with(monthKey: month)
-                    selectedTab = .expenses
-                }
-                .id(filter)
-            }
         }
         .navigationTitle("")
         .toolbar {
             MonthNavigationToolbar(year: $filter.year, month: $filter.month)
+            ToolbarItem {
+                Picker("Section", selection: $selectedTab) {
+                    Label("Calendar", systemImage: "calendar").tag(ExpenseTab.calendar)
+                    Label("Expenses", systemImage: "list.bullet").tag(ExpenseTab.expenses)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
             if selectedTab == .expenses {
                 ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
                 CategoryFilterToolbar(

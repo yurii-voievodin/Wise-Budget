@@ -90,32 +90,42 @@ struct CashflowView: View {
     // MARK: - Body
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Overview", systemImage: "chart.bar.fill", value: .overview) {
+        Group {
+            switch selectedTab {
+            case .overview:
                 overviewContent
-                    .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            Menu {
-                                Picker("Time Range", selection: $timeRange) {
-                                    ForEach(TimeRange.allCases) { range in
-                                        Text(range.rawValue).tag(range)
-                                    }
-                                }
-                                .pickerStyle(.inline)
-                            } label: {
-                                Image(systemName: "calendar")
-                            }
-                            .menuIndicator(.hidden)
-                            .help("Time Range")
-                            .accessibilityLabel("Time Range")
-                        }
-                    }
-            }
-            Tab("Expenses", systemImage: "chart.bar.xaxis", value: .expenses) {
+            case .expenses:
                 ExpenseComparisonView(filter: filter) { month in
                     onSelectMonth?(month)
                 }
                 .id(filter)
+            }
+        }
+        .toolbar {
+            ToolbarItem {
+                Picker("Section", selection: $selectedTab) {
+                    Label("Overview", systemImage: "chart.bar.fill").tag(CashflowTab.overview)
+                    Label("Expenses", systemImage: "chart.bar.xaxis").tag(CashflowTab.expenses)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            if selectedTab == .overview {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Picker("Time Range", selection: $timeRange) {
+                            ForEach(TimeRange.allCases) { range in
+                                Text(range.rawValue).tag(range)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                    .menuIndicator(.hidden)
+                    .help("Time Range")
+                    .accessibilityLabel("Time Range")
+                }
             }
         }
     }
