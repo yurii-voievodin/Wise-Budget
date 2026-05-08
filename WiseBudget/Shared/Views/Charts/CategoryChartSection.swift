@@ -14,6 +14,7 @@ struct CategoryChartSection: View {
     var colorMap: [String: Color] = [:]
     var sortIndex: ((String) -> Int)? = nil
     var onSelect: ((String) -> Void)? = nil
+    var hidesChart: Bool = false
 
     /// Persisted per-screen via `@AppStorage` so the user's sort choice survives
     /// app restarts and re-renders. Tied to a stable `storageKey` per call site
@@ -29,6 +30,7 @@ struct CategoryChartSection: View {
         sortIndex: ((String) -> Int)? = nil,
         sortOrderStorageKey: String,
         defaultSortOrder: CategoryChartSortOrder = .bySpending,
+        hidesChart: Bool = false,
         onSelect: ((String) -> Void)? = nil
     ) {
         self.title = title
@@ -37,6 +39,7 @@ struct CategoryChartSection: View {
         self.emptyText = emptyText
         self.colorMap = colorMap
         self.sortIndex = sortIndex
+        self.hidesChart = hidesChart
         self.onSelect = onSelect
         self._sortOrder = AppStorage(wrappedValue: defaultSortOrder, sortOrderStorageKey)
     }
@@ -61,35 +64,37 @@ struct CategoryChartSection: View {
                 Text(emptyText)
                     .foregroundStyle(.secondary)
             } else {
-                Chart(sortedSlices) { slice in
-                    SectorMark(
-                        angle: .value("Amount", slice.total),
-                        innerRadius: .ratio(0.5),
-                        angularInset: 1
-                    )
-                    .foregroundStyle(by: .value("Category", slice.name))
-                }
-                .chartForegroundStyleScale(domain: sortedSlices.map(\.name), range: sortedSlices.map { colorMap[$0.name] ?? .gray })
-                .chartLegend(.hidden)
-                .chartBackground { proxy in
-                    GeometryReader { geo in
-                        if let frame = proxy.plotFrame {
-                            let rect = geo[frame]
-                            VStack(spacing: 2) {
-                                Text("\(Decimal(grandTotal), format: .number)")
-                                    .font(.headline)
-                                    .fontWeight(.bold)
-                                    .monospacedDigit()
-                                Text(currency)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                if !hidesChart {
+                    Chart(sortedSlices) { slice in
+                        SectorMark(
+                            angle: .value("Amount", slice.total),
+                            innerRadius: .ratio(0.5),
+                            angularInset: 1
+                        )
+                        .foregroundStyle(by: .value("Category", slice.name))
+                    }
+                    .chartForegroundStyleScale(domain: sortedSlices.map(\.name), range: sortedSlices.map { colorMap[$0.name] ?? .gray })
+                    .chartLegend(.hidden)
+                    .chartBackground { proxy in
+                        GeometryReader { geo in
+                            if let frame = proxy.plotFrame {
+                                let rect = geo[frame]
+                                VStack(spacing: 2) {
+                                    Text("\(Decimal(grandTotal), format: .number)")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .monospacedDigit()
+                                    Text(currency)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .position(x: rect.midX, y: rect.midY)
                             }
-                            .position(x: rect.midX, y: rect.midY)
                         }
                     }
+                    .frame(height: 150)
+                    .padding(.vertical, 8)
                 }
-                .frame(height: 150)
-                .padding(.vertical, 8)
 
                 ForEach(sortedSlices) { slice in
                     if let onSelect {
@@ -109,7 +114,7 @@ struct CategoryChartSection: View {
             HStack {
                 Text(title)
                 Spacer()
-                if sortIndex != nil && !slices.isEmpty {
+                if !hidesChart, sortIndex != nil, !slices.isEmpty {
                     sortMenu
                 }
             }

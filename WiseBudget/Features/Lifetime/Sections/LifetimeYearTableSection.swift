@@ -5,48 +5,63 @@ struct LifetimeYearTableSection: View {
     let currency: String
 
     var body: some View {
-        Section("By Year") {
-            Grid(alignment: .trailing, horizontalSpacing: 16, verticalSpacing: 8) {
+        Section {
+            Grid(alignment: .trailing, horizontalSpacing: 20, verticalSpacing: 0) {
                 GridRow {
                     Text("Year").gridColumnAlignment(.leading)
-                    Text("Income")
-                    Text("Expenses")
-                    Text("Net")
+                    Text("Income \(currency)")
+                    Text("Expenses \(currency)")
+                    Text("Net \(currency)")
                     Text("Saved")
-                    Text("Top Expense").gridColumnAlignment(.leading)
                 }
-                .font(.caption)
+                .font(.subheadline)
+                .fontWeight(.medium)
                 .foregroundStyle(.secondary)
+                .padding(.vertical, 8)
 
-                ForEach(rows.reversed()) { row in
+                ForEach(Array(rows.reversed().enumerated()), id: \.element.id) { index, row in
+                    Divider()
+                        .gridCellColumns(5)
+
                     GridRow {
                         Text(String(row.year))
                             .gridColumnAlignment(.leading)
                             .fontWeight(.semibold)
-                        Text(amount: Decimal(row.income), currency: currency, precision: 0)
-                        Text(amount: Decimal(row.expenses), currency: currency, precision: 0)
-                        Text(amount: Decimal(row.net), currency: currency, precision: 0)
-                            .foregroundStyle(row.net >= 0 ? Color.green : Color.red)
+                        Text(Decimal(row.income), format: .number.precision(.fractionLength(0)))
+                        Text(Decimal(row.expenses), format: .number.precision(.fractionLength(0)))
+                        Text(Decimal(row.net), format: .number.sign(strategy: .always(includingZero: false)).precision(.fractionLength(0)))
+                            .foregroundStyle(row.net >= 0 ? Color.income : Color.expense)
+                            .fontWeight(.medium)
                         if let rate = row.savingsRate {
                             Text("\(rate * 100, format: .number.precision(.fractionLength(0)))%")
-                                .foregroundStyle(rate >= 0 ? Color.primary : Color.red)
+                                .foregroundStyle(rate >= 0 ? Color.primary : Color.expense)
                         } else {
                             Text("—").foregroundStyle(.secondary)
                         }
-                        if let cat = row.topExpenseCategory {
-                            Label(cat, systemImage: DefaultExpenseCategory(rawValue: cat)?.iconName ?? "ellipsis.circle")
-                                .gridColumnAlignment(.leading)
-                                .labelStyle(.titleAndIcon)
-                        } else {
-                            Text("—")
-                                .foregroundStyle(.secondary)
-                                .gridColumnAlignment(.leading)
-                        }
                     }
                     .monospacedDigit()
+                    .padding(.vertical, 10)
                 }
             }
-            .padding(.vertical, 4)
+        } header: {
+            Text("By Year")
         }
     }
+}
+
+#Preview {
+    Form {
+        LifetimeYearTableSection(
+            rows: [
+                .init(year: 2022, income: 18_500, expenses: 12_300),
+                .init(year: 2023, income: 32_400, expenses: 21_800),
+                .init(year: 2024, income: 47_900, expenses: 38_600),
+                .init(year: 2025, income: 56_200, expenses: 49_400),
+                .init(year: 2026, income: 22_100, expenses: 27_500)
+            ],
+            currency: "EUR"
+        )
+    }
+    .formStyle(.grouped)
+    .frame(width: 700, height: 360)
 }

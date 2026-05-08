@@ -7,7 +7,6 @@ struct LifetimeAggregate {
         let year: Int
         let income: Double
         let expenses: Double
-        let topExpenseCategory: String?
 
         var id: Int { year }
         var net: Double { income - expenses }
@@ -41,7 +40,6 @@ struct LifetimeAggregate {
         var monthExpense: [MonthKey: Double] = [:]
         var expenseByCat: [String: Double] = [:]
         var incomeByCat: [String: Double] = [:]
-        var yearCatExpense: [Int: [String: Double]] = [:]
         var firstDate: Date?
         var lastDate: Date?
 
@@ -69,7 +67,6 @@ struct LifetimeAggregate {
             monthExpense[MonthKey(year: y, month: m), default: 0] += value
             let cat = expense.category?.name ?? "Uncategorized"
             expenseByCat[cat, default: 0] += value
-            yearCatExpense[y, default: [:]][cat, default: 0] += value
             firstDate = min(firstDate ?? expense.date, expense.date)
             lastDate = max(lastDate ?? expense.date, expense.date)
         }
@@ -79,8 +76,7 @@ struct LifetimeAggregate {
             YearTotals(
                 year: year,
                 income: yearIncome[year, default: 0],
-                expenses: yearExpense[year, default: 0],
-                topExpenseCategory: yearCatExpense[year]?.max(by: { $0.value < $1.value })?.key
+                expenses: yearExpense[year, default: 0]
             )
         }
 

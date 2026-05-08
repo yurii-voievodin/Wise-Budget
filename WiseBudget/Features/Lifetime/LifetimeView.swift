@@ -37,8 +37,8 @@ struct LifetimeView: View {
                     currency: defaultCurrency,
                     emptyText: "No expenses yet",
                     colorMap: DefaultExpenseCategory.chartColorMap,
-                    sortIndex: { DefaultExpenseCategory.sortIndex(for: $0) },
-                    sortOrderStorageKey: "lifetimeExpenseCategorySortOrder"
+                    sortOrderStorageKey: "lifetimeExpenseCategorySortOrder",
+                    hidesChart: true
                 )
 
                 CategoryChartSection(
@@ -47,8 +47,8 @@ struct LifetimeView: View {
                     currency: defaultCurrency,
                     emptyText: "No income yet",
                     colorMap: DefaultIncomeCategory.chartColorMap,
-                    sortIndex: { DefaultIncomeCategory.sortIndex(for: $0) },
-                    sortOrderStorageKey: "lifetimeIncomeCategorySortOrder"
+                    sortOrderStorageKey: "lifetimeIncomeCategorySortOrder",
+                    hidesChart: true
                 )
 
                 LifetimeYearTableSection(rows: data.yearRows, currency: defaultCurrency)
