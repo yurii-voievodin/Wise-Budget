@@ -8,6 +8,7 @@ import SwiftData
 struct ExpenseTableView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
+    @Query(sort: \ExpenseCategory.name) private var categories: [ExpenseCategory]
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
@@ -157,6 +158,8 @@ struct ExpenseTableView: View {
                     }
                 }
                 Divider()
+                BulkCategoryMenu(categories: categories) { setCategory($0, for: items) }
+                Divider()
                 Button(items.count == 1 ? "Delete…" : "Delete \(items.count) Expenses…", role: .destructive) {
                     pendingDeletion = items
                 }
@@ -187,6 +190,12 @@ struct ExpenseTableView: View {
     private func setTransfer(_ value: Bool, for items: [Expense]) {
         for expense in items where expense.isInternalTransfer != value {
             expense.isInternalTransfer = value
+        }
+    }
+
+    private func setCategory(_ category: ExpenseCategory?, for items: [Expense]) {
+        for expense in items where expense.category != category {
+            expense.category = category
         }
     }
 }

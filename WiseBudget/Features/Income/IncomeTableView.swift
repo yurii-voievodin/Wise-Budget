@@ -6,6 +6,7 @@ import SwiftData
 struct IncomeTableView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var incomes: [Income]
+    @Query(sort: \IncomeCategory.name) private var categories: [IncomeCategory]
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
 
     let filter: MonthFilter
@@ -155,6 +156,8 @@ struct IncomeTableView: View {
                     }
                 }
                 Divider()
+                BulkCategoryMenu(categories: categories) { setCategory($0, for: items) }
+                Divider()
                 Button(items.count == 1 ? "Delete…" : "Delete \(items.count) Incomes…", role: .destructive) {
                     pendingDeletion = items
                 }
@@ -185,6 +188,12 @@ struct IncomeTableView: View {
     private func setTransfer(_ value: Bool, for items: [Income]) {
         for income in items where income.isInternalTransfer != value {
             income.isInternalTransfer = value
+        }
+    }
+
+    private func setCategory(_ category: IncomeCategory?, for items: [Income]) {
+        for income in items where income.category != category {
+            income.category = category
         }
     }
 }
