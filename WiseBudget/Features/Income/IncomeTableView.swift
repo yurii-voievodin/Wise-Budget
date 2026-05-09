@@ -17,6 +17,7 @@ struct IncomeTableView: View {
         KeyPathComparator(\Income.date, order: .reverse)
     ]
     @State private var selection: Set<PersistentIdentifier> = []
+    @State private var pendingDeletion: [Income] = []
 
     init(
         filter: MonthFilter,
@@ -31,9 +32,11 @@ struct IncomeTableView: View {
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
+        let categoryName = selectedCategoryName
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate &&
+                (categoryName == nil || income.category?.name == categoryName)
             },
             sort: \.date,
             order: .reverse
@@ -45,9 +48,7 @@ struct IncomeTableView: View {
         if filter.foreignOnly {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
-        if let categoryName = selectedCategoryName {
-            result = result.filter { $0.category?.name == categoryName }
-        }
+        result = result.filterBySource(filter.sourceFilter)
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             let needle = trimmed.lowercased()
@@ -83,6 +84,7 @@ struct IncomeTableView: View {
                         .foregroundStyle(income.descriptionText == nil ? .secondary : .primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
+                    TransactionSourceBadge(externalId: income.externalId)
                 }
                 .modifier(TransferRowStyle(isTransfer: income.isInternalTransfer))
             }
@@ -123,6 +125,12 @@ struct IncomeTableView: View {
                 .modifier(TransferRowStyle(isTransfer: income.isInternalTransfer))
             }
             .width(min: 100, ideal: 130)
+
+            TableColumn("In \(defaultCurrency)") { income in
+                BaseCurrencyAmountCell(item: income, defaultCurrency: defaultCurrency)
+                    .modifier(TransferRowStyle(isTransfer: income.isInternalTransfer))
+            }
+            .width(min: 90, ideal: 120)
         }
         .contextMenu(forSelectionType: PersistentIdentifier.self) { ids in
             let items = incomes.filter { ids.contains($0.persistentModelID) }
@@ -146,6 +154,10 @@ struct IncomeTableView: View {
                         setTransfer(false, for: items)
                     }
                 }
+                Divider()
+                Button(items.count == 1 ? "Delete…" : "Delete \(items.count) Incomes…", role: .destructive) {
+                    pendingDeletion = items
+                }
             }
         } primaryAction: { ids in
             if ids.count == 1, let id = ids.first,
@@ -154,23 +166,26 @@ struct IncomeTableView: View {
                 selection = []
             }
         }
+        .bulkDeleteConfirmation(
+            items: $pendingDeletion,
+            singularNoun: "income",
+            pluralNoun: "incomes",
+            onConfirm: delete
+        )
+    }
+
+    private func delete(_ items: [Income]) {
+        for income in items {
+            modelContext.delete(income)
+        }
+        selection = []
+        pendingDeletion = []
     }
 
     private func setTransfer(_ value: Bool, for items: [Income]) {
         for income in items where income.isInternalTransfer != value {
             income.isInternalTransfer = value
         }
-        try? modelContext.save()
-    }
-}
-
-private struct TransferRowStyle: ViewModifier {
-    let isTransfer: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(isTransfer ? 0.55 : 1)
-            .foregroundStyle(isTransfer ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
     }
 }
 

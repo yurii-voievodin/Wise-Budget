@@ -19,6 +19,7 @@ struct ExpenseTableView: View {
         KeyPathComparator(\Expense.date, order: .reverse)
     ]
     @State private var selection: Set<PersistentIdentifier> = []
+    @State private var pendingDeletion: [Expense] = []
 
     init(
         filter: MonthFilter,
@@ -33,9 +34,11 @@ struct ExpenseTableView: View {
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
+        let categoryName = selectedCategoryName
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate &&
+                (categoryName == nil || expense.category?.name == categoryName)
             },
             sort: \.date,
             order: .reverse
@@ -47,9 +50,7 @@ struct ExpenseTableView: View {
         if filter.foreignOnly {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
-        if let categoryName = selectedCategoryName {
-            result = result.filter { $0.category?.name == categoryName }
-        }
+        result = result.filterBySource(filter.sourceFilter)
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             let needle = trimmed.lowercased()
@@ -85,6 +86,7 @@ struct ExpenseTableView: View {
                         .foregroundStyle(expense.descriptionText == nil ? .secondary : .primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
+                    TransactionSourceBadge(externalId: expense.externalId)
                 }
                 .modifier(TransferRowStyle(isTransfer: expense.isInternalTransfer))
             }
@@ -125,6 +127,12 @@ struct ExpenseTableView: View {
                 .modifier(TransferRowStyle(isTransfer: expense.isInternalTransfer))
             }
             .width(min: 100, ideal: 130)
+
+            TableColumn("In \(defaultCurrency)") { expense in
+                BaseCurrencyAmountCell(item: expense, defaultCurrency: defaultCurrency)
+                    .modifier(TransferRowStyle(isTransfer: expense.isInternalTransfer))
+            }
+            .width(min: 90, ideal: 120)
         }
         .contextMenu(forSelectionType: PersistentIdentifier.self) { ids in
             let items = expenses.filter { ids.contains($0.persistentModelID) }
@@ -148,6 +156,10 @@ struct ExpenseTableView: View {
                         setTransfer(false, for: items)
                     }
                 }
+                Divider()
+                Button(items.count == 1 ? "Delete…" : "Delete \(items.count) Expenses…", role: .destructive) {
+                    pendingDeletion = items
+                }
             }
         } primaryAction: { ids in
             if ids.count == 1, let id = ids.first,
@@ -156,24 +168,26 @@ struct ExpenseTableView: View {
                 selection = []
             }
         }
+        .bulkDeleteConfirmation(
+            items: $pendingDeletion,
+            singularNoun: "expense",
+            pluralNoun: "expenses",
+            onConfirm: delete
+        )
+    }
+
+    private func delete(_ items: [Expense]) {
+        for expense in items {
+            modelContext.delete(expense)
+        }
+        selection = []
+        pendingDeletion = []
     }
 
     private func setTransfer(_ value: Bool, for items: [Expense]) {
         for expense in items where expense.isInternalTransfer != value {
             expense.isInternalTransfer = value
         }
-        try? modelContext.save()
-    }
-}
-
-/// Dim transfer rows so they recede the way they do in `TransactionRowView`.
-private struct TransferRowStyle: ViewModifier {
-    let isTransfer: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(isTransfer ? 0.55 : 1)
-            .foregroundStyle(isTransfer ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
     }
 }
 

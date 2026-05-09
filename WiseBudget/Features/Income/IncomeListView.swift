@@ -43,7 +43,7 @@ struct IncomeListView: View {
                     selectedSidebarItem: $selectedSidebarItem,
                     syncService: syncService
                 )
-                .id(filter)
+                .id(MonthKey(year: filter.year, month: filter.month))
             case .table:
                 IncomeTableView(
                     filter: filter,
@@ -51,7 +51,7 @@ struct IncomeListView: View {
                     searchText: searchText,
                     incomeToEdit: $incomeToEdit
                 )
-                .id(filter)
+                .id(MonthKey(year: filter.year, month: filter.month))
             }
         }
         .navigationTitle("")
@@ -65,7 +65,7 @@ struct IncomeListView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+            TransactionFilterToolbar(foreignOnly: $filter.foreignOnly, sourceFilter: $filter.sourceFilter)
             CategoryFilterToolbar(
                 selectedCategoryName: $selectedCategoryName,
                 categories: incomeCategories.map { ($0.name, $0.displayIconName) }

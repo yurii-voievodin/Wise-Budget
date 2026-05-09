@@ -27,10 +27,12 @@ struct ExpenseQueryListView: View {
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
+        let categoryName = selectedCategoryName
 
         self._expenses = Query(
             filter: #Predicate<Expense> { expense in
-                expense.date >= startDate && expense.date < endDate
+                expense.date >= startDate && expense.date < endDate &&
+                (categoryName == nil || expense.category?.name == categoryName)
             },
             sort: \.date,
             order: .reverse
@@ -42,9 +44,7 @@ struct ExpenseQueryListView: View {
         if filter.foreignOnly {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
-        if let categoryName = selectedCategoryName {
-            result = result.filter { $0.category?.name == categoryName }
-        }
+        result = result.filterBySource(filter.sourceFilter)
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             let needle = trimmed.lowercased()

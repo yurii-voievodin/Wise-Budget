@@ -1,7 +1,8 @@
+import SwiftData
 import SwiftUI
 
 struct DashboardRecentTransaction: Identifiable {
-    let id = UUID()
+    let id: PersistentIdentifier
     let descriptionText: String?
     let categoryName: String?
     let categoryIcon: String?

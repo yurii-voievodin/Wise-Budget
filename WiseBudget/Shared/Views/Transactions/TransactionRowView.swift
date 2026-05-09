@@ -10,23 +10,27 @@ struct TransactionRowView: View {
     var amountTintColor: Color?
 
     var body: some View {
+        let source = TransactionSource(externalId: item.externalId)
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                if let desc = descriptionText {
+                if descriptionText != nil || item.isInternalTransfer || source.isSynced {
                     HStack(spacing: 4) {
-                        Text(desc)
-                            .font(.body)
-                            .fontWeight(.medium)
-                        if item.isInternalTransfer {
-                            transferBadge
+                        if let desc = descriptionText {
+                            Text(desc)
+                                .font(.body)
+                                .fontWeight(.medium)
+                            if item.isInternalTransfer {
+                                transferBadge
+                            }
+                        } else if item.isInternalTransfer {
+                            Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel("Internal transfer")
                         }
+                        TransactionSourceBadge(source: source)
                     }
-                } else if item.isInternalTransfer {
-                    Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("Internal transfer")
                 }
                 if let name = categoryName, let icon = categoryIcon {
                     HStack(spacing: 6) {

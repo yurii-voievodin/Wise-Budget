@@ -51,7 +51,7 @@ struct WiseBudgetApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 750, maxWidth: 1000, minHeight: 400)
+                .frame(minWidth: 750, maxWidth: 1600, minHeight: 400)
                 .environment(localAIAppDetector)
                 .onAppear {
                     let context = sharedModelContainer.mainContext
@@ -119,7 +119,7 @@ struct WiseBudgetApp: App {
                     }
                 }
         }
-        .defaultSize(width: 900, height: 600)
+        .defaultSize(width: 1100, height: 700)
         .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
 

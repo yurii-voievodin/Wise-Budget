@@ -25,10 +25,12 @@ struct IncomeQueryListView: View {
 
         let startDate = filter.startOfMonth
         let endDate = filter.startOfNextMonth
+        let categoryName = selectedCategoryName
 
         self._incomes = Query(
             filter: #Predicate<Income> { income in
-                income.date >= startDate && income.date < endDate
+                income.date >= startDate && income.date < endDate &&
+                (categoryName == nil || income.category?.name == categoryName)
             },
             sort: \.date,
             order: .reverse
@@ -40,10 +42,7 @@ struct IncomeQueryListView: View {
         if filter.foreignOnly {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
-        if let categoryName = selectedCategoryName {
-            result = result.filter { $0.category?.name == categoryName }
-        }
-        return result
+        return result.filterBySource(filter.sourceFilter)
     }
 
     var body: some View {

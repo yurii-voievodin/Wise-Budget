@@ -15,6 +15,7 @@ struct SyncProgress: Sendable, Equatable {
 }
 
 @Observable
+@MainActor
 final class BankSyncService {
     private(set) var isSyncing = false
     private(set) var syncResultMessage: String?
@@ -40,11 +41,10 @@ final class BankSyncService {
         guard !isSyncing else { return }
         isSyncing = true
 
-        currentSyncTask = Task { [weak self] in
+        currentSyncTask = Task { @MainActor [weak self] in
             defer {
                 self?.isSyncing = false
                 self?.progress = nil
-                self?.lastSyncDate = Date.now
                 self?.currentSyncTask = nil
             }
 
@@ -110,6 +110,7 @@ final class BankSyncService {
                 message = "\(totalExpenses) expenses, \(totalIncomes) incomes imported. \(totalDuplicates) duplicates skipped."
             }
             self?.syncResultMessage = message
+            self?.lastSyncDate = Date.now
             await Self.postSyncNotification(message: message)
         }
     }

@@ -8,6 +8,30 @@ nonisolated protocol CurrencyConvertible {
     /// Internal transfers stay visible in history but are excluded from
     /// every aggregation (totals, charts, budgets, AI insights, day totals).
     var isInternalTransfer: Bool { get }
+    /// Set by sync services (`wise_*`, `mono_*`); `nil` for manual or CSV imports.
+    var externalId: String? { get }
+}
+
+extension CurrencyConvertible {
+    var externalId: String? { nil }
+}
+
+nonisolated enum TransactionSource: Hashable {
+    case manualOrCSV
+    case wiseSync
+    case monobankSync
+
+    static let wisePrefix = "wise_"
+    static let monobankPrefix = "mono_"
+
+    init(externalId: String?) {
+        guard let id = externalId else { self = .manualOrCSV; return }
+        if id.hasPrefix(Self.wisePrefix) { self = .wiseSync }
+        else if id.hasPrefix(Self.monobankPrefix) { self = .monobankSync }
+        else { self = .manualOrCSV }
+    }
+
+    var isSynced: Bool { self != .manualOrCSV }
 }
 
 extension CurrencyConvertible {
@@ -28,6 +52,17 @@ extension Array where Element: CurrencyConvertible {
     func filterForeignCurrency(defaultCurrency: String) -> [Element] {
         filter { item in
             item.currency != defaultCurrency
+        }
+    }
+
+    func filterBySource(_ sourceFilter: TransactionSourceFilter) -> [Element] {
+        switch sourceFilter {
+        case .all:
+            return self
+        case .syncedOnly:
+            return filter { TransactionSource(externalId: $0.externalId).isSynced }
+        case .manualOnly:
+            return filter { !TransactionSource(externalId: $0.externalId).isSynced }
         }
     }
 }

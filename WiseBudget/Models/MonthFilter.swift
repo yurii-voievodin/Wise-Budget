@@ -1,9 +1,16 @@
 import Foundation
 
+nonisolated enum TransactionSourceFilter: Hashable {
+    case all
+    case syncedOnly
+    case manualOnly
+}
+
 nonisolated struct MonthFilter: Hashable {
     var year: Int
     var month: Int
     var foreignOnly: Bool = false
+    var sourceFilter: TransactionSourceFilter = .all
 
     static func currentMonth() -> MonthFilter {
         let comps = Calendar.current.dateComponents([.year, .month], from: Date.now)
@@ -45,7 +52,7 @@ extension MonthFilter {
     private static let monthKey = "MonthFilter.month"
 
     /// Restores the user's last-viewed year/month, or falls back to the current month
-    /// on first launch. `foreignOnly` is intentionally not persisted — it's a per-session toggle.
+    /// on first launch. `foreignOnly` and `sourceFilter` are intentionally not persisted — per-session toggles.
     static var stored: MonthFilter {
         let defaults = UserDefaults.standard
         guard

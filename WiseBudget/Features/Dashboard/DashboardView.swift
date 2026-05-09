@@ -92,6 +92,7 @@ struct DashboardView: View {
     private var recentTransactions: [DashboardRecentTransaction] {
         let expenseItems = expenses.prefix(5).map {
             DashboardRecentTransaction(
+                id: $0.persistentModelID,
                 descriptionText: $0.descriptionText,
                 categoryName: $0.category?.name,
                 categoryIcon: $0.category?.displayIconName,
@@ -102,6 +103,7 @@ struct DashboardView: View {
         }
         let incomeItems = incomes.prefix(5).map {
             DashboardRecentTransaction(
+                id: $0.persistentModelID,
                 descriptionText: $0.descriptionText,
                 categoryName: $0.category?.name,
                 categoryIcon: $0.category?.displayIconName,

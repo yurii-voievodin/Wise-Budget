@@ -13,6 +13,7 @@ final class WiseSyncService {
     }()
 
     /// Syncs Wise activities into the given model context for the specified date range.
+    @MainActor
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,
@@ -152,7 +153,7 @@ final class WiseSyncService {
             destination: nil,
             baseCurrencyAmount: baseCurrencyAmount,
             baseCurrency: baseCurrency,
-            externalId: "wise_\(activity.id)",
+            externalId: "\(TransactionSource.wisePrefix)\(activity.id)",
             isInternalTransfer: isInternalTransfer
         )
     }

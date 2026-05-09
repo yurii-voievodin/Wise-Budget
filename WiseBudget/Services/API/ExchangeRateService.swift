@@ -32,7 +32,7 @@ final class ExchangeRateService {
         // Coalesce concurrent fetches for the same currency pair + day so we
         // don't hit the Wise API twice when multiple callers miss the cache.
         let task = inflight[cacheKey] ?? {
-            let new = Task<Decimal?, Never> { [weak self] in
+            let new = Task<Decimal?, Never> { @MainActor [weak self] in
                 defer { self?.inflight[cacheKey] = nil }
                 do {
                     let client = WiseAPIClient(token: token)

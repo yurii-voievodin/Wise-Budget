@@ -54,7 +54,7 @@ struct ExpenseListView: View {
             switch selectedTab {
             case .calendar:
                 ExpenseCalendarView(filter: filter, syncService: syncService)
-                    .id(filter)
+                    .id(MonthKey(year: filter.year, month: filter.month))
             case .expenses:
                 ExpenseQueryListView(
                     filter: filter,
@@ -65,7 +65,7 @@ struct ExpenseListView: View {
                     selectedSidebarItem: $selectedSidebarItem,
                     syncService: syncService
                 )
-                .id(filter)
+                .id(MonthKey(year: filter.year, month: filter.month))
             case .table:
                 ExpenseTableView(
                     filter: filter,
@@ -73,7 +73,7 @@ struct ExpenseListView: View {
                     searchText: searchText,
                     expenseToEdit: $expenseToEdit
                 )
-                .id(filter)
+                .id(MonthKey(year: filter.year, month: filter.month))
             }
         }
         .navigationTitle("")
@@ -89,7 +89,7 @@ struct ExpenseListView: View {
                 .labelsHidden()
             }
             if supportsListFilters {
-                ForeignCurrencyFilterToolbar(foreignOnly: $filter.foreignOnly)
+                TransactionFilterToolbar(foreignOnly: $filter.foreignOnly, sourceFilter: $filter.sourceFilter)
                 CategoryFilterToolbar(
                     selectedCategoryName: $selectedCategoryName,
                     categories: expenseCategories.map { ($0.name, $0.displayIconName) }
