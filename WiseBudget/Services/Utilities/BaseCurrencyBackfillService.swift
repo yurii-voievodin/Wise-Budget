@@ -5,13 +5,15 @@ import SwiftData
 private let logger = Logger(subsystem: "com.wisebudget", category: "BaseCurrencyBackfill")
 
 /// Fills in `baseCurrencyAmount` / `baseCurrency` for foreign-currency Expenses
-/// in a date range by fetching historical Wise rates. Groups by (currency, day)
-/// so each unique pair is fetched at most once per run.
+/// and Incomes in a date range by fetching historical Wise rates. Groups by
+/// (currency, day) so each unique pair is fetched at most once per run.
 @MainActor
 enum BaseCurrencyBackfillService {
 
     struct Result {
         var convertedCount: Int = 0
+        var convertedExpenses: Int = 0
+        var convertedIncomes: Int = 0
         var alreadyHadBase: Int = 0
         var sameCurrency: Int = 0
         var failedRateFetches: Int = 0
@@ -45,19 +47,25 @@ enum BaseCurrencyBackfillService {
 
         let start = dateRange.start
         let end = dateRange.end
-        let descriptor = FetchDescriptor<Expense>(
+        let expenseDescriptor = FetchDescriptor<Expense>(
             predicate: #Predicate<Expense> { expense in
                 expense.date >= start && expense.date < end
             }
         )
-        let expenses = try context.fetch(descriptor)
-        logger.info("Backfill scan: \(expenses.count) expenses in range, base=\(baseCurrency)")
+        let incomeDescriptor = FetchDescriptor<Income>(
+            predicate: #Predicate<Income> { income in
+                income.date >= start && income.date < end
+            }
+        )
+        let expenses = try context.fetch(expenseDescriptor)
+        let incomes = try context.fetch(incomeDescriptor)
+        logger.info("Backfill scan: \(expenses.count) expenses, \(incomes.count) incomes in range, base=\(baseCurrency)")
 
         var result = Result()
 
-        // Group eligible expenses by (currency, day-key)
+        // Group eligible items by (kind, currency, day-key)
         let calendar = Calendar.current
-        var buckets: [String: [Expense]] = [:]
+        var expenseBuckets: [String: [Expense]] = [:]
         for expense in expenses {
             if expense.currency == baseCurrency {
                 result.sameCurrency += 1
@@ -69,28 +77,74 @@ enum BaseCurrencyBackfillService {
             }
             let day = calendar.startOfDay(for: expense.date)
             let key = "\(expense.currency)|\(Int(day.timeIntervalSince1970))"
-            buckets[key, default: []].append(expense)
+            expenseBuckets[key, default: []].append(expense)
+        }
+
+        var incomeBuckets: [String: [Income]] = [:]
+        for income in incomes {
+            if income.currency == baseCurrency {
+                result.sameCurrency += 1
+                continue
+            }
+            if income.baseCurrencyAmount != nil {
+                result.alreadyHadBase += 1
+                continue
+            }
+            let day = calendar.startOfDay(for: income.date)
+            let key = "\(income.currency)|\(Int(day.timeIntervalSince1970))"
+            incomeBuckets[key, default: []].append(income)
         }
 
         let client = WiseAPIClient(token: token)
 
-        for (_, group) in buckets {
-            guard let sample = group.first else { continue }
-            let date = sample.date
-            let currency = sample.currency
+        // Cache rates by (currency, day) so expense + income on the same day share a fetch.
+        var rateCache: [String: Decimal] = [:]
+        var failedKeys: Set<String> = []
+
+        func rate(for currency: String, on date: Date) async -> Decimal? {
+            let day = calendar.startOfDay(for: date)
+            let key = "\(currency)|\(Int(day.timeIntervalSince1970))"
+            if let cached = rateCache[key] { return cached }
+            if failedKeys.contains(key) { return nil }
             do {
                 let wiseRate = try await client.fetchRate(source: currency, target: baseCurrency, time: date)
-                let rate = Decimal(wiseRate.rate)
+                let value = Decimal(wiseRate.rate)
+                rateCache[key] = value
                 result.ratesFetched += 1
-                for expense in group {
-                    let converted = round2(expense.amount * rate)
-                    expense.baseCurrencyAmount = converted
-                    expense.baseCurrency = baseCurrency
-                    result.convertedCount += 1
-                    result.perCurrencyConverted[currency, default: 0] += 1
-                }
+                return value
             } catch {
                 logger.error("Rate fetch failed for \(currency)->\(baseCurrency) on \(date): \(error.localizedDescription)")
+                failedKeys.insert(key)
+                return nil
+            }
+        }
+
+        for (_, group) in expenseBuckets {
+            guard let sample = group.first else { continue }
+            if let rate = await rate(for: sample.currency, on: sample.date) {
+                for expense in group {
+                    expense.baseCurrencyAmount = round2(expense.amount * rate)
+                    expense.baseCurrency = baseCurrency
+                    result.convertedCount += 1
+                    result.convertedExpenses += 1
+                    result.perCurrencyConverted[sample.currency, default: 0] += 1
+                }
+            } else {
+                result.failedRateFetches += group.count
+            }
+        }
+
+        for (_, group) in incomeBuckets {
+            guard let sample = group.first else { continue }
+            if let rate = await rate(for: sample.currency, on: sample.date) {
+                for income in group {
+                    income.baseCurrencyAmount = round2(income.amount * rate)
+                    income.baseCurrency = baseCurrency
+                    result.convertedCount += 1
+                    result.convertedIncomes += 1
+                    result.perCurrencyConverted[sample.currency, default: 0] += 1
+                }
+            } else {
                 result.failedRateFetches += group.count
             }
         }
@@ -99,7 +153,7 @@ enum BaseCurrencyBackfillService {
             try context.save()
         }
 
-        logger.info("Backfill done: converted=\(result.convertedCount) failed=\(result.failedRateFetches) ratesFetched=\(result.ratesFetched)")
+        logger.info("Backfill done: converted=\(result.convertedCount) (expenses=\(result.convertedExpenses), incomes=\(result.convertedIncomes)) failed=\(result.failedRateFetches) ratesFetched=\(result.ratesFetched)")
         return result
     }
 

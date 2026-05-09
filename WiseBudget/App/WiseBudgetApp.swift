@@ -99,7 +99,7 @@ struct WiseBudgetApp: App {
                             .map { "\($0.key): \($0.value)" }
                             .joined(separator: ", ")
                         Text("""
-                        Converted \(r.convertedCount) expenses (\(r.ratesFetched) rates fetched).
+                        Converted \(r.convertedCount) transactions — \(r.convertedExpenses) expenses, \(r.convertedIncomes) incomes (\(r.ratesFetched) rates fetched).
                         Already had base: \(r.alreadyHadBase). Same currency: \(r.sameCurrency). Failed: \(r.failedRateFetches).
                         \(perCurrency.isEmpty ? "" : "By currency — \(perCurrency).")
                         """)
