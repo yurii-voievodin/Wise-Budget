@@ -16,7 +16,7 @@ struct IncomeTableView: View {
     @State private var sortOrder: [KeyPathComparator<Income>] = [
         KeyPathComparator(\Income.date, order: .reverse)
     ]
-    @State private var selection: PersistentIdentifier?
+    @State private var selection: Set<PersistentIdentifier> = []
 
     init(
         filter: MonthFilter,
@@ -124,12 +124,43 @@ struct IncomeTableView: View {
             }
             .width(min: 100, ideal: 130)
         }
-        .onChange(of: selection) { _, newValue in
-            if let id = newValue, let income = incomes.first(where: { $0.persistentModelID == id }) {
+        .contextMenu(forSelectionType: PersistentIdentifier.self) { ids in
+            let items = incomes.filter { ids.contains($0.persistentModelID) }
+            if items.count == 1, let income = items.first {
+                Button("Edit…") {
+                    incomeToEdit = income
+                    selection = []
+                }
+                Divider()
+            }
+            if !items.isEmpty {
+                let allTransfer = items.allSatisfy(\.isInternalTransfer)
+                let noneTransfer = items.allSatisfy { !$0.isInternalTransfer }
+                if !allTransfer {
+                    Button(items.count == 1 ? "Mark as Transfer" : "Mark \(items.count) as Transfers") {
+                        setTransfer(true, for: items)
+                    }
+                }
+                if !noneTransfer {
+                    Button(items.count == 1 ? "Unmark Transfer" : "Unmark \(items.count) Transfers") {
+                        setTransfer(false, for: items)
+                    }
+                }
+            }
+        } primaryAction: { ids in
+            if ids.count == 1, let id = ids.first,
+               let income = incomes.first(where: { $0.persistentModelID == id }) {
                 incomeToEdit = income
-                selection = nil
+                selection = []
             }
         }
+    }
+
+    private func setTransfer(_ value: Bool, for items: [Income]) {
+        for income in items where income.isInternalTransfer != value {
+            income.isInternalTransfer = value
+        }
+        try? modelContext.save()
     }
 }
 

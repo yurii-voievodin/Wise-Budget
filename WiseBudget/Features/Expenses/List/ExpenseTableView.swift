@@ -18,7 +18,7 @@ struct ExpenseTableView: View {
     @State private var sortOrder: [KeyPathComparator<Expense>] = [
         KeyPathComparator(\Expense.date, order: .reverse)
     ]
-    @State private var selection: PersistentIdentifier?
+    @State private var selection: Set<PersistentIdentifier> = []
 
     init(
         filter: MonthFilter,
@@ -126,12 +126,43 @@ struct ExpenseTableView: View {
             }
             .width(min: 100, ideal: 130)
         }
-        .onChange(of: selection) { _, newValue in
-            if let id = newValue, let expense = expenses.first(where: { $0.persistentModelID == id }) {
+        .contextMenu(forSelectionType: PersistentIdentifier.self) { ids in
+            let items = expenses.filter { ids.contains($0.persistentModelID) }
+            if items.count == 1, let expense = items.first {
+                Button("Edit…") {
+                    expenseToEdit = expense
+                    selection = []
+                }
+                Divider()
+            }
+            if !items.isEmpty {
+                let allTransfer = items.allSatisfy(\.isInternalTransfer)
+                let noneTransfer = items.allSatisfy { !$0.isInternalTransfer }
+                if !allTransfer {
+                    Button(items.count == 1 ? "Mark as Transfer" : "Mark \(items.count) as Transfers") {
+                        setTransfer(true, for: items)
+                    }
+                }
+                if !noneTransfer {
+                    Button(items.count == 1 ? "Unmark Transfer" : "Unmark \(items.count) Transfers") {
+                        setTransfer(false, for: items)
+                    }
+                }
+            }
+        } primaryAction: { ids in
+            if ids.count == 1, let id = ids.first,
+               let expense = expenses.first(where: { $0.persistentModelID == id }) {
                 expenseToEdit = expense
-                selection = nil
+                selection = []
             }
         }
+    }
+
+    private func setTransfer(_ value: Bool, for items: [Expense]) {
+        for expense in items where expense.isInternalTransfer != value {
+            expense.isInternalTransfer = value
+        }
+        try? modelContext.save()
     }
 }
 
