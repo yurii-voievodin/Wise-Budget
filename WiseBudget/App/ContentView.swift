@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var monthFilter: MonthFilter = .stored
     @State private var expenseCategoryFilter: String?
     @State private var expenseListTab: ExpenseListView.ExpenseTab = .calendar
+    @State private var incomeListTab: IncomeListView.IncomeTab = .incomes
     @State private var syncService = BankSyncService()
 
     var body: some View {
@@ -59,7 +60,7 @@ struct ContentView: View {
             case .expenses:
                 ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $expenseCategoryFilter, selectedTab: $expenseListTab, syncService: syncService)
             case .income:
-                IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, syncService: syncService)
+                IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedTab: $incomeListTab, syncService: syncService)
             case .cashflow:
                 CashflowView(
                     filter: monthFilter,
@@ -93,6 +94,9 @@ struct ContentView: View {
             if oldValue == .expenses {
                 expenseCategoryFilter = nil
                 expenseListTab = .calendar
+            }
+            if oldValue == .income {
+                incomeListTab = .incomes
             }
         }
     }
