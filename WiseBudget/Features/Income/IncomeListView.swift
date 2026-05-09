@@ -77,7 +77,7 @@ struct IncomeListView: View {
             }
         }
         .sheet(isPresented: $isAddingIncome) {
-            IncomeFormSheet { result in
+            IncomeFormSheet(initialDate: filter.startOfMonth) { result in
                 withAnimation {
                     modelContext.insert(result.makeIncome())
                 }

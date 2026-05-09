@@ -6,7 +6,7 @@ struct IncomeFormSheet: View {
 
     @State private var amount: Decimal?
     @State private var currency: String
-    @State private var date = Date.now
+    @State private var date: Date
     @State private var selectedCategory: IncomeCategory?
     @State private var descriptionText: String = ""
     @State private var source: String = ""
@@ -16,7 +16,7 @@ struct IncomeFormSheet: View {
     var incomeToEdit: Income?
     var onSave: (IncomeFormResult) -> Void
 
-    init(income: Income? = nil, onSave: @escaping (IncomeFormResult) -> Void) {
+    init(income: Income? = nil, initialDate: Date = .now, onSave: @escaping (IncomeFormResult) -> Void) {
         self.incomeToEdit = income
         self.onSave = onSave
         let storedCurrency = DefaultCurrency.resolve()
@@ -31,6 +31,7 @@ struct IncomeFormSheet: View {
             _isInternalTransfer = State(initialValue: income.isInternalTransfer)
         } else {
             _currency = State(initialValue: storedCurrency)
+            _date = State(initialValue: initialDate)
         }
     }
 

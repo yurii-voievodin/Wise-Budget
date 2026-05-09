@@ -176,7 +176,11 @@ def read_expenses(month_dir: Path, month: int, year: int, currency: str,
         for row in reader:
             if len(row) < 4:
                 continue
-            date_s, desc_s, cat_s, amt_s = row[0], row[1], row[2], row[3]
+            # Some months export with a leading empty column (5+ fields).
+            if row[0] == "" and len(row) >= 5:
+                date_s, desc_s, cat_s, amt_s = row[1], row[2], row[3], row[4]
+            else:
+                date_s, desc_s, cat_s, amt_s = row[0], row[1], row[2], row[3]
             # Skip header rows (title and column header, RU or UA)
             if date_s.strip() in ("", "Дата") or cat_s.strip() in ("Категория", "Категорія"):
                 continue

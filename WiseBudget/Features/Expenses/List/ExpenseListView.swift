@@ -102,7 +102,7 @@ struct ExpenseListView: View {
             }
         }
         .sheet(isPresented: $isAddingExpense) {
-            ExpenseFormSheet { result in
+            ExpenseFormSheet(initialDate: filter.startOfMonth) { result in
                 withAnimation {
                     modelContext.insert(result.makeExpense())
                 }
