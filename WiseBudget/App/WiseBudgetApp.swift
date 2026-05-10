@@ -71,6 +71,7 @@ struct WiseBudgetApp: App {
                     OnboardingFlowView()
                         .environment(localAIAppDetector)
                 }
+                .reviewPrompt()
                 .alert("Delete Budget Plan", isPresented: $showResetPlanConfirmation) {
                     Button("Delete", role: .destructive) {
                         resetBudgetPlan?()
