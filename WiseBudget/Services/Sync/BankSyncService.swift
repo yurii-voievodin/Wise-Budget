@@ -24,6 +24,9 @@ final class BankSyncService {
     private var lastSyncDate: Date?
     private var currentSyncTask: Task<Void, Never>?
 
+    private static let autoSyncLastAttemptKey = "autoSyncLastAttemptDate"
+    private static let autoSyncInterval: TimeInterval = 3600
+
     /// Whether any bank token (Monobank or Wise) is stored in the Keychain.
     var hasBankToken: Bool {
         KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
@@ -118,6 +121,21 @@ final class BankSyncService {
     /// Cancels any in-flight sync. Safe to call when no sync is running.
     func cancel() {
         currentSyncTask?.cancel()
+    }
+
+    /// Auto-triggers a sync of the current month for app launch and activation.
+    /// Throttled to at most once per hour; the timestamp is persisted so the
+    /// throttle also holds across relaunches, not just within one session.
+    func autoSyncIfNeeded(context: ModelContext) {
+        guard hasBankToken, !isSyncing else { return }
+
+        let defaults = UserDefaults.standard
+        let lastAttempt = defaults.double(forKey: Self.autoSyncLastAttemptKey)
+        guard Date.now.timeIntervalSince1970 - lastAttempt >= Self.autoSyncInterval else { return }
+        defaults.set(Date.now.timeIntervalSince1970, forKey: Self.autoSyncLastAttemptKey)
+
+        let filter = MonthFilter.currentMonth()
+        sync(context: context, from: filter.startOfMonth, to: filter.startOfNextMonth)
     }
 
     /// Request notification authorization. Call once at app launch.

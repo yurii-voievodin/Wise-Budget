@@ -13,6 +13,9 @@ struct ContentView: View {
     @State private var incomeListTab: IncomeListView.IncomeTab = .incomes
     @State private var syncService = BankSyncService()
 
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedSidebarItem) {
@@ -84,6 +87,14 @@ struct ContentView: View {
             }
         }
         .focusedSceneValue(\.selectedMonthFilter, monthFilter)
+        .task {
+            syncService.autoSyncIfNeeded(context: modelContext)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                syncService.autoSyncIfNeeded(context: modelContext)
+            }
+        }
         .onChange(of: monthFilter) { _, newValue in
             newValue.persist()
         }
