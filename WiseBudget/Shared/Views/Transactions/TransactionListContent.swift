@@ -91,6 +91,6 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
     private func dayTotal(for items: [T]) -> Decimal {
         items
             .filter { !$0.isInternalTransfer }
-            .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
+            .reduce(Decimal.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? $1.amount) }
     }
 }

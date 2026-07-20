@@ -45,19 +45,12 @@ struct ExpenseQueryListView: View {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
         result = result.filterBySource(filter.sourceFilter)
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            let needle = trimmed.lowercased()
-            result = result.filter { expense in
-                if expense.descriptionText?.lowercased().contains(needle) == true { return true }
-                if expense.destination?.lowercased().contains(needle) == true { return true }
-                if expense.category?.name.lowercased().contains(needle) == true { return true }
-                if "\(expense.amount)".contains(needle) { return true }
-                if let base = expense.baseCurrencyAmount, "\(base)".contains(needle) { return true }
-                return false
-            }
-        }
-        return result
+        return result.filterBySearchText(
+            searchText,
+            descriptionText: { $0.descriptionText },
+            categoryName: { $0.category?.name },
+            extraField: { $0.destination }
+        )
     }
 
     var body: some View {

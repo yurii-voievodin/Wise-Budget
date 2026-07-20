@@ -65,4 +65,23 @@ extension Array where Element: CurrencyConvertible {
             return filter { !TransactionSource(externalId: $0.externalId).isSynced }
         }
     }
+
+    func filterBySearchText(
+        _ text: String,
+        descriptionText: (Element) -> String?,
+        categoryName: (Element) -> String?,
+        extraField: (Element) -> String?
+    ) -> [Element] {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return self }
+        let needle = trimmed.lowercased()
+        return filter { item in
+            if descriptionText(item)?.lowercased().contains(needle) == true { return true }
+            if extraField(item)?.lowercased().contains(needle) == true { return true }
+            if categoryName(item)?.lowercased().contains(needle) == true { return true }
+            if "\(item.amount)".contains(needle) { return true }
+            if let base = item.baseCurrencyAmount, "\(base)".contains(needle) { return true }
+            return false
+        }
+    }
 }

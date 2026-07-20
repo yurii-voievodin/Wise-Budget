@@ -19,7 +19,7 @@ struct LifetimeYearTableSection: View {
                 .foregroundStyle(.secondary)
                 .padding(.vertical, 8)
 
-                ForEach(Array(rows.reversed().enumerated()), id: \.element.id) { index, row in
+                ForEach(rows.reversed()) { row in
                     Divider()
                         .gridCellColumns(5)
 

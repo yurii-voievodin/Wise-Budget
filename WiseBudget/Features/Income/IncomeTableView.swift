@@ -50,18 +50,12 @@ struct IncomeTableView: View {
             result = result.filterForeignCurrency(defaultCurrency: defaultCurrency)
         }
         result = result.filterBySource(filter.sourceFilter)
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            let needle = trimmed.lowercased()
-            result = result.filter { income in
-                if income.descriptionText?.lowercased().contains(needle) == true { return true }
-                if income.source?.lowercased().contains(needle) == true { return true }
-                if income.category?.name.lowercased().contains(needle) == true { return true }
-                if "\(income.amount)".contains(needle) { return true }
-                if let base = income.baseCurrencyAmount, "\(base)".contains(needle) { return true }
-                return false
-            }
-        }
+        result = result.filterBySearchText(
+            searchText,
+            descriptionText: { $0.descriptionText },
+            categoryName: { $0.category?.name },
+            extraField: { $0.source }
+        )
         return result.sorted(using: sortOrder)
     }
 

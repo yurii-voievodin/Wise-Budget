@@ -25,22 +25,32 @@ struct OnboardingBanksStep: View {
             subtitle: "Import transactions automatically from Wise and Monobank. Tokens are stored in your macOS Keychain — never on a server. Both are optional."
         ) {
             VStack(spacing: 10) {
-                connectRow(
+                BankConnectionRow(
                     title: "Monobank",
-                    icon: "creditcard.fill",
+                    iconSystemName: "creditcard.fill",
                     iconColor: .pink,
                     isConnected: isMonobankConnected,
-                    name: monobankConnectedName,
-                    action: { showMonobankSheet = true }
-                )
-                connectRow(
+                    connectedName: monobankConnectedName,
+                    lastSync: 0
+                ) {
+                    if !isMonobankConnected {
+                        Button("Connect") { showMonobankSheet = true }
+                            .controlSize(.small)
+                    }
+                }
+                BankConnectionRow(
                     title: "Wise",
-                    icon: "globe",
+                    iconSystemName: "globe",
                     iconColor: .blue,
                     isConnected: isWiseConnected,
-                    name: wiseConnectedName,
-                    action: { showWiseSheet = true }
-                )
+                    connectedName: wiseConnectedName,
+                    lastSync: 0
+                ) {
+                    if !isWiseConnected {
+                        Button("Connect") { showWiseSheet = true }
+                            .controlSize(.small)
+                    }
+                }
             }
             .frame(maxWidth: 380)
         }
@@ -54,46 +64,6 @@ struct OnboardingBanksStep: View {
                 wiseConnectedName = name
             }
         }
-    }
-
-    @ViewBuilder
-    private func connectRow(title: String, icon: String, iconColor: Color, isConnected: Bool, name: String, action: @escaping () -> Void) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(iconColor.opacity(0.18))
-                Image(systemName: icon)
-                    .foregroundStyle(iconColor)
-            }
-            .frame(width: 32, height: 32)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).fontWeight(.medium)
-                if isConnected, !name.isEmpty {
-                    Text(name)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            if isConnected {
-                Label("Connected", systemImage: "checkmark.circle.fill")
-                    .labelStyle(.iconOnly)
-                    .foregroundStyle(.green)
-                    .font(.title3)
-            } else {
-                Button("Connect", action: action)
-                    .controlSize(.small)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
-        )
     }
 }
 

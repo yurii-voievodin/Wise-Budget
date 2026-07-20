@@ -101,7 +101,7 @@ struct OnboardingFlowView: View {
     }
 
     private func advance() {
-        let next = visibleSteps.firstIndex(of: currentStep).map { $0 + 1 } ?? 0
+        let next = currentIndex + 1
         if next < visibleSteps.count {
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentStep = visibleSteps[next]

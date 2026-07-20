@@ -50,6 +50,9 @@ struct ComparisonChartSection: View {
     }
 
     var body: some View {
+        let colorScale = resolvedColorScale
+        let pointsByMonthLabel = Dictionary(grouping: chartData) { $0.monthKey.chartLabel(labelStyle) }
+
         Section(title) {
             Chart(chartData) { point in
                 BarMark(
@@ -59,7 +62,7 @@ struct ComparisonChartSection: View {
                 .foregroundStyle(by: .value("Category", point.categoryName))
                 .opacity(hoveredCategory == nil || hoveredCategory == point.categoryName ? 1.0 : 0.25)
             }
-            .chartForegroundStyleScale(domain: resolvedColorScale.domain, range: resolvedColorScale.range)
+            .chartForegroundStyleScale(domain: colorScale.domain, range: colorScale.range)
             .chartXScale(domain: xDomain)
             .chartXAxis {
                 switch labelStyle {
@@ -98,7 +101,13 @@ struct ComparisonChartSection: View {
                         .onContinuousHover { phase in
                             switch phase {
                             case .active(let location):
-                                updateHover(at: location, proxy: proxy, geo: geo)
+                                updateHover(
+                                    at: location,
+                                    proxy: proxy,
+                                    geo: geo,
+                                    domain: colorScale.domain,
+                                    pointsByMonthLabel: pointsByMonthLabel
+                                )
                             case .ended:
                                 hoveredCategory = nil
                                 hoverLocation = nil
@@ -147,7 +156,13 @@ struct ComparisonChartSection: View {
         return CGPoint(x: clampedX, y: y)
     }
 
-    private func updateHover(at location: CGPoint, proxy: ChartProxy, geo: GeometryProxy) {
+    private func updateHover(
+        at location: CGPoint,
+        proxy: ChartProxy,
+        geo: GeometryProxy,
+        domain: [String],
+        pointsByMonthLabel: [String: [ComparisonChartDataPoint]]
+    ) {
         guard let plotFrameAnchor = proxy.plotFrame else { return }
         let plotFrame = geo[plotFrameAnchor]
         let xInPlot = location.x - plotFrame.minX
@@ -163,9 +178,7 @@ struct ComparisonChartSection: View {
             return
         }
 
-        let domain = resolvedColorScale.domain
-        let stacked = chartData
-            .filter { $0.monthKey.chartLabel(labelStyle) == monthLabel }
+        let stacked = (pointsByMonthLabel[monthLabel] ?? [])
             .sorted {
                 (domain.firstIndex(of: $0.categoryName) ?? .max)
                     < (domain.firstIndex(of: $1.categoryName) ?? .max)

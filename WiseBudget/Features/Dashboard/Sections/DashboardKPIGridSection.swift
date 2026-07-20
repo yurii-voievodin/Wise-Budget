@@ -50,12 +50,9 @@ struct DashboardKPIGridSection: View {
     }
 
     private func dailyLabel(amount: Decimal, signed: Bool = false) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        if signed { formatter.positivePrefix = "+" }
-        let raw = formatter.string(from: amount as NSDecimalNumber) ?? ""
-        return "\(raw) \(currency) / day"
+        let style: Decimal.FormatStyle = signed
+            ? .number.precision(.fractionLength(2)).sign(strategy: .always(includingZero: false))
+            : .number.precision(.fractionLength(2))
+        return "\(amount.formatted(style)) \(currency) / day"
     }
 }

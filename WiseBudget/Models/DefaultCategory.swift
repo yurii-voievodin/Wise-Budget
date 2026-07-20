@@ -64,21 +64,23 @@ nonisolated enum DefaultExpenseCategory: String, CaseIterable {
         }
     }
 
+    static let uncategorizedColor = Color(red: 149/255, green: 165/255, blue: 166/255)
+
     static let chartColorMap: [String: Color] = {
         var map: [String: Color] = [:]
         for category in Self.allCases {
             map[category.rawValue] = category.chartColor
         }
-        map["Uncategorized"] = Color(red: 149/255, green: 165/255, blue: 166/255)
+        map["Uncategorized"] = uncategorizedColor
         return map
     }()
 
     static let chartColorDomain: [String] = Self.allCases.map(\.rawValue) + ["Uncategorized"]
 
-    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [Color(red: 149/255, green: 165/255, blue: 166/255)]
+    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [uncategorizedColor]
 
     static func color(for name: String) -> Color {
-        chartColorMap[name] ?? Color(red: 149/255, green: 165/255, blue: 166/255)
+        chartColorMap[name] ?? uncategorizedColor
     }
 
     static func sortIndex(for name: String) -> Int {
@@ -116,21 +118,23 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
         }
     }
 
+    static let uncategorizedColor = Color(red: 178/255, green: 190/255, blue: 195/255)
+
     static let chartColorMap: [String: Color] = {
         var map: [String: Color] = [:]
         for category in Self.allCases {
             map[category.rawValue] = category.chartColor
         }
-        map["Uncategorized"] = Color(red: 178/255, green: 190/255, blue: 195/255)
+        map["Uncategorized"] = uncategorizedColor
         return map
     }()
 
     static let chartColorDomain: [String] = Self.allCases.map(\.rawValue) + ["Uncategorized"]
 
-    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [Color(red: 178/255, green: 190/255, blue: 195/255)]
+    static let chartColorRange: [Color] = Self.allCases.map(\.chartColor) + [uncategorizedColor]
 
     static func color(for name: String) -> Color {
-        chartColorMap[name] ?? Color(red: 178/255, green: 190/255, blue: 195/255)
+        chartColorMap[name] ?? uncategorizedColor
     }
 
     static func sortIndex(for name: String) -> Int {
