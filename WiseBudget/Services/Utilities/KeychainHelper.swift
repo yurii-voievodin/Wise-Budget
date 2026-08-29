@@ -10,20 +10,10 @@ enum KeychainHelper {
     static func save(token: String, service: String) throws {
         guard let data = token.data(using: .utf8) else { return }
 
-        // Delete existing item first
-        let deleteQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        SecItemDelete(deleteQuery as CFDictionary)
+        SecItemDelete(baseQuery(service: service, dataProtection: true) as CFDictionary)
 
-        let addQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-        ]
+        var addQuery = baseQuery(service: service, dataProtection: true)
+        addQuery[kSecValueData as String] = data
 
         let status = SecItemAdd(addQuery as CFDictionary, nil)
         guard status == errSecSuccess else {
@@ -32,13 +22,52 @@ enum KeychainHelper {
     }
 
     static func loadToken(service: String) -> String? {
-        let query: [String: Any] = [
+        if let token = readToken(service: service, dataProtection: true) {
+            return token
+        }
+
+        guard let legacyToken = readToken(service: service, dataProtection: false) else {
+            return nil
+        }
+
+        SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
+        if (try? save(token: legacyToken, service: service)) == nil {
+            var restoreQuery = baseQuery(service: service, dataProtection: false)
+            restoreQuery[kSecValueData as String] = legacyToken.data(using: .utf8)
+            SecItemAdd(restoreQuery as CFDictionary, nil)
+        }
+
+        return legacyToken
+    }
+
+    static func deleteToken(service: String) throws {
+        let status = SecItemDelete(baseQuery(service: service, dataProtection: true) as CFDictionary)
+        let legacyStatus = SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
+
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.unableToDelete(status)
+        }
+        guard legacyStatus == errSecSuccess || legacyStatus == errSecItemNotFound else {
+            throw KeychainError.unableToDelete(legacyStatus)
+        }
+    }
+
+    private static func baseQuery(service: String, dataProtection: Bool) -> [String: Any] {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
+        if dataProtection {
+            query[kSecUseDataProtectionKeychain as String] = true
+        }
+        return query
+    }
+
+    private static func readToken(service: String, dataProtection: Bool) -> String? {
+        var query = baseQuery(service: service, dataProtection: dataProtection)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -48,19 +77,6 @@ enum KeychainHelper {
         }
 
         return String(data: data, encoding: .utf8)
-    }
-
-    static func deleteToken(service: String) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-
-        let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.unableToDelete(status)
-        }
     }
 
     enum KeychainError: LocalizedError {
