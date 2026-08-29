@@ -6,6 +6,7 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var expenses: [Expense]
     @Query private var incomes: [Income]
+    @Query private var budgetPlans: [BudgetPlan]
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
     @AppStorage("monobankConnectedName") private var monobankConnectedName: String = ""
     @AppStorage("wiseConnectedName") private var wiseConnectedName: String = ""
@@ -53,15 +54,33 @@ struct DashboardView: View {
             sort: \.date,
             order: .reverse
         )
+
+        let filterYear = monthFilter.wrappedValue.year
+        let filterMonth = monthFilter.wrappedValue.month
+        self._budgetPlans = Query(
+            filter: #Predicate<BudgetPlan> { plan in
+                plan.year == filterYear && plan.month == filterMonth
+            }
+        )
     }
 
     // MARK: - Computed
+
+    private var plannedBudgetForPacing: Decimal? {
+        guard let plan = budgetPlans.first else { return nil }
+        if let monthlyBudget = plan.monthlyBudget, monthlyBudget > .zero {
+            return monthlyBudget
+        }
+        let totalPlanned = plan.items.reduce(Decimal.zero) { $0 + $1.plannedAmount }
+        return totalPlanned > .zero ? totalPlanned : nil
+    }
 
     private var metrics: DashboardMetrics {
         DashboardMetrics(
             monthFilter: monthFilter,
             totalIncome: incomes.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
-            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) }
+            totalExpenses: expenses.reduce(.zero) { $0 + ($1.convertedAmount(to: defaultCurrency) ?? .zero) },
+            plannedBudget: plannedBudgetForPacing
         )
     }
 

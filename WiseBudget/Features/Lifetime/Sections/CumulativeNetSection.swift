@@ -43,6 +43,7 @@ struct CumulativeNetSection: View {
                     }
                 }
             }
+            .chartXScale(range: .plotDimension(padding: 20))
             .frame(minHeight: 220)
             .padding(.vertical, 8)
         }

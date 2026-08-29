@@ -30,11 +30,8 @@ enum KeychainHelper {
             return nil
         }
 
-        SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
-        if (try? save(token: legacyToken, service: service)) == nil {
-            var restoreQuery = baseQuery(service: service, dataProtection: false)
-            restoreQuery[kSecValueData as String] = legacyToken.data(using: .utf8)
-            SecItemAdd(restoreQuery as CFDictionary, nil)
+        if (try? save(token: legacyToken, service: service)) != nil {
+            SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
         }
 
         return legacyToken

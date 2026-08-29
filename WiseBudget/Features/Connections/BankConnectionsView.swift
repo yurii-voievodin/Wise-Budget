@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct BankConnectionsView: View {
+    let syncService: BankSyncService
+
     @Environment(\.modelContext) private var modelContext
 
     @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
@@ -17,13 +19,11 @@ struct BankConnectionsView: View {
     @State private var showWiseDisconnectConfirmation = false
 
     private var isMonobankConnected: Bool {
-        !monobankConnectedName.isEmpty
-            || KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
     }
 
     private var isWiseConnected: Bool {
-        !wiseConnectedName.isEmpty
-            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+        KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
     var body: some View {
@@ -48,6 +48,10 @@ struct BankConnectionsView: View {
                         Button("Disconnect", role: .destructive) {
                             showDisconnectConfirmation = true
                         }
+                    } else if !monobankConnectedName.isEmpty {
+                        Button("Forget", role: .destructive) { disconnectMonobank() }
+                        Button("Reconnect") { showConnectSheet = true }
+                            .buttonStyle(.borderedProminent)
                     } else {
                         Button("Connect") { showConnectSheet = true }
                             .buttonStyle(.borderedProminent)
@@ -68,6 +72,10 @@ struct BankConnectionsView: View {
                         Button("Disconnect", role: .destructive) {
                             showWiseDisconnectConfirmation = true
                         }
+                    } else if !wiseConnectedName.isEmpty {
+                        Button("Forget", role: .destructive) { disconnectWise() }
+                        Button("Reconnect") { showWiseConnectSheet = true }
+                            .buttonStyle(.borderedProminent)
                     } else {
                         Button("Connect") { showWiseConnectSheet = true }
                             .buttonStyle(.borderedProminent)
@@ -80,6 +88,7 @@ struct BankConnectionsView: View {
         .sheet(isPresented: $showConnectSheet) {
             MonobankConnectSheet { name in
                 monobankConnectedName = name
+                syncService.refreshConnectionStatus()
             }
         }
         .sheet(isPresented: $showAccountsSheet) {
@@ -99,6 +108,7 @@ struct BankConnectionsView: View {
         .sheet(isPresented: $showWiseConnectSheet) {
             WiseConnectSheet { name in
                 wiseConnectedName = name
+                syncService.refreshConnectionStatus()
             }
         }
         .confirmationDialog(
@@ -112,6 +122,7 @@ struct BankConnectionsView: View {
         } message: {
             Text("This will remove your Wise token. Previously imported transactions will not be deleted.")
         }
+        .navigationTitle("")
     }
 
     private func disconnectMonobank() {
@@ -120,16 +131,18 @@ struct BankConnectionsView: View {
         monobankLastSync = 0
         UserDefaults.standard.removeObject(forKey: "monobankAccountDetails")
         UserDefaults.standard.removeObject(forKey: "monobankSelectedAccounts")
+        syncService.refreshConnectionStatus()
     }
 
     private func disconnectWise() {
         try? KeychainHelper.deleteToken(service: KeychainHelper.wiseService)
         wiseConnectedName = ""
         wiseLastSync = 0
+        syncService.refreshConnectionStatus()
     }
 }
 
 #Preview {
-    BankConnectionsView()
+    BankConnectionsView(syncService: BankSyncService())
         .modelContainer(for: [Expense.self, Income.self], inMemory: true)
 }

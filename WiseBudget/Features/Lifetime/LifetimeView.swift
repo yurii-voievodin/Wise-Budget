@@ -55,6 +55,7 @@ struct LifetimeView: View {
             }
         }
         .formStyle(.grouped)
+        .navigationTitle("")
     }
 }
 

@@ -98,7 +98,9 @@ struct LifetimeAggregate {
         let incomeSlices = incomeByCat.map { name, total in
             CategoryChartSlice(
                 name: name,
-                iconName: DefaultIncomeCategory(rawValue: name)?.iconName ?? "ellipsis.circle",
+                iconName: DefaultIncomeCategory(rawValue: name)?.iconName
+                    ?? DefaultExpenseCategory(rawValue: name)?.iconName
+                    ?? "ellipsis.circle",
                 total: total
             )
         }

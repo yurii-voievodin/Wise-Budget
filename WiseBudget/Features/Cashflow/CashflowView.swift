@@ -151,6 +151,7 @@ struct CashflowView: View {
                 .accessibilityLabel("Time Range")
             }
         }
+        .navigationTitle("")
     }
 
     @ViewBuilder

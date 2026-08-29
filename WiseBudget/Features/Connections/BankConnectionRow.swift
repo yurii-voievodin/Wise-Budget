@@ -29,7 +29,7 @@ struct BankConnectionRow<Actions: View>: View {
                         .font(.headline)
                     statusPill
                 }
-                if isConnected, !connectedName.isEmpty {
+                if !connectedName.isEmpty {
                     Text(connectedName)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -53,17 +53,26 @@ struct BankConnectionRow<Actions: View>: View {
         .padding(.vertical, 4)
     }
 
+    private var needsReconnect: Bool {
+        !isConnected && !connectedName.isEmpty
+    }
+
     private var statusPill: some View {
-        Text(isConnected ? "Connected" : "Not connected")
+        let (label, tint): (String, Color) = if isConnected {
+            ("Connected", .green)
+        } else if needsReconnect {
+            ("Needs Reconnect", .orange)
+        } else {
+            ("Not connected", .secondary)
+        }
+
+        return Text(label)
             .font(.caption)
             .fontWeight(.medium)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(isConnected ? Color.green.opacity(0.18) : Color.secondary.opacity(0.18))
-            )
-            .foregroundStyle(isConnected ? Color.green : Color.secondary)
+            .background(Capsule().fill(tint.opacity(0.18)))
+            .foregroundStyle(tint)
     }
 }
 

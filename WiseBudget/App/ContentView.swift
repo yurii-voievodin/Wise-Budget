@@ -83,7 +83,7 @@ struct ContentView: View {
             case .lifetime:
                 LifetimeView()
             case .bankConnections:
-                BankConnectionsView()
+                BankConnectionsView(syncService: syncService)
             }
         }
         .focusedSceneValue(\.selectedMonthFilter, monthFilter)

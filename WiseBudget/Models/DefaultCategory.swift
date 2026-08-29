@@ -122,6 +122,9 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
 
     static let chartColorMap: [String: Color] = {
         var map: [String: Color] = [:]
+        for category in DefaultExpenseCategory.allCases {
+            map[category.rawValue] = category.chartColor
+        }
         for category in Self.allCases {
             map[category.rawValue] = category.chartColor
         }

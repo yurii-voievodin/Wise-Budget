@@ -27,11 +27,7 @@ final class BankSyncService {
     private static let autoSyncLastAttemptKey = "autoSyncLastAttemptDate"
     private static let autoSyncInterval: TimeInterval = 3600
 
-    /// Whether any bank token (Monobank or Wise) is stored in the Keychain.
-    var hasBankToken: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
-        || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
-    }
+    private(set) var hasBankToken = BankSyncService.checkBankToken()
 
     /// Whether the 1-minute cooldown after a sync is still active.
     var isSyncCooldown: Bool {
@@ -123,10 +119,20 @@ final class BankSyncService {
         currentSyncTask?.cancel()
     }
 
+    func refreshConnectionStatus() {
+        hasBankToken = Self.checkBankToken()
+    }
+
+    private static func checkBankToken() -> Bool {
+        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+    }
+
     /// Auto-triggers a sync of the current month for app launch and activation.
     /// Throttled to at most once per hour; the timestamp is persisted so the
     /// throttle also holds across relaunches, not just within one session.
     func autoSyncIfNeeded(context: ModelContext) {
+        refreshConnectionStatus()
         guard hasBankToken, !isSyncing else { return }
 
         let defaults = UserDefaults.standard
