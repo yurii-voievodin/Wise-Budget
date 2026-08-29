@@ -7,7 +7,7 @@ struct ComparisonBreakdownSection: View {
 
     var body: some View {
         Section("Monthly Totals") {
-            ForEach(monthTotals.filter { $0.total > 0 }, id: \.month) { item in
+            ForEach(monthTotals.reversed().filter { $0.total > 0 }, id: \.month) { item in
                 if let onSelect {
                     Button {
                         onSelect(item.month)
