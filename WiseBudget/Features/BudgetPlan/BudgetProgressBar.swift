@@ -4,13 +4,17 @@ struct BudgetProgressBar: View {
     let spent: Decimal
     let planned: Decimal
 
+    private var isUnplannedSpending: Bool {
+        planned <= 0 && spent > 0
+    }
+
     private var ratio: Double {
         guard planned > 0 else { return 0 }
         return Double(truncating: spent as NSDecimalNumber) / Double(truncating: planned as NSDecimalNumber)
     }
 
     private var progress: Double {
-        min(ratio, 1.0)
+        isUnplannedSpending ? 1.0 : min(ratio, 1.0)
     }
 
     private static let thresholdLow = 0.5
@@ -18,12 +22,15 @@ struct BudgetProgressBar: View {
     private static let thresholdHigh = 1.0
 
     private var barColor: Color {
+        if isUnplannedSpending {
+            return .expense
+        }
         switch ratio {
-        case ...0: .clear
-        case ..<Self.thresholdLow: .income
-        case Self.thresholdLow..<Self.thresholdMedium: .yellow
-        case Self.thresholdMedium..<Self.thresholdHigh: .orange
-        default: .expense
+        case ...0: return .clear
+        case ..<Self.thresholdLow: return .income
+        case Self.thresholdLow..<Self.thresholdMedium: return .yellow
+        case Self.thresholdMedium..<Self.thresholdHigh: return .orange
+        default: return .expense
         }
     }
 
@@ -33,7 +40,11 @@ struct BudgetProgressBar: View {
             .tint(barColor)
             .accessibilityElement()
             .accessibilityLabel("Budget progress")
-            .accessibilityValue("\(Int(ratio * 100)) percent spent")
+            .accessibilityValue(
+                isUnplannedSpending
+                    ? "No budget planned, \(spent.formatted()) spent"
+                    : "\(Int(ratio * 100)) percent spent"
+            )
     }
 }
 

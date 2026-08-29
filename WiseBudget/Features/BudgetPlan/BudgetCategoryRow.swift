@@ -11,6 +11,10 @@ struct BudgetCategoryRow: View {
 
     @State private var draftPlanned: Decimal?
 
+    private var isUnplannedSpending: Bool {
+        planned <= 0 && actual > 0
+    }
+
     private var percentText: String {
         guard planned > 0, actual > 0 else { return "—" }
         return (actual / planned).formatted(.percent.precision(.fractionLength(0)))
@@ -68,7 +72,7 @@ struct BudgetCategoryRow: View {
                 BudgetProgressBar(spent: actual, planned: planned)
                 Text(percentText)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isUnplannedSpending ? .expense : .secondary)
                     .monospacedDigit()
                     .frame(width: 44, alignment: .trailing)
             }
