@@ -15,6 +15,7 @@ struct ContentView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(OnboardingFlowView.completedKey) private var hasCompletedOnboarding: Bool = false
 
     var body: some View {
         NavigationSplitView {
@@ -97,6 +98,11 @@ struct ContentView: View {
         }
         .onChange(of: monthFilter) { _, newValue in
             newValue.persist()
+        }
+        .onChange(of: hasCompletedOnboarding) { _, completed in
+            if completed {
+                syncService.refreshConnectionStatus()
+            }
         }
         .onChange(of: selectedSidebarItem) { oldValue, newValue in
             if oldValue == .expenses || oldValue == .income {

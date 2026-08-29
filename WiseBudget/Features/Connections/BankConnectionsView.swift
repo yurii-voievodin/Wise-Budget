@@ -18,13 +18,8 @@ struct BankConnectionsView: View {
     @State private var showWiseConnectSheet = false
     @State private var showWiseDisconnectConfirmation = false
 
-    private var isMonobankConnected: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
-    }
-
-    private var isWiseConnected: Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
-    }
+    @State private var isMonobankConnected = false
+    @State private var isWiseConnected = false
 
     var body: some View {
         Form {
@@ -82,11 +77,14 @@ struct BankConnectionsView: View {
             }
         }
         .formStyle(.grouped)
-
+        .task {
+            refreshConnectionState()
+        }
         .sheet(isPresented: $showConnectSheet) {
             MonobankConnectSheet { name in
                 monobankConnectedName = name
                 syncService.refreshConnectionStatus()
+                refreshConnectionState()
             }
         }
         .sheet(isPresented: $showAccountsSheet) {
@@ -107,6 +105,7 @@ struct BankConnectionsView: View {
             WiseConnectSheet { name in
                 wiseConnectedName = name
                 syncService.refreshConnectionStatus()
+                refreshConnectionState()
             }
         }
         .confirmationDialog(
@@ -146,6 +145,7 @@ struct BankConnectionsView: View {
         UserDefaults.standard.removeObject(forKey: "monobankAccountDetails")
         UserDefaults.standard.removeObject(forKey: "monobankSelectedAccounts")
         syncService.refreshConnectionStatus()
+        refreshConnectionState()
     }
 
     private func disconnectWise() {
@@ -153,6 +153,12 @@ struct BankConnectionsView: View {
         wiseConnectedName = ""
         wiseLastSync = 0
         syncService.refreshConnectionStatus()
+        refreshConnectionState()
+    }
+
+    private func refreshConnectionState() {
+        isMonobankConnected = KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
+        isWiseConnected = KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 }
 
