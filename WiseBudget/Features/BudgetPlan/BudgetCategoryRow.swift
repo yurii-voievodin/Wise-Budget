@@ -12,7 +12,7 @@ struct BudgetCategoryRow: View {
     @State private var draftPlanned: Decimal?
 
     private var isUnplannedSpending: Bool {
-        planned <= 0 && actual > 0
+        BudgetProgressBar.isUnplannedSpending(planned: planned, spent: actual)
     }
 
     private var percentText: String {

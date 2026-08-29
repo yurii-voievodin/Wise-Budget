@@ -48,13 +48,12 @@ struct BankConnectionsView: View {
                         Button("Disconnect", role: .destructive) {
                             showDisconnectConfirmation = true
                         }
-                    } else if !monobankConnectedName.isEmpty {
-                        Button("Forget", role: .destructive) { disconnectMonobank() }
-                        Button("Reconnect") { showConnectSheet = true }
-                            .buttonStyle(.borderedProminent)
                     } else {
-                        Button("Connect") { showConnectSheet = true }
-                            .buttonStyle(.borderedProminent)
+                        disconnectedActions(
+                            connectedName: monobankConnectedName,
+                            onConnect: { showConnectSheet = true },
+                            onForget: disconnectMonobank
+                        )
                     }
                 }
             }
@@ -72,13 +71,12 @@ struct BankConnectionsView: View {
                         Button("Disconnect", role: .destructive) {
                             showWiseDisconnectConfirmation = true
                         }
-                    } else if !wiseConnectedName.isEmpty {
-                        Button("Forget", role: .destructive) { disconnectWise() }
-                        Button("Reconnect") { showWiseConnectSheet = true }
-                            .buttonStyle(.borderedProminent)
                     } else {
-                        Button("Connect") { showWiseConnectSheet = true }
-                            .buttonStyle(.borderedProminent)
+                        disconnectedActions(
+                            connectedName: wiseConnectedName,
+                            onConnect: { showWiseConnectSheet = true },
+                            onForget: disconnectWise
+                        )
                     }
                 }
             }
@@ -123,6 +121,22 @@ struct BankConnectionsView: View {
             Text("This will remove your Wise token. Previously imported transactions will not be deleted.")
         }
         .navigationTitle("")
+    }
+
+    @ViewBuilder
+    private func disconnectedActions(
+        connectedName: String,
+        onConnect: @escaping () -> Void,
+        onForget: @escaping () -> Void
+    ) -> some View {
+        if !connectedName.isEmpty {
+            Button("Forget", role: .destructive, action: onForget)
+            Button("Reconnect", action: onConnect)
+                .buttonStyle(.borderedProminent)
+        } else {
+            Button("Connect", action: onConnect)
+                .buttonStyle(.borderedProminent)
+        }
     }
 
     private func disconnectMonobank() {

@@ -132,12 +132,14 @@ final class BankSyncService {
     /// Throttled to at most once per hour; the timestamp is persisted so the
     /// throttle also holds across relaunches, not just within one session.
     func autoSyncIfNeeded(context: ModelContext) {
-        refreshConnectionStatus()
-        guard hasBankToken, !isSyncing else { return }
+        guard !isSyncing else { return }
 
         let defaults = UserDefaults.standard
         let lastAttempt = defaults.double(forKey: Self.autoSyncLastAttemptKey)
         guard Date.now.timeIntervalSince1970 - lastAttempt >= Self.autoSyncInterval else { return }
+
+        refreshConnectionStatus()
+        guard hasBankToken else { return }
         defaults.set(Date.now.timeIntervalSince1970, forKey: Self.autoSyncLastAttemptKey)
 
         let filter = MonthFilter.currentMonth()

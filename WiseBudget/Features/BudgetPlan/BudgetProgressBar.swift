@@ -4,8 +4,12 @@ struct BudgetProgressBar: View {
     let spent: Decimal
     let planned: Decimal
 
-    private var isUnplannedSpending: Bool {
+    static func isUnplannedSpending(planned: Decimal, spent: Decimal) -> Bool {
         planned <= 0 && spent > 0
+    }
+
+    private var isUnplannedSpending: Bool {
+        Self.isUnplannedSpending(planned: planned, spent: spent)
     }
 
     private var ratio: Double {

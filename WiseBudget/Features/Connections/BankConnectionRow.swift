@@ -53,14 +53,10 @@ struct BankConnectionRow<Actions: View>: View {
         .padding(.vertical, 4)
     }
 
-    private var needsReconnect: Bool {
-        !isConnected && !connectedName.isEmpty
-    }
-
     private var statusPill: some View {
         let (label, tint): (String, Color) = if isConnected {
             ("Connected", .green)
-        } else if needsReconnect {
+        } else if !connectedName.isEmpty {
             ("Needs Reconnect", .orange)
         } else {
             ("Not connected", .secondary)

@@ -143,4 +143,8 @@ nonisolated enum DefaultIncomeCategory: String, CaseIterable {
     static func sortIndex(for name: String) -> Int {
         Self.allCases.firstIndex { $0.rawValue == name }.map { Int($0) } ?? Self.allCases.count
     }
+
+    static func icon(for name: String) -> String? {
+        Self(rawValue: name)?.iconName ?? DefaultExpenseCategory(rawValue: name)?.iconName
+    }
 }

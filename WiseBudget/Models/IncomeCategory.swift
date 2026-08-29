@@ -13,13 +13,7 @@ final nonisolated class IncomeCategory {
         if let iconName, iconName != "folder" {
             return iconName
         }
-        if let match = DefaultIncomeCategory(rawValue: name) {
-            return match.iconName
-        }
-        if let match = DefaultExpenseCategory(rawValue: name) {
-            return match.iconName
-        }
-        return iconName ?? "folder"
+        return DefaultIncomeCategory.icon(for: name) ?? iconName ?? "folder"
     }
 
     init(name: String, iconName: String = "folder") {
