@@ -41,6 +41,7 @@ struct ExpenseFormSheet: View {
             entityLabel: "Expense",
             extraFieldLabel: "Destination",
             isEditing: expenseToEdit != nil,
+            accentColor: .expense,
             amount: $amount,
             currency: $currency,
             date: $date,

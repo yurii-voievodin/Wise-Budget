@@ -9,10 +9,12 @@ struct BudgetCategoryRow: View {
     let onPlannedChange: (Decimal) -> Void
     var onCategoryTap: (() -> Void)?
 
-    @State private var draftPlanned: Decimal?
-
     private var isUnplannedSpending: Bool {
         BudgetProgressBar.isUnplannedSpending(planned: planned, spent: actual)
+    }
+
+    private var isOverspent: Bool {
+        isUnplannedSpending || (planned > 0 && actual > planned)
     }
 
     private var percentText: String {
@@ -33,8 +35,8 @@ struct BudgetCategoryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
                 if let onCategoryTap {
                     Button(action: onCategoryTap) {
                         categoryLabel
@@ -45,45 +47,34 @@ struct BudgetCategoryRow: View {
                 } else {
                     categoryLabel
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Text(actual, format: .number)
-                    .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
                     .monospacedDigit()
+                    .foregroundStyle(isOverspent ? Color.expense : .primary)
                 Text("/")
-                    .foregroundStyle(.secondary)
-                TextField("0", value: $draftPlanned, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                    .multilineTextAlignment(.trailing)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                    }
-                    .onChange(of: draftPlanned) { _, newValue in
-                        let normalized = max(.zero, newValue ?? .zero)
-                        if normalized != planned {
-                            onPlannedChange(normalized)
-                        }
-                    }
-                Text(currency)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
+                PlannedAmountField(
+                    value: planned,
+                    currency: currency,
+                    onChange: onPlannedChange
+                )
             }
-            HStack {
+            HStack(spacing: 8) {
                 BudgetProgressBar(spent: actual, planned: planned)
                 Text(percentText)
                     .font(.caption)
-                    .foregroundStyle(isUnplannedSpending ? .expense : .secondary)
+                    .foregroundStyle(isOverspent ? Color.expense : .secondary)
                     .monospacedDigit()
                     .frame(width: 44, alignment: .trailing)
             }
         }
         .padding(12)
-        .cardBackground()
-        .task(id: planned) {
-            // Sync the draft from the source of truth when a different
-            // category's value changes propagate, or on first appearance.
-            if draftPlanned != planned {
-                draftPlanned = planned == .zero ? nil : planned
+        .cardBackground(tint: isOverspent ? .expense : nil)
+        .overlay {
+            if isOverspent {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.expense.opacity(0.35), lineWidth: 1)
             }
         }
     }

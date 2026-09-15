@@ -11,8 +11,6 @@ struct BudgetSummarySection: View {
     let onMonthlyBudgetChange: (Decimal) -> Void
     let onShowForeignExpenses: () -> Void
 
-    @State private var draftBudget: Decimal?
-
     private let columns = [
         GridItem(.adaptive(minimum: 200), spacing: 12)
     ]
@@ -22,34 +20,24 @@ struct BudgetSummarySection: View {
     private var isOverBudget: Bool { remaining < 0 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-
-            HStack {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                Spacer(minLength: 12)
                 Label("Monthly Budget", systemImage: "wallet.bifold")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Spacer()
-                TextField("0", value: $draftBudget, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 120)
-                    .multilineTextAlignment(.trailing)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                    }
-                    .onChange(of: draftBudget) { _, newValue in
-                        let normalized = max(.zero, newValue ?? .zero)
-                        if normalized != monthlyBudget {
-                            onMonthlyBudgetChange(normalized)
-                        }
-                    }
-                Text(planCurrency)
-                    .foregroundStyle(.secondary)
+                PlannedAmountField(
+                    value: monthlyBudget,
+                    currency: planCurrency,
+                    width: 110,
+                    onChange: onMonthlyBudgetChange
+                )
             }
+
+            Divider()
 
             LazyVGrid(columns: columns, spacing: 12) {
                 StatCard(
@@ -107,12 +95,11 @@ struct BudgetSummarySection: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(12)
-        .cardBackground()
-        .task(id: monthlyBudget) {
-            if draftBudget != monthlyBudget {
-                draftBudget = monthlyBudget == .zero ? nil : monthlyBudget
-            }
+        .padding(16)
+        .cardBackground(cornerRadius: 12)
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
         }
     }
 }

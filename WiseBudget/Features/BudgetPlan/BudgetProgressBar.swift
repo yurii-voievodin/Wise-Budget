@@ -38,17 +38,42 @@ struct BudgetProgressBar: View {
         }
     }
 
+    private var isOverBudget: Bool { ratio > 1 }
+
+    private var overflowFraction: Double {
+        guard isOverBudget else { return 0 }
+        return min((ratio - 1) / ratio, 0.6)
+    }
+
     var body: some View {
-        ProgressView(value: progress)
-            .progressViewStyle(.linear)
-            .tint(barColor)
-            .accessibilityElement()
-            .accessibilityLabel("Budget progress")
-            .accessibilityValue(
-                isUnplannedSpending
-                    ? "No budget planned, \(spent.formatted()) spent"
-                    : "\(Int(ratio * 100)) percent spent"
-            )
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.15))
+                if isOverBudget {
+                    Capsule()
+                        .fill(barColor.opacity(0.45))
+                    Capsule()
+                        .fill(barColor)
+                        .frame(width: width * overflowFraction)
+                        .offset(x: width * (1 - overflowFraction))
+                } else {
+                    Capsule()
+                        .fill(barColor)
+                        .frame(width: width * progress)
+                }
+            }
+        }
+        .frame(height: 6)
+        .animation(.easeOut(duration: 0.2), value: progress)
+        .accessibilityElement()
+        .accessibilityLabel("Budget progress")
+        .accessibilityValue(
+            isUnplannedSpending
+                ? "No budget planned, \(spent.formatted()) spent"
+                : "\(Int(ratio * 100)) percent spent"
+        )
     }
 }
 

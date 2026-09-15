@@ -19,25 +19,62 @@ struct CurrencyPickerScreen: View {
     }
 
     var body: some View {
-        List(filteredOptions) { option in
-            Button {
-                currency = option.code
-                dismiss()
-            } label: {
-                HStack {
-                    Text("\(option.code) – \(option.label)")
-                    Spacer()
-                    if option.code == currency {
-                        Image(systemName: "checkmark")
-                            .foregroundStyle(.tint)
-                    }
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+        VStack(spacing: 0) {
+            searchField
+            Divider()
+            list
         }
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search currency")
-        .navigationTitle("Currency")
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search currency", text: $searchText)
+                .textFieldStyle(.plain)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+    }
+
+    private var list: some View {
+        ScrollViewReader { proxy in
+            List(filteredOptions) { option in
+                Button {
+                    currency = option.code
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(option.code)
+                            .font(.system(.body, design: .rounded))
+                            .fontWeight(.semibold)
+                            .frame(width: 42, alignment: .leading)
+                        Text(option.label)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        if option.code == currency {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            }
+            .listStyle(.inset)
+            .onAppear { proxy.scrollTo(currency, anchor: .center) }
+        }
     }
 }
 
@@ -49,8 +86,6 @@ private struct CurrencyOption: Identifiable {
 
 #Preview {
     @Previewable @State var currency = "USD"
-    NavigationStack {
-        CurrencyPickerScreen(currency: $currency)
-    }
-    .frame(width: 400, height: 500)
+    CurrencyPickerScreen(currency: $currency)
+        .frame(width: 300, height: 360)
 }

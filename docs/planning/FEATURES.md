@@ -50,6 +50,10 @@ Surface top merchants (via `externalId` / description clustering — `MerchantCa
 
 Extend `ExpenseComparisonView` with a YoY mode (this month vs. same month last year, this year-to-date vs. last year-to-date). Custom date ranges are out of scope for now — revisit later.
 
+## UI Polish Pass — Remaining Surfaces
+
+The transaction form sheet and Budget Plan have been restyled (category-tinted header, shared `PlannedAmountField`, capsule progress bar with an overspend segment, attention-tinted overspent cards). Surfaces still on the default styling: Bank Connections rows (connection state wants colored status pills), Dashboard `StatCard` grid, and the empty states (`MonthEmptyStateView`, `BudgetEmptyStateView`, `TransactionEmptyStateView`). Also deferred from the Budget Plan pass: dimming dormant categories (zero planned, zero spent) so active ones carry more visual weight. Pairs naturally with the Accessibility Audit Pass — verify color is never the sole differentiator while touching these views.
+
 ## Global Search (Later)
 
 Command-palette-style search (⌘F) across transactions, categories, and budget plans with filters. Deferred — revisit after priority items land.
