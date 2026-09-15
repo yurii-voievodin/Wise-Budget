@@ -33,7 +33,7 @@ final class SpendingInsightsService {
     """
 
     private static let generationOptions = GenerationOptions(
-        sampling: .greedy,
+        samplingMode: .greedy,
         maximumResponseTokens: 600
     )
 

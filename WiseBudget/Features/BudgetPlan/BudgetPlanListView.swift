@@ -55,6 +55,6 @@ struct BudgetPlanListView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 16)
         }
-        .focusedSceneValue(\.resetBudgetPlan, onResetPlan)
+        .focusedSceneValue(\.resetBudgetPlan, ResetBudgetPlanAction(onResetPlan))
     }
 }
