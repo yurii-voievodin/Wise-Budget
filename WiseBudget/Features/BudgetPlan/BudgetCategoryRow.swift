@@ -22,34 +22,22 @@ struct BudgetCategoryRow: View {
         return (actual / planned).formatted(.percent.precision(.fractionLength(0)))
     }
 
-    private var categoryLabel: some View {
-        HStack(spacing: 8) {
-            CategoryIconBadge(
-                systemName: categoryIcon,
-                color: DefaultExpenseCategory.color(for: categoryName),
-                size: 24
-            )
-            Text(categoryName)
-                .fontWeight(.medium)
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.small) {
+            HStack(spacing: Layout.Spacing.small) {
                 if let onCategoryTap {
                     Button(action: onCategoryTap) {
-                        categoryLabel
+                        BudgetCategoryLabel(categoryName: categoryName, categoryIcon: categoryIcon)
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show expenses for \(categoryName)")
                 } else {
-                    categoryLabel
+                    BudgetCategoryLabel(categoryName: categoryName, categoryIcon: categoryIcon)
                 }
                 Spacer(minLength: 8)
                 Text(actual, format: .number)
-                    .fontWeight(.semibold)
+                    .bold()
                     .monospacedDigit()
                     .foregroundStyle(isOverspent ? Color.expense : .primary)
                 Text("/")
@@ -60,7 +48,7 @@ struct BudgetCategoryRow: View {
                     onChange: onPlannedChange
                 )
             }
-            HStack(spacing: 8) {
+            HStack(spacing: Layout.Spacing.small) {
                 BudgetProgressBar(spent: actual, planned: planned)
                 Text(percentText)
                     .font(.caption)
@@ -69,11 +57,11 @@ struct BudgetCategoryRow: View {
                     .frame(width: 44, alignment: .trailing)
             }
         }
-        .padding(12)
+        .padding(Layout.Spacing.medium)
         .cardBackground(tint: isOverspent ? .expense : nil)
         .overlay {
             if isOverspent {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.Radius.medium)
                     .stroke(Color.expense.opacity(0.35), lineWidth: 1)
             }
         }

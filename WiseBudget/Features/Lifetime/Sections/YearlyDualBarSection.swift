@@ -41,7 +41,7 @@ struct YearlyDualBarSection: View {
                 }
             }
             .frame(minHeight: 260)
-            .padding(.vertical, 8)
+            .padding(.vertical, Layout.Spacing.small)
         }
     }
 }

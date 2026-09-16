@@ -12,10 +12,10 @@ struct OnboardingAIStep: View {
             title: "Apple Intelligence insights",
             subtitle: subtitle
         ) {
-            VStack(spacing: 12) {
+            VStack(spacing: Layout.Spacing.medium) {
                 Toggle(isOn: $aiInsightsEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Enable AI Insights").fontWeight(.medium)
+                        Text("Enable AI Insights")
                         Text("Runs on-device. Nothing leaves your Mac.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -33,7 +33,7 @@ struct OnboardingAIStep: View {
             }
             .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.Radius.large)
                     .fill(Color.secondary.opacity(0.08))
             )
             .frame(maxWidth: 380)

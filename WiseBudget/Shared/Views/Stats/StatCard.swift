@@ -14,7 +14,7 @@ struct StatCard: View {
     var subtitle: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.snug) {
             Label(label, systemImage: icon)
                 .font(.subheadline)
                 .foregroundStyle(color)

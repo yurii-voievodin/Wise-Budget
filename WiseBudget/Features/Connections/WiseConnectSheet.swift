@@ -20,7 +20,7 @@ struct WiseConnectSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.large) {
             Text("Connect Wise")
                 .font(.headline)
 
@@ -42,7 +42,7 @@ struct WiseConnectSheet: View {
 
             Spacer()
 
-            VStack(spacing: 8) {
+            VStack(spacing: Layout.Spacing.small) {
                 if connectedName != nil {
                     Button("Done", action: finishSelection)
                         .buttonStyle(.borderedProminent)
@@ -72,7 +72,7 @@ struct WiseConnectSheet: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(20)
+        .padding(Layout.Spacing.xLarge)
         .frame(minWidth: 380, idealWidth: 420, minHeight: 420, idealHeight: 500)
     }
 

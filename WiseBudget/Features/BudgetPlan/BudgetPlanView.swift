@@ -21,20 +21,6 @@ struct BudgetPlanView: View {
     }
 }
 
-struct ResetBudgetPlanAction: Equatable {
-    private let perform: () -> Void
-
-    init(_ perform: @escaping () -> Void) {
-        self.perform = perform
-    }
-
-    func callAsFunction() {
-        perform()
-    }
-
-    static func == (lhs: Self, rhs: Self) -> Bool { true }
-}
-
 extension FocusedValues {
     @Entry var resetBudgetPlan: ResetBudgetPlanAction?
 }

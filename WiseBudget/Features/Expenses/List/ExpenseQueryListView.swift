@@ -74,8 +74,7 @@ struct ExpenseQueryListView: View {
             onAdd: { isAddingExpense = true },
             onNavigateToBank: { selectedSidebarItem = .bankConnections }
         )
-        .onAppear { checkHasAnyExpenses() }
-        .onChange(of: expenses.count) { checkHasAnyExpenses() }
+        .task(id: expenses.count) { checkHasAnyExpenses() }
     }
 
     private func checkHasAnyExpenses() {

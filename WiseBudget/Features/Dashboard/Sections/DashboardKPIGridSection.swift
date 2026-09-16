@@ -10,14 +10,14 @@ struct DashboardKPIGridSection: View {
     let currency: String
 
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
+        GridItem(.flexible(), spacing: Layout.Spacing.medium),
+        GridItem(.flexible(), spacing: Layout.Spacing.medium),
+        GridItem(.flexible(), spacing: Layout.Spacing.medium)
     ]
 
     var body: some View {
         Section {
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: Layout.Spacing.medium) {
                 StatCard(
                     label: "Income",
                     icon: "arrow.down.circle.fill",
@@ -45,7 +45,7 @@ struct DashboardKPIGridSection: View {
                     subtitle: dailyLabel(amount: dailyBalance, signed: true)
                 )
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, Layout.Spacing.tight)
         }
     }
 

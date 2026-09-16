@@ -45,28 +45,22 @@ struct BudgetProgressBar: View {
         return min((ratio - 1) / ratio, 0.6)
     }
 
+    private var fillAnchor: UnitPoint { isOverBudget ? .trailing : .leading }
+
+    private var fillFraction: Double { isOverBudget ? overflowFraction : progress }
+
     var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.secondary.opacity(0.15))
-                if isOverBudget {
-                    Capsule()
-                        .fill(barColor.opacity(0.45))
-                    Capsule()
-                        .fill(barColor)
-                        .frame(width: width * overflowFraction)
-                        .offset(x: width * (1 - overflowFraction))
-                } else {
-                    Capsule()
-                        .fill(barColor)
-                        .frame(width: width * progress)
-                }
-            }
+        ZStack {
+            Capsule()
+                .fill(Color.secondary.opacity(0.15))
+            Capsule()
+                .fill(barColor.opacity(isOverBudget ? 0.45 : 0))
+            Capsule()
+                .fill(barColor)
+                .scaleEffect(x: fillFraction, anchor: fillAnchor)
         }
         .frame(height: 6)
-        .animation(.easeOut(duration: 0.2), value: progress)
+        .animation(Motion.settle, value: progress)
         .accessibilityElement()
         .accessibilityLabel("Budget progress")
         .accessibilityValue(
@@ -90,7 +84,7 @@ struct BudgetProgressBar: View {
 
 private struct BudgetProgressBarPreviewSamples: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Layout.Spacing.xLarge) {
             BudgetProgressBar(spent: 200, planned: 500)   // 40%
             BudgetProgressBar(spent: 400, planned: 500)   // 80%
             BudgetProgressBar(spent: 480, planned: 500)   // 96%

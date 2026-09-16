@@ -10,7 +10,7 @@ struct BankSyncSidebarRow: View {
 
     var body: some View {
         if syncService.hasBankToken {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.small) {
                 syncButton
 
                 if let progress = syncService.progress {
@@ -24,7 +24,7 @@ struct BankSyncSidebarRow: View {
 
     private var syncButton: some View {
         Button(action: triggerSync) {
-            HStack(spacing: 8) {
+            HStack(spacing: Layout.Spacing.small) {
                 if syncService.isSyncing {
                     ProgressView()
                         .controlSize(.small)
@@ -45,7 +45,7 @@ struct BankSyncSidebarRow: View {
 
     @ViewBuilder
     private func progressStrip(for progress: SyncProgress) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.tight) {
             Text("\(progress.bank) — \(progress.detail)")
                 .font(.caption)
                 .foregroundStyle(.secondary)

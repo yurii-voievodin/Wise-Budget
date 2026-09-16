@@ -1,16 +1,6 @@
 import SwiftData
 import SwiftUI
 
-struct DashboardRecentTransaction: Identifiable {
-    let id: PersistentIdentifier
-    let descriptionText: String?
-    let categoryName: String?
-    let categoryIcon: String?
-    let item: CurrencyConvertible
-    let isExpense: Bool
-    let date: Date
-}
-
 struct DashboardRecentTransactionsSection: View {
     let transactions: [DashboardRecentTransaction]
     let onTap: (DashboardRecentTransaction) -> Void

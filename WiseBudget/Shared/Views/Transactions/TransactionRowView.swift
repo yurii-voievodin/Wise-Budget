@@ -14,18 +14,16 @@ struct TransactionRowView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 if descriptionText != nil || item.isInternalTransfer || source.isSynced {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Layout.Spacing.tight) {
                         if let desc = descriptionText {
                             Text(desc)
                                 .font(.body)
-                                .fontWeight(.medium)
                             if item.isInternalTransfer {
-                                transferBadge
+                                TransferBadge()
                             }
                         } else if item.isInternalTransfer {
                             Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
                                 .font(.body)
-                                .fontWeight(.medium)
                                 .foregroundStyle(.secondary)
                                 .accessibilityLabel("Internal transfer")
                         }
@@ -33,7 +31,7 @@ struct TransactionRowView: View {
                     }
                 }
                 if let name = categoryName, let icon = categoryIcon {
-                    HStack(spacing: 6) {
+                    HStack(spacing: Layout.Spacing.snug) {
                         CategoryIconBadge(systemName: icon, color: categoryColor ?? .secondary, size: 22)
                         Text(name)
                             .font(.subheadline)
@@ -51,15 +49,6 @@ struct TransactionRowView: View {
                 .opacity(item.isInternalTransfer ? 0.7 : 1)
         }
         .contentShape(Rectangle())
-    }
-
-    private var transferBadge: some View {
-        Label("Transfer", systemImage: "arrow.left.arrow.right.circle.fill")
-            .labelStyle(.iconOnly)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .help("Internal transfer — excluded from statistics")
-            .accessibilityLabel("Internal transfer")
     }
 }
 

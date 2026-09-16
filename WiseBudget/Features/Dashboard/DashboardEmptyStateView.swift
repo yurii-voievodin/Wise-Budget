@@ -18,7 +18,7 @@ struct DashboardEmptyStateView: View {
             Text(description)
         } actions: {
             if state == .onboarding {
-                HStack(spacing: 12) {
+                HStack(spacing: Layout.Spacing.medium) {
                     Button(action: onConnectBank) {
                         Label("Connect Bank", systemImage: "link")
                     }
@@ -29,7 +29,7 @@ struct DashboardEmptyStateView: View {
                     }
                 }
             } else {
-                HStack(spacing: 12) {
+                HStack(spacing: Layout.Spacing.medium) {
                     Button(action: onAddExpense) {
                         Label("Add Expense", systemImage: "plus")
                     }

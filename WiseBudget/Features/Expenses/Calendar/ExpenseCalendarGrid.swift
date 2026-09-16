@@ -1,19 +1,5 @@
 import SwiftUI
 
-private struct IdentifiableDate: Identifiable {
-    let date: Date
-    var id: Date { date }
-}
-
-struct CalendarHeatMapData {
-    let dailyTotals: [Int: Decimal]
-    let dailyTotalsByCurrency: [Int: [String: Decimal]]
-    let averageDailyIncome: Decimal
-
-    var maxDailyTotal: Decimal { dailyTotals.values.max() ?? .zero }
-    var daysWithExpenses: Set<Int> { Set(dailyTotals.keys) }
-}
-
 struct ExpenseCalendarGrid: View {
     let filter: MonthFilter
     let defaultCurrency: String
@@ -55,8 +41,8 @@ struct ExpenseCalendarGrid: View {
     }
 
     var body: some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-        LazyVGrid(columns: columns, spacing: 4) {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: Layout.Spacing.tight), count: 7)
+        LazyVGrid(columns: columns, spacing: Layout.Spacing.tight) {
             ForEach(calendarCells) { cell in
                 cellView(for: cell)
             }
@@ -69,7 +55,7 @@ struct ExpenseCalendarGrid: View {
         case .header(let index):
             Text(orderedWeekdaySymbols[index])
                 .font(.caption)
-                .fontWeight(.semibold)
+                .bold()
                 .foregroundStyle(.primary.opacity(0.7))
                 .frame(maxWidth: .infinity)
         case .empty:

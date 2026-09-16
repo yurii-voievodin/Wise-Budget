@@ -30,7 +30,7 @@ struct BudgetEmptyStateView: View {
         } description: {
             Text("Create a budget plan for \(filter.startOfMonth.formatted(.dateTime.month(.wide).year())) to track your spending goals.")
         } actions: {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.Spacing.medium) {
                 Button {
                     copyFromPreviousMonth()
                 } label: {

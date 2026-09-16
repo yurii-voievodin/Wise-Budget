@@ -8,7 +8,7 @@ extension View {
     func cardBackground(cornerRadius: CGFloat = 10, tint: Color? = nil) -> some View {
         background(
             (tint ?? .secondary).opacity(tint == nil ? 0.06 : 0.10),
-            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            in: RoundedRectangle(cornerRadius: cornerRadius)
         )
     }
 }

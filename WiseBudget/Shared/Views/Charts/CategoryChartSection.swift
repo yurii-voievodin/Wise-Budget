@@ -1,11 +1,6 @@
 import SwiftUI
 import Charts
 
-enum CategoryChartSortOrder: String {
-    case bySpending
-    case byCategoryOrder
-}
-
 struct CategoryChartSection: View {
     let title: LocalizedStringKey
     let slices: [CategoryChartSlice]
@@ -82,7 +77,7 @@ struct CategoryChartSection: View {
                                 VStack(spacing: 2) {
                                     Text("\(Decimal(grandTotal), format: .number)")
                                         .font(.headline)
-                                        .fontWeight(.bold)
+                                        .bold()
                                         .monospacedDigit()
                                     Text(currency)
                                         .font(.caption)
@@ -93,7 +88,7 @@ struct CategoryChartSection: View {
                         }
                     }
                     .frame(height: 150)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, Layout.Spacing.small)
                 }
 
                 ForEach(sortedSlices) { slice in
@@ -115,7 +110,7 @@ struct CategoryChartSection: View {
                 Text(title)
                 Spacer()
                 if !hidesChart, sortIndex != nil, !slices.isEmpty {
-                    sortMenu
+                    CategoryChartSortMenu(sortOrder: $sortOrder)
                 }
             }
         }
@@ -123,7 +118,7 @@ struct CategoryChartSection: View {
 
     @ViewBuilder
     private func sliceRow(_ slice: CategoryChartSlice) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Layout.Spacing.small) {
             CategoryIconBadge(
                 systemName: slice.iconName,
                 color: colorMap[slice.name] ?? .gray,
@@ -139,19 +134,6 @@ struct CategoryChartSection: View {
                 .monospacedDigit()
                 .frame(minWidth: 80, alignment: .trailing)
         }
-    }
-
-    private var sortMenu: some View {
-        Menu("Sort order", systemImage: "arrow.up.arrow.down") {
-            Picker("Sort", selection: $sortOrder) {
-                Text("By Spending").tag(CategoryChartSortOrder.bySpending)
-                Text("By Category").tag(CategoryChartSortOrder.byCategoryOrder)
-            }
-            .pickerStyle(.inline)
-        }
-        .labelStyle(.iconOnly)
-        .font(.caption)
-        .textCase(nil)
     }
 }
 

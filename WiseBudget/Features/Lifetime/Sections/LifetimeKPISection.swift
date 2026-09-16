@@ -9,11 +9,11 @@ struct LifetimeKPISection: View {
 
     var body: some View {
         Section("Lifetime Totals") {
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: Layout.Spacing.large) {
                 kpi("Income", value: totalIncome, color: .income)
                 kpi("Expenses", value: totalExpenses, color: .expense)
                 kpi("Net", value: net, color: net >= 0 ? .income : .expense)
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Layout.Spacing.tight) {
                     Text("Time span")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -23,12 +23,12 @@ struct LifetimeKPISection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, Layout.Spacing.tight)
         }
     }
 
     private func kpi(_ title: LocalizedStringKey, value: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.tight) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)

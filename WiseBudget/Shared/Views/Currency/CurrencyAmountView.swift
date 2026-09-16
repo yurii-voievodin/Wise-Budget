@@ -8,7 +8,7 @@ struct CurrencyAmountView: View {
 
     var body: some View {
         VStack(alignment: .trailing) {
-            HStack(spacing: 4) {
+            HStack(spacing: Layout.Spacing.tight) {
                 Text(item.amount, format: .number)
                     .font(.headline)
                     .foregroundStyle(tintColor ?? .primary)
@@ -18,7 +18,7 @@ struct CurrencyAmountView: View {
             }
             if let baseAmount = item.baseCurrencyAmount,
                let baseCur = item.baseCurrency {
-                HStack(spacing: 4) {
+                HStack(spacing: Layout.Spacing.tight) {
                     Text(baseAmount, format: .number)
                     Text(baseCur)
                 }
@@ -38,7 +38,7 @@ private struct PreviewItem: CurrencyConvertible {
 }
 
 #Preview("Currency Amount") {
-    VStack(alignment: .trailing, spacing: 16) {
+    VStack(alignment: .trailing, spacing: Layout.Spacing.large) {
         CurrencyAmountView(item: PreviewItem(amount: 52.30, currency: "EUR", baseCurrencyAmount: nil, baseCurrency: nil))
         CurrencyAmountView(item: PreviewItem(amount: 800, currency: "USD", baseCurrencyAmount: 740, baseCurrency: "EUR"))
         CurrencyAmountView(item: PreviewItem(amount: 15, currency: "GBP", baseCurrencyAmount: 17.50, baseCurrency: "EUR"))

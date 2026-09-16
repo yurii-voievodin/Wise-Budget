@@ -5,7 +5,7 @@ struct BaseCurrencyAmountCell: View {
     let defaultCurrency: String
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Layout.Spacing.tight) {
             Spacer()
             if item.currency == defaultCurrency {
                 Text("—").foregroundStyle(.secondary)

@@ -19,10 +19,6 @@ struct MonthNavigationToolbar: ToolbarContent {
         return (currentYear - 6)...(currentYear + 4)
     }
 
-    private var monthSymbols: [String] {
-        Calendar.current.monthSymbols
-    }
-
     private var isOnCurrentMonth: Bool {
         let now = Calendar.current.dateComponents([.year, .month], from: Date.now)
         return now.year == year && now.month == month
@@ -40,51 +36,29 @@ struct MonthNavigationToolbar: ToolbarContent {
             .help("Next Month")
         }
         ToolbarItem(placement: .status) {
-            Button {
-                pickerYear = year
-                pickerMonth = month
-                isDatePickerPresented.toggle()
-            } label: {
+            Button(action: presentDatePicker) {
                 Text(monthTitle)
                     .font(.headline)
                     .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, Layout.Spacing.small)
             }
             .popover(isPresented: $isDatePickerPresented) {
-                datePickerPopover
+                MonthPickerPopover(
+                    year: $pickerYear,
+                    month: $pickerMonth,
+                    yearRange: yearRange,
+                    showsCurrentMonthButton: !isOnCurrentMonth,
+                    onGoToCurrentMonth: goToCurrentMonth,
+                    onApply: applyPickedDate
+                )
             }
         }
     }
 
-    private var datePickerPopover: some View {
-        let symbols = monthSymbols
-        return VStack(spacing: 12) {
-            HStack {
-                Picker("Month", selection: $pickerMonth) {
-                    ForEach(1...12, id: \.self) { m in
-                        Text(symbols[m - 1]).tag(m)
-                    }
-                }
-                .labelsHidden()
-
-                Picker("Year", selection: $pickerYear) {
-                    ForEach(yearRange, id: \.self) { y in
-                        Text(String(y)).tag(y)
-                    }
-                }
-                .labelsHidden()
-            }
-
-            HStack {
-                if !isOnCurrentMonth {
-                    Button("Current Month", action: goToCurrentMonth)
-                }
-
-                Button("Go", action: applyPickedDate)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding()
+    private func presentDatePicker() {
+        pickerYear = year
+        pickerMonth = month
+        isDatePickerPresented.toggle()
     }
 
     private func goToCurrentMonth() {

@@ -67,8 +67,7 @@ struct IncomeQueryListView: View {
             onAdd: { isAddingIncome = true },
             onNavigateToBank: { selectedSidebarItem = .bankConnections }
         )
-        .onAppear { checkHasAnyIncomes() }
-        .onChange(of: incomes.count) { checkHasAnyIncomes() }
+        .task(id: incomes.count) { checkHasAnyIncomes() }
     }
 
     private func checkHasAnyIncomes() {

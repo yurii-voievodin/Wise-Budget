@@ -14,7 +14,7 @@ struct MonobankAccountsSheet: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.large) {
             Text("Monobank Accounts")
                 .font(.headline)
 
@@ -31,7 +31,7 @@ struct MonobankAccountsSheet: View {
                     .disabled(selectedAccountIds.isEmpty)
             }
         }
-        .padding(20)
+        .padding(Layout.Spacing.xLarge)
         .frame(minWidth: 380, idealHeight: 400)
         .task(loadAccounts)
     }
@@ -39,46 +39,19 @@ struct MonobankAccountsSheet: View {
     @ViewBuilder
     private var content: some View {
         if isLoading {
-            loadingView
+            ProgressView("Loading accounts...")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage {
             Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
                 .font(.callout)
             Spacer()
         } else {
-            accountList
-        }
-    }
-
-    private var loadingView: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                ProgressView("Loading accounts...")
-                Spacer()
-            }
-            Spacer()
-        }
-    }
-
-    private var accountList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Select which accounts to sync")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            ScrollView {
-                VStack(spacing: 4) {
-                    ForEach(accounts) { account in
-                        MonobankAccountRow(
-                            account: account,
-                            isSelected: selectedAccountIds.contains(account.id),
-                            onToggle: { toggle(account) }
-                        )
-                    }
-                }
-            }
+            MonobankAccountSelectionList(
+                accounts: accounts,
+                selectedAccountIds: selectedAccountIds,
+                onToggle: toggle
+            )
         }
     }
 

@@ -10,21 +10,21 @@ struct PlannedAmountField: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Layout.Spacing.snug) {
             TextField("0", value: $draft, format: .number)
                 .textFieldStyle(.plain)
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
                 .focused($isFocused)
                 .frame(width: width)
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
+                .padding(.vertical, Layout.Spacing.tight)
+                .padding(.horizontal, Layout.Spacing.small)
                 .background(
                     .background.opacity(0.6),
-                    in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: 7)
                 )
                 .overlay {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: 7)
                         .stroke(
                             isFocused ? Color.accentColor.opacity(0.8) : Color.secondary.opacity(0.3),
                             lineWidth: 1
@@ -49,7 +49,7 @@ struct PlannedAmountField: View {
 
 #Preview {
     @Previewable @State var planned: Decimal = 250
-    VStack(alignment: .trailing, spacing: 12) {
+    VStack(alignment: .trailing, spacing: Layout.Spacing.medium) {
         PlannedAmountField(value: planned, currency: "EUR") { planned = $0 }
         PlannedAmountField(value: 0, currency: "USD", width: 120) { _ in }
     }

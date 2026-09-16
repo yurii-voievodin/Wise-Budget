@@ -18,7 +18,7 @@ struct MonobankAccountSelectionView: View {
                 .foregroundStyle(.secondary)
 
             ScrollView {
-                VStack(spacing: 4) {
+                VStack(spacing: Layout.Spacing.tight) {
                     ForEach(accounts) { account in
                         MonobankAccountRow(
                             account: account,

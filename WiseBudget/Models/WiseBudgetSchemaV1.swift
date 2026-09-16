@@ -15,13 +15,3 @@ enum WiseBudgetSchemaV1: VersionedSchema {
         ]
     }
 }
-
-enum WiseBudgetMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] {
-        [WiseBudgetSchemaV1.self]
-    }
-
-    static var stages: [MigrationStage] {
-        []
-    }
-}

@@ -15,9 +15,8 @@ struct LifetimeYearTableSection: View {
                     Text("Saved")
                 }
                 .font(.subheadline)
-                .fontWeight(.medium)
                 .foregroundStyle(.secondary)
-                .padding(.vertical, 8)
+                .padding(.vertical, Layout.Spacing.small)
 
                 ForEach(rows.reversed()) { row in
                     Divider()
@@ -26,12 +25,11 @@ struct LifetimeYearTableSection: View {
                     GridRow {
                         Text(String(row.year))
                             .gridColumnAlignment(.leading)
-                            .fontWeight(.semibold)
+                            .bold()
                         Text(Decimal(row.income), format: .number.precision(.fractionLength(0)))
                         Text(Decimal(row.expenses), format: .number.precision(.fractionLength(0)))
                         Text(Decimal(row.net), format: .number.sign(strategy: .always(includingZero: false)).precision(.fractionLength(0)))
                             .foregroundStyle(row.net >= 0 ? Color.income : Color.expense)
-                            .fontWeight(.medium)
                         if let rate = row.savingsRate {
                             Text("\(rate * 100, format: .number.precision(.fractionLength(0)))%")
                                 .foregroundStyle(rate >= 0 ? Color.primary : Color.expense)

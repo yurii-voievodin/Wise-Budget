@@ -26,7 +26,7 @@ struct OnboardingBudgetStep: View {
             title: "Set up your first budget",
             subtitle: "Plan how much you want to spend per category this month. WiseBudget tracks pacing on the Dashboard so you spot drift early."
         ) {
-            VStack(spacing: 12) {
+            VStack(spacing: Layout.Spacing.medium) {
                 if hasCurrentPlan || didCreatePlan {
                     Label("Budget plan ready for \(currentMonth.startOfMonth.formatted(.dateTime.month(.wide).year()))", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)

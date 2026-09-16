@@ -15,7 +15,7 @@ struct BankConnectionRow<Actions: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.Radius.medium)
                     .fill(iconColor.opacity(0.18))
                 Image(systemName: iconSystemName)
                     .font(.title3)
@@ -24,10 +24,10 @@ struct BankConnectionRow<Actions: View>: View {
             .frame(width: 40, height: 40)
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 8) {
+                HStack(spacing: Layout.Spacing.small) {
                     Text(title)
                         .font(.headline)
-                    statusPill
+                    ConnectionStatusPill(isConnected: isConnected, connectedName: connectedName)
                 }
                 if !connectedName.isEmpty {
                     Text(connectedName)
@@ -35,7 +35,7 @@ struct BankConnectionRow<Actions: View>: View {
                         .foregroundStyle(.secondary)
                 }
                 if isConnected, lastSync > 0 {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Layout.Spacing.tight) {
                         Image(systemName: "clock")
                         Text("Synced \(Date(timeIntervalSince1970: lastSync), style: .relative) ago")
                     }
@@ -46,29 +46,11 @@ struct BankConnectionRow<Actions: View>: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
+            HStack(spacing: Layout.Spacing.small) {
                 actions()
             }
         }
-        .padding(.vertical, 4)
-    }
-
-    private var statusPill: some View {
-        let (label, tint): (String, Color) = if isConnected {
-            ("Connected", .green)
-        } else if !connectedName.isEmpty {
-            ("Needs Reconnect", .orange)
-        } else {
-            ("Not connected", .secondary)
-        }
-
-        return Text(label)
-            .font(.caption)
-            .fontWeight(.medium)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(Capsule().fill(tint.opacity(0.18)))
-            .foregroundStyle(tint)
+        .padding(.vertical, Layout.Spacing.tight)
     }
 }
 

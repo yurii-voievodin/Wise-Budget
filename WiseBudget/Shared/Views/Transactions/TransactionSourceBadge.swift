@@ -24,14 +24,15 @@ struct TransactionSourceBadge: View {
 
     private func monogram(_ letter: String, help: String) -> some View {
         Text(letter)
-            .font(.caption2.weight(.bold))
+            .font(.caption)
+            .bold()
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, Layout.Spacing.tight)
             .padding(.vertical, 1)
-            .overlay(
+            .overlay {
                 RoundedRectangle(cornerRadius: 3)
                     .stroke(Color.secondary.opacity(0.4), lineWidth: 0.5)
-            )
+            }
             .help(help)
             .accessibilityLabel(help)
     }

@@ -9,15 +9,18 @@ struct MonthEmptyStateView: View {
     let filter: MonthFilter
     @Bindable var syncService: BankSyncService
 
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: Double = 48
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Layout.Spacing.large) {
             Spacer()
             Image(systemName: systemImage)
-                .font(.system(size: 48))
+                .font(.system(size: iconSize))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(title)
                 .font(.title2)
-                .fontWeight(.semibold)
+                .bold()
             if filter.isFutureMonth {
                 Text("This month hasn't started yet.")
                     .font(.body)
@@ -41,7 +44,7 @@ struct MonthEmptyStateView: View {
                     } label: {
                         Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    .padding(.top, 4)
+                    .padding(.top, Layout.Spacing.tight)
                 }
             } else {
                 Text("No transactions recorded for this month.")

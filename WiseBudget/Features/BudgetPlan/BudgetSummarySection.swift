@@ -12,7 +12,7 @@ struct BudgetSummarySection: View {
     let onShowForeignExpenses: () -> Void
 
     private let columns = [
-        GridItem(.adaptive(minimum: 200), spacing: 12)
+        GridItem(.adaptive(minimum: 200), spacing: Layout.Spacing.medium)
     ]
 
     private var remaining: Decimal { monthlyBudget - totalActual }
@@ -21,10 +21,10 @@ struct BudgetSummarySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.Spacing.medium) {
                 Text(title)
                     .font(.title3)
-                    .fontWeight(.semibold)
+                    .bold()
                 Spacer(minLength: 12)
                 Label("Monthly Budget", systemImage: "wallet.bifold")
                     .font(.subheadline)
@@ -39,7 +39,7 @@ struct BudgetSummarySection: View {
 
             Divider()
 
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: Layout.Spacing.medium) {
                 StatCard(
                     label: "Total Planned",
                     icon: "list.bullet.rectangle",
@@ -95,10 +95,10 @@ struct BudgetSummarySection: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16)
-        .cardBackground(cornerRadius: 12)
+        .padding(Layout.Spacing.large)
+        .cardBackground(cornerRadius: Layout.Radius.large)
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Layout.Radius.large)
                 .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
         }
     }

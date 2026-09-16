@@ -22,7 +22,7 @@ struct MonobankConnectSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.large) {
             Text("Connect Monobank")
                 .font(.headline)
 
@@ -44,7 +44,7 @@ struct MonobankConnectSheet: View {
 
             Spacer()
 
-            VStack(spacing: 8) {
+            VStack(spacing: Layout.Spacing.small) {
                 if connectedName != nil {
                     Button("Done", action: finishSelection)
                         .buttonStyle(.borderedProminent)
@@ -75,7 +75,7 @@ struct MonobankConnectSheet: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(20)
+        .padding(Layout.Spacing.xLarge)
         .frame(minWidth: 380, idealWidth: 420, minHeight: 480, idealHeight: 560)
     }
 

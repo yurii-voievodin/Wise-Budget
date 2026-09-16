@@ -13,7 +13,7 @@ struct TransactionEmptyStateView: View {
         } description: {
             Text("Add your first entry, import from a CSV file,\nor connect a bank account to get started.")
         } actions: {
-            HStack(spacing: 12) {
+            HStack(spacing: Layout.Spacing.medium) {
                 Button(action: onAdd) {
                     Label(addLabel, systemImage: "plus")
                 }

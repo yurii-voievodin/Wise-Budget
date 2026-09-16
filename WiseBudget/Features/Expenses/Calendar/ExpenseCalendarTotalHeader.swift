@@ -5,7 +5,7 @@ struct ExpenseCalendarTotalHeader: View {
     let defaultCurrency: String
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Layout.Spacing.tight) {
             Text("Month Total")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
