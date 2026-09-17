@@ -24,73 +24,76 @@ final class BankSyncService {
 
     /// Syncs all connected banks for the given month (startOfMonth ..< endOfMonth).
     func sync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) {
-        guard !isSyncing else { return }
+        guard !isSyncing, Self.checkBankToken() else { return }
         isSyncing = true
 
         Task {
-            defer {
-                isSyncing = false
-                progress = nil
-            }
-
-            let onProgress: @MainActor (SyncProgress) -> Void = { p in
-                guard self.progress != p else { return }
-                self.progress = p
-            }
-
-            var totalExpenses = 0
-            var totalIncomes = 0
-            var totalDuplicates = 0
-            var errors: [String] = []
-
-            let syncFrom = startOfMonth.timeIntervalSince1970
-            let syncTo = endOfMonth.timeIntervalSince1970
-
-            if KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil {
-                do {
-                    let result = try await MonobankSyncService.sync(
-                        context: context,
-                        fromTimestamp: syncFrom,
-                        toTimestamp: syncTo,
-                        onProgress: onProgress
-                    )
-                    totalExpenses += result.expensesImported
-                    totalIncomes += result.incomesImported
-                    totalDuplicates += result.duplicatesSkipped
-                    UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "monobankLastSync")
-                } catch {
-                    errors.append("Monobank: \(error.localizedDescription)")
-                }
-            }
-
-            if KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil {
-                do {
-                    let result = try await WiseSyncService.sync(
-                        context: context,
-                        fromTimestamp: syncFrom,
-                        toTimestamp: syncTo,
-                        onProgress: onProgress
-                    )
-                    totalExpenses += result.expensesImported
-                    totalIncomes += result.incomesImported
-                    totalDuplicates += result.duplicatesSkipped
-                    UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "wiseLastSync")
-                } catch {
-                    errors.append("Wise: \(error.localizedDescription)")
-                }
-            }
-
-            let message: String
-            if !errors.isEmpty {
-                message = errors.joined(separator: "\n")
-            } else if totalExpenses == 0 && totalIncomes == 0 {
-                message = "Already up to date. \(totalDuplicates) duplicates skipped."
-            } else {
-                message = "\(totalExpenses) expenses, \(totalIncomes) incomes imported. \(totalDuplicates) duplicates skipped."
-            }
-            lastSyncDate = Date.now
-            await Self.postSyncNotification(message: message)
+            await performSync(context: context, from: startOfMonth, to: endOfMonth)
         }
+    }
+
+    private func performSync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) async {
+        defer {
+            isSyncing = false
+            progress = nil
+        }
+
+        let syncFrom = startOfMonth.timeIntervalSince1970
+        let syncTo = endOfMonth.timeIntervalSince1970
+
+        var banks: [(name: String, lastSyncKey: String, run: () async throws -> ImportResult)] = []
+        if KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil {
+            banks.append(("Monobank", "monobankLastSync", {
+                try await MonobankSyncService.sync(
+                    context: context,
+                    fromTimestamp: syncFrom,
+                    toTimestamp: syncTo,
+                    onProgress: self.updateProgress
+                )
+            }))
+        }
+        if KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil {
+            banks.append(("Wise", "wiseLastSync", {
+                try await WiseSyncService.sync(
+                    context: context,
+                    fromTimestamp: syncFrom,
+                    toTimestamp: syncTo,
+                    onProgress: self.updateProgress
+                )
+            }))
+        }
+
+        var totals = ImportResult()
+        var errors: [String] = []
+        for bank in banks {
+            do {
+                let result = try await bank.run()
+                totals.expensesImported += result.expensesImported
+                totals.incomesImported += result.incomesImported
+                totals.duplicatesSkipped += result.duplicatesSkipped
+                UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: bank.lastSyncKey)
+            } catch {
+                errors.append("\(bank.name): \(error.localizedDescription)")
+            }
+        }
+
+        lastSyncDate = Date.now
+        await Self.postSyncNotification(message: Self.summaryMessage(totals: totals, errors: errors))
+    }
+
+    private func updateProgress(_ p: SyncProgress) {
+        guard progress != p else { return }
+        progress = p
+    }
+
+    private static func summaryMessage(totals: ImportResult, errors: [String]) -> String {
+        if !errors.isEmpty {
+            return errors.joined(separator: "\n")
+        }
+        if totals.expensesImported == 0 && totals.incomesImported == 0 {
+            return "Already up to date. \(totals.duplicatesSkipped) duplicates skipped."
+        }
+        return "\(totals.expensesImported) expenses, \(totals.incomesImported) incomes imported. \(totals.duplicatesSkipped) duplicates skipped."
     }
 
     func refreshConnectionStatus() {

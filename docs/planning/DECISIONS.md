@@ -98,6 +98,14 @@ Log of ideas that were explicitly **Rejected** or **Deferred**, with rationale. 
 
 ---
 
+## 2026-09-17 — Bank Sync off the MainActor
+
+### Move Bank Sync to a Background `ModelActor` — Deferred
+**Rationale:** The only real main-thread work in the sync pipeline is `CSVImporter.importTransactions` + `context.save()` — at most a few hundred rows per monthly sync, i.e. milliseconds. Network calls and rate-limit sleeps are async suspension points that never block the UI. A background `ModelContext` (SwiftData `ModelActor`) would add change-propagation and dedup-snapshot complexity for no perceptible responsiveness win.
+**Revisit when:** A full-history import feature lands (thousands of rows per import) or profiling shows main-thread stalls during sync.
+
+---
+
 ## 2026-04-21 — Ukrainian Insight Prompts
 
 ### Ukrainian Foundation Models Prompts — Deferred
