@@ -23,7 +23,7 @@ final class BankSyncService {
 
     /// Syncs all connected banks for the given month (startOfMonth ..< endOfMonth).
     func sync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) {
-        guard !isSyncing, Self.checkBankToken() else { return }
+        guard !isSyncing, hasBankToken else { return }
         isSyncing = true
 
         Task {
