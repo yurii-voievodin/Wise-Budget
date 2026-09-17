@@ -2,10 +2,17 @@ import Foundation
 import SwiftData
 import Observation
 
+struct BankSyncFailure: Identifiable {
+    let id = UUID()
+    let bank: Bank
+    let message: String
+}
+
 @Observable
 final class BankSyncService {
     private(set) var isSyncing = false
     private(set) var currentBank: Bank?
+    private(set) var lastSyncErrors: [BankSyncFailure] = []
 
     private var lastSyncDate: Date?
 
@@ -39,7 +46,7 @@ final class BankSyncService {
         let banks = Bank.allCases.filter { KeychainHelper.loadToken(service: $0.keychainService) != nil }
 
         var totals = ImportResult()
-        var errors: [String] = []
+        var errors: [BankSyncFailure] = []
         for bank in banks {
             currentBank = bank
             do {
@@ -49,12 +56,13 @@ final class BankSyncService {
                 totals.duplicatesSkipped += result.duplicatesSkipped
                 UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: bank.lastSyncKey)
             } catch {
-                errors.append("\(bank.displayName): \(error.localizedDescription)")
+                errors.append(BankSyncFailure(bank: bank, message: error.localizedDescription))
             }
         }
 
         lastSyncDate = Date.now
-        await SyncNotifier.notify(totals: totals, errors: errors)
+        lastSyncErrors = errors
+        await SyncNotifier.notify(totals: totals)
     }
 
     func refreshConnectionStatus() {

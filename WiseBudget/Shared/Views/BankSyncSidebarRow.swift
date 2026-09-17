@@ -8,9 +8,16 @@ struct BankSyncSidebarRow: View {
     let monthFilter: MonthFilter
     @Environment(\.modelContext) private var modelContext
 
+    @State private var showErrorsPopover = false
+
     var body: some View {
         if syncService.hasBankToken {
-            syncButton
+            HStack(spacing: Layout.Spacing.small) {
+                syncButton
+                if !syncService.isSyncing && !syncService.lastSyncErrors.isEmpty {
+                    errorIndicator
+                }
+            }
         }
     }
 
@@ -33,6 +40,26 @@ struct BankSyncSidebarRow: View {
         .buttonStyle(.plain)
         .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
         .help(helpText)
+    }
+
+    private var errorIndicator: some View {
+        Button {
+            showErrorsPopover = true
+        } label: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        }
+        .buttonStyle(.plain)
+        .help("Sync completed with errors")
+        .popover(isPresented: $showErrorsPopover) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.small) {
+                ForEach(syncService.lastSyncErrors) { failure in
+                    Text("\(failure.bank.displayName): \(failure.message)")
+                }
+            }
+            .padding()
+            .frame(minWidth: 240, maxWidth: 360)
+        }
     }
 
     private var syncingLabel: String {

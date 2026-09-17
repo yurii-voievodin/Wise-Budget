@@ -7,14 +7,11 @@ struct SyncNotifier {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
-    static func notify(totals: ImportResult, errors: [String]) async {
-        await post(message: summaryMessage(totals: totals, errors: errors))
+    static func notify(totals: ImportResult) async {
+        await post(message: summaryMessage(totals: totals))
     }
 
-    private static func summaryMessage(totals: ImportResult, errors: [String]) -> String {
-        if !errors.isEmpty {
-            return errors.joined(separator: "\n")
-        }
+    private static func summaryMessage(totals: ImportResult) -> String {
         if totals.expensesImported == 0 && totals.incomesImported == 0 {
             return "Already up to date. \(totals.duplicatesSkipped) duplicates skipped."
         }
