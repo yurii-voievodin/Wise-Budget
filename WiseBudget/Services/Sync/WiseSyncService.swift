@@ -18,7 +18,7 @@ final class WiseSyncService {
         context: ModelContext,
         fromTimestamp: Double,
         toTimestamp: Double,
-        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
     ) async throws -> ImportResult {
         logger.info("sync started")
         onProgress?(SyncProgress(bank: "Wise", detail: "fetching activities", kind: .indeterminate))

@@ -7,11 +7,9 @@ import UserNotifications
 @MainActor
 final class BankSyncService {
     private(set) var isSyncing = false
-    private(set) var syncResultMessage: String?
     private(set) var progress: SyncProgress?
 
     private var lastSyncDate: Date?
-    private var currentSyncTask: Task<Void, Never>?
 
     private static let autoSyncLastAttemptKey = "autoSyncLastAttemptDate"
     private static let autoSyncInterval: TimeInterval = 3600
@@ -29,18 +27,15 @@ final class BankSyncService {
         guard !isSyncing else { return }
         isSyncing = true
 
-        currentSyncTask = Task { @MainActor [weak self] in
+        Task {
             defer {
-                self?.isSyncing = false
-                self?.progress = nil
-                self?.currentSyncTask = nil
+                isSyncing = false
+                progress = nil
             }
 
-            let onProgress: @Sendable (SyncProgress) -> Void = { [weak self] p in
-                Task { @MainActor in
-                    guard let self, self.progress != p else { return }
-                    self.progress = p
-                }
+            let onProgress: @MainActor (SyncProgress) -> Void = { p in
+                guard self.progress != p else { return }
+                self.progress = p
             }
 
             var totalExpenses = 0
@@ -63,8 +58,6 @@ final class BankSyncService {
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
                     UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "monobankLastSync")
-                } catch is CancellationError {
-                    return
                 } catch {
                     errors.append("Monobank: \(error.localizedDescription)")
                 }
@@ -82,8 +75,6 @@ final class BankSyncService {
                     totalIncomes += result.incomesImported
                     totalDuplicates += result.duplicatesSkipped
                     UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "wiseLastSync")
-                } catch is CancellationError {
-                    return
                 } catch {
                     errors.append("Wise: \(error.localizedDescription)")
                 }
@@ -97,15 +88,9 @@ final class BankSyncService {
             } else {
                 message = "\(totalExpenses) expenses, \(totalIncomes) incomes imported. \(totalDuplicates) duplicates skipped."
             }
-            self?.syncResultMessage = message
-            self?.lastSyncDate = Date.now
+            lastSyncDate = Date.now
             await Self.postSyncNotification(message: message)
         }
-    }
-
-    /// Cancels any in-flight sync. Safe to call when no sync is running.
-    func cancel() {
-        currentSyncTask?.cancel()
     }
 
     func refreshConnectionStatus() {
@@ -117,9 +102,6 @@ final class BankSyncService {
             || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
     }
 
-    /// Auto-triggers a sync of the current month for app launch and activation.
-    /// Throttled to at most once per hour; the timestamp is persisted so the
-    /// throttle also holds across relaunches, not just within one session.
     func autoSyncIfNeeded(context: ModelContext) {
         guard !isSyncing else { return }
 
@@ -135,7 +117,6 @@ final class BankSyncService {
         sync(context: context, from: filter.startOfMonth, to: filter.startOfNextMonth)
     }
 
-    /// Request notification authorization. Call once at app launch.
     static func requestNotificationPermission() async {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }

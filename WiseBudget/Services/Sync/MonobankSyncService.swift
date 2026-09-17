@@ -32,7 +32,7 @@ final class MonobankSyncService {
         context: ModelContext,
         fromTimestamp: Double,
         toTimestamp: Double,
-        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
     ) async throws -> ImportResult {
         logger.info("sync started")
 
@@ -111,7 +111,7 @@ final class MonobankSyncService {
         defaultCurrency: String,
         fetchStatements: FetchStatements,
         sleep: Sleep,
-        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
     ) async throws -> ImportResult {
         logger.debug("sync from: \(dateFormatter.string(from: from))")
         logger.debug("sync to: \(dateFormatter.string(from: to))")
