@@ -6,7 +6,7 @@ import UserNotifications
 @Observable
 final class BankSyncService {
     private(set) var isSyncing = false
-    private(set) var progress: SyncProgress?
+    private(set) var currentBank: Bank?
 
     private var lastSyncDate: Date?
 
@@ -34,45 +34,26 @@ final class BankSyncService {
     private func performSync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) async {
         defer {
             isSyncing = false
-            progress = nil
+            currentBank = nil
         }
 
         let syncFrom = startOfMonth.timeIntervalSince1970
         let syncTo = endOfMonth.timeIntervalSince1970
 
-        var banks: [(name: String, lastSyncKey: String, run: () async throws -> ImportResult)] = []
-        if KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil {
-            banks.append(("Monobank", "monobankLastSync", {
-                try await MonobankSyncService.sync(
-                    context: context,
-                    fromTimestamp: syncFrom,
-                    toTimestamp: syncTo,
-                    onProgress: self.updateProgress
-                )
-            }))
-        }
-        if KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil {
-            banks.append(("Wise", "wiseLastSync", {
-                try await WiseSyncService.sync(
-                    context: context,
-                    fromTimestamp: syncFrom,
-                    toTimestamp: syncTo,
-                    onProgress: self.updateProgress
-                )
-            }))
-        }
+        let banks = Bank.allCases.filter { KeychainHelper.loadToken(service: $0.keychainService) != nil }
 
         var totals = ImportResult()
         var errors: [String] = []
         for bank in banks {
+            currentBank = bank
             do {
-                let result = try await bank.run()
+                let result = try await run(bank, context: context, syncFrom: syncFrom, syncTo: syncTo)
                 totals.expensesImported += result.expensesImported
                 totals.incomesImported += result.incomesImported
                 totals.duplicatesSkipped += result.duplicatesSkipped
                 UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: bank.lastSyncKey)
             } catch {
-                errors.append("\(bank.name): \(error.localizedDescription)")
+                errors.append("\(bank.displayName): \(error.localizedDescription)")
             }
         }
 
@@ -80,9 +61,13 @@ final class BankSyncService {
         await Self.postSyncNotification(message: Self.summaryMessage(totals: totals, errors: errors))
     }
 
-    private func updateProgress(_ p: SyncProgress) {
-        guard progress != p else { return }
-        progress = p
+    private func run(_ bank: Bank, context: ModelContext, syncFrom: Double, syncTo: Double) async throws -> ImportResult {
+        switch bank {
+        case .monobank:
+            return try await MonobankSyncService.sync(context: context, fromTimestamp: syncFrom, toTimestamp: syncTo)
+        case .wise:
+            return try await WiseSyncService.sync(context: context, fromTimestamp: syncFrom, toTimestamp: syncTo)
+        }
     }
 
     private static func summaryMessage(totals: ImportResult, errors: [String]) -> String {
@@ -100,8 +85,7 @@ final class BankSyncService {
     }
 
     private static func checkBankToken() -> Bool {
-        KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
-            || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
+        Bank.allCases.contains { KeychainHelper.loadToken(service: $0.keychainService) != nil }
     }
 
     func autoSyncIfNeeded(context: ModelContext) {

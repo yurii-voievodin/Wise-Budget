@@ -10,15 +10,7 @@ struct BankSyncSidebarRow: View {
 
     var body: some View {
         if syncService.hasBankToken {
-            VStack(alignment: .leading, spacing: Layout.Spacing.small) {
-                syncButton
-
-                if let progress = syncService.progress {
-                    progressStrip(for: progress)
-                        .transition(.opacity)
-                }
-            }
-            .animation(.default, value: syncService.progress)
+            syncButton
         }
     }
 
@@ -33,7 +25,7 @@ struct BankSyncSidebarRow: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .frame(width: 16)
                 }
-                Text(syncService.isSyncing ? "Syncing…" : "Sync \(monthLabel)")
+                Text(syncingLabel)
                 Spacer()
             }
             .contentShape(.rect)
@@ -43,21 +35,10 @@ struct BankSyncSidebarRow: View {
         .help(helpText)
     }
 
-    @ViewBuilder
-    private func progressStrip(for progress: SyncProgress) -> some View {
-        VStack(alignment: .leading, spacing: Layout.Spacing.tight) {
-            Text("\(progress.bank) — \(progress.detail)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            switch progress.kind {
-            case .determinate(let current, let total) where total > 0:
-                ProgressView(value: Double(current), total: Double(total))
-            default:
-                ProgressView()
-            }
-        }
+    private var syncingLabel: String {
+        guard syncService.isSyncing else { return "Sync \(monthLabel)" }
+        guard let bank = syncService.currentBank else { return "Syncing…" }
+        return "Syncing \(bank.displayName)…"
     }
 
     private var monthLabel: String {

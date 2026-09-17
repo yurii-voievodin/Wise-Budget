@@ -16,11 +16,9 @@ final class WiseSyncService {
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,
-        toTimestamp: Double,
-        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
+        toTimestamp: Double
     ) async throws -> ImportResult {
         logger.info("sync started")
-        onProgress?(SyncProgress(bank: "Wise", detail: "fetching activities", kind: .indeterminate))
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.wiseService) else {
             logger.warning("sync aborted: no token in Keychain")

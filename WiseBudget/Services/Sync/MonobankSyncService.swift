@@ -30,8 +30,7 @@ final class MonobankSyncService {
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,
-        toTimestamp: Double,
-        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
+        toTimestamp: Double
     ) async throws -> ImportResult {
         logger.info("sync started")
 
@@ -95,8 +94,7 @@ final class MonobankSyncService {
                     sleep: defaultSleep
                 )
             },
-            sleep: defaultSleep,
-            onProgress: onProgress
+            sleep: defaultSleep
         )
     }
 
@@ -108,8 +106,7 @@ final class MonobankSyncService {
         ownIbans: Set<String>,
         defaultCurrency: String,
         fetchStatements: FetchStatements,
-        sleep: Sleep,
-        onProgress: (@MainActor (SyncProgress) -> Void)? = nil
+        sleep: Sleep
     ) async throws -> ImportResult {
         logger.debug("sync from: \(dateFormatter.string(from: from))")
         logger.debug("sync to: \(dateFormatter.string(from: to))")
@@ -129,12 +126,6 @@ final class MonobankSyncService {
             for (windowStart, windowEnd) in windows {
                 try Task.checkCancellation()
                 logger.debug("fetching statements: \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
-
-                onProgress?(SyncProgress(
-                    bank: "Monobank",
-                    detail: "\(currency) ····\(account.id.suffix(4))",
-                    kind: .determinate(current: requestCount + 1, total: totalRequests)
-                ))
 
                 let statements = try await fetchStatements(account.id, windowStart, windowEnd)
                 let transactions = statements.compactMap { statement -> CSVTransaction? in
