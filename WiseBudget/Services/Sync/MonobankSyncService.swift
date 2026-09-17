@@ -27,7 +27,6 @@ final class MonobankSyncService {
     }()
 
     /// Syncs Monobank transactions into the given model context for the specified date range.
-    @MainActor
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,
@@ -101,7 +100,6 @@ final class MonobankSyncService {
         )
     }
 
-    @MainActor
     static func sync(
         context: ModelContext,
         from: Date,

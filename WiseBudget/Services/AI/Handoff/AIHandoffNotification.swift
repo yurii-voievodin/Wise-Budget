@@ -4,7 +4,6 @@ import UserNotifications
 /// Posts a macOS user notification telling the user to paste the prepared
 /// payload into the chosen AI provider. Visible regardless of which app is
 /// in focus, so the user sees it after the browser has stolen focus. 
-@MainActor
 enum AIHandoffNotification {
     private static let identifier = "wisebudget.aiHandoff.readyToPaste"
 

@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import WiseBudget
 
-@MainActor
 struct AIProviderTests {
 
     @Test func claudeURLHasNewPathAndQueryItems() throws {

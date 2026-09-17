@@ -7,7 +7,6 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "SpendingInsi
 
 /// On-device generation; results cached in SwiftData via `InsightsCache`.
 @Observable
-@MainActor
 final class SpendingInsightsService {
 
     private static let instructions = """

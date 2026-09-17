@@ -13,7 +13,6 @@ final class WiseSyncService {
     }()
 
     /// Syncs Wise activities into the given model context for the specified date range.
-    @MainActor
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,

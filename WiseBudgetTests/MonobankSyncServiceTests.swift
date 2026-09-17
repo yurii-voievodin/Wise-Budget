@@ -40,7 +40,6 @@ struct MonobankSyncServiceTests {
         }
     }
 
-    @MainActor
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self])
         let config = ModelConfiguration(
@@ -52,7 +51,7 @@ struct MonobankSyncServiceTests {
     }
 
     /// Helper to create a MonobankStatement with sensible defaults.
-    private static func makeStatement(
+    private nonisolated static func makeStatement(
         id: String = "testId",
         time: Int = 1_712_000_000,
         description: String = "Test merchant",
@@ -359,7 +358,6 @@ struct MonobankSyncServiceTests {
         #expect(statements.first?.id == "retried-success")
     }
 
-    @MainActor
     @Test func syncImportsNewestWindowBeforeLaterFailure() async throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -415,7 +413,6 @@ struct MonobankSyncServiceTests {
         #expect(expenses.first?.descriptionText == "Newest window merchant")
     }
 
-    @MainActor
     @Test func syncEmitsProgressForEachAccountWindow() async throws {
         let container = try makeContainer()
         let context = container.mainContext
