@@ -10,13 +10,18 @@ struct BankSyncFailure: Identifiable {
 
 @Observable
 final class BankSyncService {
+    // MARK: - Public state
+
     private(set) var isSyncing = false
     private(set) var currentBank: Bank?
     private(set) var lastSyncErrors: [BankSyncFailure] = []
+    private(set) var hasBankToken = BankSyncService.checkBankToken()
+
+    // MARK: - Private state
 
     private var lastSyncDate: Date?
 
-    private(set) var hasBankToken = BankSyncService.checkBankToken()
+    // MARK: - Public API
 
     /// Whether the 1-minute cooldown after a sync is still active.
     var isSyncCooldown: Bool {
@@ -33,6 +38,23 @@ final class BankSyncService {
             await performSync(context: context, from: startOfMonth, to: endOfMonth)
         }
     }
+
+    func refreshConnectionStatus() {
+        hasBankToken = Self.checkBankToken()
+    }
+
+    func autoSyncIfNeeded(context: ModelContext) {
+        guard !isSyncing, AutoSyncScheduler.isDue() else { return }
+
+        refreshConnectionStatus()
+        guard hasBankToken else { return }
+        AutoSyncScheduler.recordAttempt()
+
+        let filter = MonthFilter.currentMonth()
+        sync(context: context, from: filter.startOfMonth, to: filter.startOfNextMonth)
+    }
+
+    // MARK: - Private
 
     private func performSync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) async {
         defer {
@@ -65,22 +87,7 @@ final class BankSyncService {
         await SyncNotifier.notify(totals: totals)
     }
 
-    func refreshConnectionStatus() {
-        hasBankToken = Self.checkBankToken()
-    }
-
     private static func checkBankToken() -> Bool {
         Bank.allCases.contains { KeychainHelper.loadToken(service: $0.keychainService) != nil }
-    }
-
-    func autoSyncIfNeeded(context: ModelContext) {
-        guard !isSyncing, AutoSyncScheduler.isDue() else { return }
-
-        refreshConnectionStatus()
-        guard hasBankToken else { return }
-        AutoSyncScheduler.recordAttempt()
-
-        let filter = MonthFilter.currentMonth()
-        sync(context: context, from: filter.startOfMonth, to: filter.startOfNextMonth)
     }
 }

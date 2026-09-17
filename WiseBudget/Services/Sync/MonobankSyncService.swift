@@ -85,9 +85,7 @@ final class MonobankSyncService: BankSyncing {
             defaultCurrency: defaultCurrency,
             fetchStatements: { accountId, from, to in
                 try await fetchStatementsWithRetry(
-                    fetchStatements: { accountId, from, to in
-                        try await client.fetchStatements(accountId: accountId, from: from, to: to)
-                    },
+                    fetchStatements: client.fetchStatements,
                     accountId: accountId,
                     from: from,
                     to: to,
@@ -112,37 +110,36 @@ final class MonobankSyncService: BankSyncing {
         logger.debug("sync to: \(dateFormatter.string(from: to))")
 
         var totalResult = ImportResult()
-        var requestCount = 0
+        // Fetched once and reused for every window below — CSVImporter.importTransactions would
+        // otherwise refetch every existing Expense/Income to rebuild its dedup sets on each call.
+        var deduper = try CSVImporter.makeDeduper(context: context)
 
         let windows = dateWindows(from: from, to: to)
-        let totalRequests = accountsToSync.count * windows.count
+        let requests = accountsToSync.flatMap { account in
+            windows.map { window in (account: account, window: window) }
+        }
 
-        for account in accountsToSync {
+        for (index, request) in requests.enumerated() {
             try Task.checkCancellation()
-            let currency = MonobankAPIClient.currencyString(for: account.currencyCode)
-            logger.debug("processing account \(account.id, privacy: .private) (\(currency))")
-            logger.debug("date range split into \(windows.count) window(s)")
+            let (windowStart, windowEnd) = request.window
+            let currency = MonobankAPIClient.currencyString(for: request.account.currencyCode)
+            logger.debug("fetching \(request.account.id, privacy: .private) (\(currency)): \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
 
-            for (windowStart, windowEnd) in windows {
-                try Task.checkCancellation()
-                logger.debug("fetching statements: \(dateFormatter.string(from: windowStart)) -> \(dateFormatter.string(from: windowEnd))")
+            let statements = try await fetchStatements(request.account.id, windowStart, windowEnd)
+            let transactions = statements.compactMap { statement -> CSVTransaction? in
+                convertStatement(statement, accountCurrency: currency, ownIbans: ownIbans, defaultCurrency: defaultCurrency)
+            }
+            logger.debug("fetched \(statements.count) statements, \(transactions.count) converted")
 
-                let statements = try await fetchStatements(account.id, windowStart, windowEnd)
-                let transactions = statements.compactMap { statement -> CSVTransaction? in
-                    convertStatement(statement, accountCurrency: currency, ownIbans: ownIbans, defaultCurrency: defaultCurrency)
-                }
-                logger.debug("fetched \(statements.count) statements, \(transactions.count) converted")
+            let importResult = CSVImporter.importTransactions(transactions, into: context, deduper: &deduper)
+            try context.save()
+            merge(importResult, into: &totalResult)
+            logger.debug("saved window: +\(importResult.expensesImported) expenses, +\(importResult.incomesImported) incomes")
 
-                let importResult = try CSVImporter.importTransactions(transactions, into: context)
-                try context.save()
-                merge(importResult, into: &totalResult)
-                logger.debug("saved window: +\(importResult.expensesImported) expenses, +\(importResult.incomesImported) incomes")
-
-                requestCount += 1
-                if requestCount < totalRequests {
-                    logger.debug("rate limit delay (\(rateLimitDelay)s)...")
-                    try await sleep(rateLimitDelay)
-                }
+            let isLastRequest = index == requests.count - 1
+            if !isLastRequest {
+                logger.debug("rate limit delay (\(rateLimitDelay)s)...")
+                try await sleep(rateLimitDelay)
             }
         }
 
