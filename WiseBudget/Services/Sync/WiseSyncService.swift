@@ -4,7 +4,7 @@ import OSLog
 
 nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "WiseSync")
 
-final class WiseSyncService {
+final class WiseSyncService: BankSyncing {
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()

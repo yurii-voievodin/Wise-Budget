@@ -165,7 +165,7 @@ struct WiseBudgetApp: App {
         if !hasCompletedOnboarding {
             showOnboarding = true
         }
-        await BankSyncService.requestNotificationPermission()
+        await SyncNotifier.requestPermission()
     }
 
     private func exportDataCSV() {

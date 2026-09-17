@@ -4,7 +4,7 @@ import OSLog
 
 nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankSync")
 
-final class MonobankSyncService {
+final class MonobankSyncService: BankSyncing {
     typealias SyncAccount = (id: String, currencyCode: Int, iban: String?)
     typealias FetchStatements = @Sendable (_ accountId: String, _ from: Date, _ to: Date) async throws -> [MonobankStatement]
     typealias Sleep = @Sendable (_ duration: TimeInterval) async throws -> Void
