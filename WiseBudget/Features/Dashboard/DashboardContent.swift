@@ -74,7 +74,7 @@ struct DashboardContent: View {
         withAnimation(Motion.standard) {
             askAIToastProvider = provider
         }
-        askAIToastTask = Task { @MainActor in
+        askAIToastTask = Task {
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
             withAnimation(Motion.standard) {

@@ -291,7 +291,7 @@ struct WiseBudgetApp: App {
         let context = sharedModelContainer.mainContext
 
         backfillRunning = true
-        Task { @MainActor in
+        Task {
             defer { backfillRunning = false }
             do {
                 let result = try await BaseCurrencyBackfillService.backfill(

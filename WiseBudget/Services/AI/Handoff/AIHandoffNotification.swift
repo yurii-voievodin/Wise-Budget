@@ -10,7 +10,7 @@ enum AIHandoffNotification {
     static func notifyReadyToPaste(provider: AIProvider) {
         let providerName = provider.displayName
         let requestIdentifier = identifier
-        Task { @MainActor in
+        Task {
             let center = UNUserNotificationCenter.current()
             let settings = await center.notificationSettings()
             guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
