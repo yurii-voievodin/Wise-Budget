@@ -12,7 +12,7 @@ struct CategoryIconBadge: View {
             .frame(width: size, height: size)
             .background(
                 color.opacity(0.18),
-                in: RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                in: RoundedRectangle(cornerRadius: size * 0.28)
             )
     }
 }

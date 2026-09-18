@@ -3,7 +3,6 @@ import Foundation
 import Security
 @testable import WiseBudget
 
-@MainActor
 struct KeychainHelperMigrationTests {
 
     private let service = "com.wisebudget.test.migration-check"

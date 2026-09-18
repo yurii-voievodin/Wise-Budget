@@ -53,20 +53,7 @@ struct WiseBudgetApp: App {
             ContentView()
                 .frame(minWidth: 750, maxWidth: 1600, minHeight: 400)
                 .environment(localAIAppDetector)
-                .onAppear {
-                    let context = sharedModelContainer.mainContext
-                    DataSeeder.prepopulateCategories(in: context)
-                    DataSeeder.prepopulateIncomeCategories(in: context)
-                    DataSeeder.migrateCategoryIcons(in: context)
-                    DataSeeder.prepopulateSubscriptionCategory(in: context)
-                    DataSeeder.prepopulateGiftsCategory(in: context)
-                    DataSeeder.prepopulateImportCategories(in: context)
-                    Task { await BankSyncService.requestNotificationPermission() }
-                    disableFullScreen()
-                    if !hasCompletedOnboarding {
-                        showOnboarding = true
-                    }
-                }
+                .task(prepareForLaunch)
                 .sheet(isPresented: $showOnboarding) {
                     OnboardingFlowView()
                         .environment(localAIAppDetector)
@@ -81,7 +68,6 @@ struct WiseBudgetApp: App {
                     Text("This will delete the budget plan for the selected month. This action cannot be undone.")
                 }
                 .alert("Export", isPresented: $showingExportAlert) {
-                    Button("OK") {}
                 } message: {
                     if let error = exportError {
                         Text("Export failed: \(error)")
@@ -90,7 +76,6 @@ struct WiseBudgetApp: App {
                     }
                 }
                 .alert("Backfill Base Currency", isPresented: $showingBackfillAlert) {
-                    Button("OK") {}
                 } message: {
                     if let error = backfillError {
                         Text("Backfill failed: \(error)")
@@ -107,7 +92,6 @@ struct WiseBudgetApp: App {
                     }
                 }
                 .alert("Import Complete", isPresented: $showingImportAlert) {
-                    Button("OK") {}
                 } message: {
                     if let error = importError {
                         Text("Import failed: \(error)")
@@ -166,6 +150,22 @@ struct WiseBudgetApp: App {
                 }
             }
         }
+    }
+
+    @Sendable
+    private func prepareForLaunch() async {
+        let context = sharedModelContainer.mainContext
+        DataSeeder.prepopulateCategories(in: context)
+        DataSeeder.prepopulateIncomeCategories(in: context)
+        DataSeeder.migrateCategoryIcons(in: context)
+        DataSeeder.prepopulateSubscriptionCategory(in: context)
+        DataSeeder.prepopulateGiftsCategory(in: context)
+        DataSeeder.prepopulateImportCategories(in: context)
+        disableFullScreen()
+        if !hasCompletedOnboarding {
+            showOnboarding = true
+        }
+        await SyncNotifier.requestPermission()
     }
 
     private func exportDataCSV() {
@@ -291,7 +291,7 @@ struct WiseBudgetApp: App {
         let context = sharedModelContainer.mainContext
 
         backfillRunning = true
-        Task { @MainActor in
+        Task {
             defer { backfillRunning = false }
             do {
                 let result = try await BaseCurrencyBackfillService.backfill(

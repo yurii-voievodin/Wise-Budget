@@ -22,7 +22,7 @@ struct BudgetPlanView: View {
 }
 
 extension FocusedValues {
-    @Entry var resetBudgetPlan: (() -> Void)? = nil
+    @Entry var resetBudgetPlan: ResetBudgetPlanAction?
 }
 
 #Preview {
@@ -33,4 +33,3 @@ extension FocusedValues {
     }
     .modelContainer(PreviewSampleData.container)
 }
-

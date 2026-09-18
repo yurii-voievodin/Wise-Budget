@@ -70,12 +70,11 @@ struct TransactionListContent<T: CurrencyConvertible & PersistentModel>: View {
                                 }
                             }
                         } header: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: Layout.Spacing.tight) {
                                 Text(group.date, format: Date.FormatStyle(date: .long))
-                                    .fontWeight(.semibold)
+                                    .bold()
                                 Spacer()
                                 Text(dayTotal(for: group.items), format: .number.precision(.fractionLength(0)))
-                                    .fontWeight(.medium)
                                     .monospacedDigit()
                                 Text(defaultCurrency)
                                     .foregroundStyle(.secondary)

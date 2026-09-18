@@ -3,7 +3,6 @@ import Foundation
 import SwiftData
 @testable import WiseBudget
 
-@MainActor
 struct CloudAIPromptBuilderTests {
 
     private func makeContainer() throws -> ModelContainer {

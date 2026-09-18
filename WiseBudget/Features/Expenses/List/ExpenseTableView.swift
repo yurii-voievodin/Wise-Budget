@@ -71,7 +71,7 @@ struct ExpenseTableView: View {
             .width(min: 70, ideal: 90)
 
             TableColumn("Description") { expense in
-                HStack(spacing: 4) {
+                HStack(spacing: Layout.Spacing.tight) {
                     if expense.isInternalTransfer {
                         Image(systemName: "arrow.left.arrow.right.circle.fill")
                             .foregroundStyle(.secondary)
@@ -89,7 +89,7 @@ struct ExpenseTableView: View {
             TableColumn("Category") { expense in
                 Group {
                     if let name = expense.category?.name {
-                        HStack(spacing: 6) {
+                        HStack(spacing: Layout.Spacing.snug) {
                             Image(systemName: expense.category?.displayIconName ?? "folder")
                                 .foregroundStyle(DefaultExpenseCategory.color(for: name))
                             Text(name)
@@ -112,7 +112,7 @@ struct ExpenseTableView: View {
             }
 
             TableColumn("Amount", value: \.amount) { expense in
-                HStack(spacing: 4) {
+                HStack(spacing: Layout.Spacing.tight) {
                     Spacer()
                     Text(expense.amount, format: .number.precision(.fractionLength(2)))
                         .monospacedDigit()

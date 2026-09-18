@@ -4,8 +4,6 @@ import SwiftData
 struct GeneralSettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @AppStorage(DefaultCurrency.userDefaultsKey) private var defaultCurrency: String = DefaultCurrency.localeFallback
-    @AppStorage("monobankLastSync") private var monobankLastSync: Double = 0
-    @AppStorage("wiseLastSync") private var wiseLastSync: Double = 0
     @AppStorage(SpendingInsightsService.userPreferenceKey) private var aiInsightsEnabled: Bool = SpendingInsightsService.userPreferenceDefault
 
     @State private var showDeleteAllExpensesConfirmation = false
@@ -113,8 +111,7 @@ struct GeneralSettingsView: View {
     private func deleteAllExpenses() {
         do {
             try modelContext.deleteAll(Expense.self)
-            monobankLastSync = 0
-            wiseLastSync = 0
+            Bank.resetSyncState()
         } catch {
             errorMessage = "Failed to delete expenses: \(error.localizedDescription)"
         }
@@ -123,8 +120,7 @@ struct GeneralSettingsView: View {
     private func deleteAllIncomes() {
         do {
             try modelContext.deleteAll(Income.self)
-            monobankLastSync = 0
-            wiseLastSync = 0
+            Bank.resetSyncState()
         } catch {
             errorMessage = "Failed to delete incomes: \(error.localizedDescription)"
         }

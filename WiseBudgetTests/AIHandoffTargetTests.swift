@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import WiseBudget
 
-@MainActor
 struct AIHandoffTargetTests {
 
     @Test func idEncodesProviderAndDestination() {

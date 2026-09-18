@@ -4,7 +4,7 @@ import OSLog
 
 nonisolated private let logger = Logger(subsystem: "com.wisebudget", category: "WiseSync")
 
-final class WiseSyncService {
+final class WiseSyncService: BankSyncing {
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -13,15 +13,12 @@ final class WiseSyncService {
     }()
 
     /// Syncs Wise activities into the given model context for the specified date range.
-    @MainActor
     static func sync(
         context: ModelContext,
         fromTimestamp: Double,
-        toTimestamp: Double,
-        onProgress: (@Sendable (SyncProgress) -> Void)? = nil
+        toTimestamp: Double
     ) async throws -> ImportResult {
         logger.info("sync started")
-        onProgress?(SyncProgress(bank: "Wise", detail: "fetching activities", kind: .indeterminate))
 
         guard let token = KeychainHelper.loadToken(service: KeychainHelper.wiseService) else {
             logger.warning("sync aborted: no token in Keychain")

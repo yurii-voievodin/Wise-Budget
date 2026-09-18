@@ -8,23 +8,22 @@ struct BankSyncSidebarRow: View {
     let monthFilter: MonthFilter
     @Environment(\.modelContext) private var modelContext
 
+    @State private var showErrorsPopover = false
+
     var body: some View {
         if syncService.hasBankToken {
-            VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: Layout.Spacing.small) {
                 syncButton
-
-                if let progress = syncService.progress {
-                    progressStrip(for: progress)
-                        .transition(.opacity)
+                if !syncService.isSyncing && !syncService.lastSyncErrors.isEmpty {
+                    errorIndicator
                 }
             }
-            .animation(.default, value: syncService.progress)
         }
     }
 
     private var syncButton: some View {
-        Button(action: triggerSync) {
-            HStack(spacing: 8) {
+        Button(action: { triggerSync() }) {
+            HStack(spacing: Layout.Spacing.small) {
                 if syncService.isSyncing {
                     ProgressView()
                         .controlSize(.small)
@@ -33,31 +32,50 @@ struct BankSyncSidebarRow: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .frame(width: 16)
                 }
-                Text(syncService.isSyncing ? "Syncing…" : "Sync \(monthLabel)")
+                Text(syncingLabel)
                 Spacer()
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
+        .disabled(isSyncDisabled)
         .help(helpText)
+        .contextMenu {
+            Button("Full Resync \(monthLabel)") {
+                triggerSync(fullResync: true)
+            }
+            .disabled(isSyncDisabled)
+        }
     }
 
-    @ViewBuilder
-    private func progressStrip(for progress: SyncProgress) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("\(progress.bank) — \(progress.detail)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            switch progress.kind {
-            case .determinate(let current, let total) where total > 0:
-                ProgressView(value: Double(current), total: Double(total))
-            default:
-                ProgressView()
-            }
+    private var isSyncDisabled: Bool {
+        syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth
+    }
+
+    private var errorIndicator: some View {
+        Button {
+            showErrorsPopover = true
+        } label: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
         }
+        .buttonStyle(.plain)
+        .help("Sync completed with errors")
+        .popover(isPresented: $showErrorsPopover) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.small) {
+                ForEach(syncService.lastSyncErrors) { failure in
+                    Text("\(failure.bank.displayName): \(failure.message)")
+                }
+            }
+            .padding()
+            .frame(minWidth: 240, maxWidth: 360)
+        }
+    }
+
+    private var syncingLabel: String {
+        guard syncService.isSyncing else { return "Sync \(monthLabel)" }
+        guard let bank = syncService.currentBank else { return "Syncing…" }
+        return "Syncing \(bank.displayName)…"
     }
 
     private var monthLabel: String {
@@ -74,11 +92,12 @@ struct BankSyncSidebarRow: View {
         return "Sync bank transactions for \(monthLabel)"
     }
 
-    private func triggerSync() {
+    private func triggerSync(fullResync: Bool = false) {
         syncService.sync(
             context: modelContext,
             from: monthFilter.startOfMonth,
-            to: monthFilter.startOfNextMonth
+            to: monthFilter.startOfNextMonth,
+            fullResync: fullResync
         )
     }
 }

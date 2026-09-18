@@ -40,7 +40,6 @@ struct MonobankSyncServiceTests {
         }
     }
 
-    @MainActor
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([Expense.self, Income.self, ExpenseCategory.self, IncomeCategory.self])
         let config = ModelConfiguration(
@@ -52,7 +51,7 @@ struct MonobankSyncServiceTests {
     }
 
     /// Helper to create a MonobankStatement with sensible defaults.
-    private static func makeStatement(
+    private nonisolated static func makeStatement(
         id: String = "testId",
         time: Int = 1_712_000_000,
         description: String = "Test merchant",
@@ -359,7 +358,6 @@ struct MonobankSyncServiceTests {
         #expect(statements.first?.id == "retried-success")
     }
 
-    @MainActor
     @Test func syncImportsNewestWindowBeforeLaterFailure() async throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -413,48 +411,5 @@ struct MonobankSyncServiceTests {
         #expect(expenses.count == 1)
         #expect(expenses.first?.externalId == "mono_newest-window-transaction")
         #expect(expenses.first?.descriptionText == "Newest window merchant")
-    }
-
-    @MainActor
-    @Test func syncEmitsProgressForEachAccountWindow() async throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let calendar = Calendar(identifier: .gregorian)
-        let from = calendar.date(from: DateComponents(year: 2026, month: 2, day: 1, hour: 0, minute: 0))!
-        let to = calendar.date(from: DateComponents(year: 2026, month: 3, day: 1, hour: 0, minute: 0))!
-
-        // Lock-protected box so the @Sendable closure can mutate without an actor hop.
-        final class EventBox: @unchecked Sendable {
-            let lock = NSLock()
-            var events: [SyncProgress] = []
-        }
-        let box = EventBox()
-
-        _ = try await MonobankSyncService.sync(
-            context: context,
-            from: from,
-            to: to,
-            accountsToSync: [
-                ("acc-aaaaWXYZ", 980, nil),
-                ("acc-bbbb1234", 840, nil),
-            ],
-            ownIbans: [],
-            defaultCurrency: "UAH",
-            fetchStatements: { _, _, _ in [] },
-            sleep: { _ in },
-            onProgress: { event in
-                box.lock.lock()
-                box.events.append(event)
-                box.lock.unlock()
-            }
-        )
-
-        let events = box.events
-        #expect(events.count == 2)
-        #expect(events.allSatisfy { $0.bank == "Monobank" })
-        #expect(events[0].kind == .determinate(current: 1, total: 2))
-        #expect(events[1].kind == .determinate(current: 2, total: 2))
-        #expect(events[0].detail == "UAH ····WXYZ")
-        #expect(events[1].detail == "USD ····1234")
     }
 }

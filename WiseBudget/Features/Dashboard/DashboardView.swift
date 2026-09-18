@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import Charts
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,15 +15,9 @@ struct DashboardView: View {
     var onAddExpense: () -> Void
     var onConnectBank: () -> Void
 
-    @State private var expenseToEdit: Expense?
-    @State private var incomeToEdit: Income?
-    @State private var askAIToastProvider: AIProvider?
-    @State private var askAIToastTask: Task<Void, Never>?
     @State private var hasAnyExpenses = true
     @State private var hasAnyIncomes = true
     @State private var hasKeychainTokens = false
-    @State private var showByCategoryPopover = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         monthFilter: Binding<MonthFilter>,
@@ -64,7 +57,42 @@ struct DashboardView: View {
         )
     }
 
-    // MARK: - Computed
+    var body: some View {
+        Group {
+            if isCurrentMonthEmpty {
+                DashboardEmptyStateView(
+                    state: isFirstLaunchEmptyState ? .onboarding : .noTransactionsThisMonth,
+                    onAddExpense: onAddExpense,
+                    onConnectBank: onConnectBank
+                )
+            } else {
+                DashboardContent(
+                    summary: spendingSummary,
+                    metrics: metrics,
+                    scopeKey: insightsScopeKey,
+                    currency: defaultCurrency,
+                    recentTransactions: recentTransactions,
+                    expenseSlices: expenseSlices,
+                    monthFilter: monthFilter,
+                    expenseCount: expenses.count,
+                    onSelectCategory: onSelectCategory
+                )
+            }
+        }
+        .task { checkForAnyTransactions() }
+    }
+
+    private var isCurrentMonthEmpty: Bool {
+        expenses.isEmpty && incomes.isEmpty
+    }
+
+    private var isFirstLaunchEmptyState: Bool {
+        !hasAnyExpenses && !hasAnyIncomes && !hasConnectedBank
+    }
+
+    private var hasConnectedBank: Bool {
+        !monobankConnectedName.isEmpty || !wiseConnectedName.isEmpty || hasKeychainTokens
+    }
 
     private var plannedBudgetForPacing: Decimal? {
         guard let plan = budgetPlans.first else { return nil }
@@ -138,136 +166,12 @@ struct DashboardView: View {
         )
     }
 
-    private var isFirstLaunchEmptyState: Bool {
-        !hasAnyExpenses && !hasAnyIncomes && !hasConnectedBank
-    }
-
-    private var hasConnectedBank: Bool {
-        !monobankConnectedName.isEmpty || !wiseConnectedName.isEmpty || hasKeychainTokens
-    }
-
-    private var isCurrentMonthEmpty: Bool {
-        expenses.isEmpty && incomes.isEmpty
-    }
-
-    // MARK: - Body
-
-    var body: some View {
-        Group {
-            if isCurrentMonthEmpty {
-                emptyStateView
-            } else {
-                dashboardContentView
-            }
-        }
-        .onAppear { checkForAnyTransactions() }
-    }
-
-    private var emptyStateView: some View {
-        DashboardEmptyStateView(
-            state: isFirstLaunchEmptyState ? .onboarding : .noTransactionsThisMonth,
-            onAddExpense: onAddExpense,
-            onConnectBank: onConnectBank
-        )
-    }
-
-    private var dashboardContentView: some View {
-        DashboardOverviewTab(
-            summary: spendingSummary,
-            metrics: metrics,
-            scopeKey: insightsScopeKey,
-            currency: defaultCurrency,
-            recentTransactions: recentTransactions,
-            onSelectTransaction: handleTransactionSelection
-        )
-        .sheet(item: $expenseToEdit) { expense in
-            ExpenseFormSheet(expense: expense) { result in
-                withAnimation { result.apply(to: expense) }
-            }
-        }
-        .sheet(item: $incomeToEdit) { income in
-            IncomeFormSheet(income: income) { result in
-                withAnimation { result.apply(to: income) }
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if let provider = askAIToastProvider {
-                AIHandoffCopiedToast(provider: provider)
-                    .padding(.bottom, 24)
-                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-                    .accessibilityAddTraits(.isStaticText)
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showByCategoryPopover.toggle()
-                } label: {
-                    Label("By Category", systemImage: "chart.pie")
-                }
-                .help("By Category")
-                .popover(isPresented: $showByCategoryPopover, arrowEdge: .top) {
-                    DashboardByCategoryTab(
-                        expenseSlices: expenseSlices,
-                        currency: defaultCurrency,
-                        onSelectCategory: { name in
-                            showByCategoryPopover = false
-                            onSelectCategory(name)
-                        }
-                    )
-                    .frame(minWidth: 420, minHeight: 480)
-                }
-            }
-            AskAIToolbar(
-                filter: monthFilter,
-                expenseCount: expenses.count,
-                onCopied: presentAskAIToast
-            )
-        }
-    }
-
-    private func handleTransactionSelection(_ transaction: DashboardRecentTransaction) {
-        if let expense = transaction.item as? Expense {
-            expenseToEdit = expense
-        } else if let income = transaction.item as? Income {
-            incomeToEdit = income
-        }
-    }
-
     private func checkForAnyTransactions() {
         hasAnyExpenses = ((try? modelContext.fetchCount(FetchDescriptor<Expense>())) ?? 0) > 0
         hasAnyIncomes = ((try? modelContext.fetchCount(FetchDescriptor<Income>())) ?? 0) > 0
         hasKeychainTokens =
             KeychainHelper.loadToken(service: KeychainHelper.monobankService) != nil
             || KeychainHelper.loadToken(service: KeychainHelper.wiseService) != nil
-    }
-
-    private func presentAskAIToast(provider: AIProvider) {
-        askAIToastTask?.cancel()
-        withAnimation(.easeInOut(duration: 0.2)) {
-            askAIToastProvider = provider
-        }
-        askAIToastTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.2)) {
-                askAIToastProvider = nil
-            }
-        }
-    }
-}
-
-private struct AIHandoffCopiedToast: View {
-    let provider: AIProvider
-
-    var body: some View {
-        Label("Copied — paste in \(provider.displayName) with ⌘V", systemImage: "doc.on.clipboard")
-            .font(.callout)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.thinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
-            .shadow(radius: 6, y: 2)
     }
 }
 

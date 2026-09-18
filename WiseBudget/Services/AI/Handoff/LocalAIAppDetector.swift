@@ -8,7 +8,6 @@ import Observation
 /// installed, launched, or removed. The toolbar reads this to decide whether
 /// to surface "Open in {App}" rows alongside the web handoff.
 @Observable
-@MainActor
 final class LocalAIAppDetector {
 
     struct LocalApp: Equatable, Sendable {

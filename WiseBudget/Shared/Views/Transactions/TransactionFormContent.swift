@@ -9,6 +9,7 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
     let entityLabel: String
     let extraFieldLabel: String
     let isEditing: Bool
+    let accentColor: Color
 
     @Binding var amount: Decimal?
     @Binding var currency: String
@@ -21,72 +22,65 @@ struct TransactionFormContent<C: CategoryModel & Hashable>: View {
 
     var onSave: (TransactionFormPayload<C>) -> Void
 
+    @FocusState private var isAmountFocused: Bool
+
     private var isForeignCurrency: Bool { currency != defaultCurrency }
 
+    private var isSaveDisabled: Bool { (amount ?? .zero) <= .zero }
+
+    private var tint: Color {
+        guard let selectedCategory else { return accentColor }
+        return C.badgeColor(for: selectedCategory.name)
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                TextField("Amount", value: $amount, format: .number)
-                Picker("Category", selection: $selectedCategory) {
-                    Text("None").tag(C?.none)
-                    ForEach(categories) { category in
-                        Label(category.name, systemImage: category.displayIconName).tag(C?.some(category))
-                    }
-                }
-                NavigationLink {
-                    CurrencyPickerScreen(currency: $currency)
-                } label: {
-                    LabeledContent("Currency") {
-                        Text("\(currency) – \(Locale.current.localizedString(forCurrencyCode: currency) ?? currency)")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                if isForeignCurrency {
-                    BaseCurrencyField(
-                        baseCurrencyAmount: $baseCurrencyAmount,
-                        amount: amount,
-                        currency: currency,
-                        defaultCurrency: defaultCurrency,
-                        date: date
-                    )
-                }
-                TextField("Description", text: $descriptionText)
-                TextField(extraFieldLabel, text: $extraField)
-                DatePicker("Date", selection: $date, displayedComponents: .date)
-                Toggle("Transfer", isOn: $isInternalTransfer)
-                    .help("Transfers between your own accounts stay in history but are excluded from statistics and budgets.")
-            }
-            .padding(.horizontal)
-            .navigationTitle(isEditing ? "Edit \(entityLabel)" : "Add \(entityLabel)")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        guard let amount else { return }
-                        let desc = descriptionText.trimmingCharacters(in: .whitespaces)
-                        let extra = extraField.trimmingCharacters(in: .whitespaces)
-                        let payload = TransactionFormPayload(
-                            amount: amount,
-                            currency: currency,
-                            date: date,
-                            category: selectedCategory,
-                            descriptionText: desc.isEmpty ? nil : desc,
-                            extraField: extra.isEmpty ? nil : extra,
-                            baseCurrencyAmount: isForeignCurrency ? baseCurrencyAmount : nil,
-                            baseCurrency: isForeignCurrency ? defaultCurrency : nil,
-                            isInternalTransfer: isInternalTransfer
-                        )
-                        onSave(payload)
-                        dismiss()
-                    }
-                    .disabled(amount == nil || (amount ?? .zero) <= .zero)
-                }
-            }
+        VStack(spacing: 0) {
+            TransactionFormHeader(
+                entityLabel: entityLabel,
+                isEditing: isEditing,
+                tint: tint,
+                amount: $amount,
+                currency: $currency,
+                isAmountFocused: $isAmountFocused
+            )
+            TransactionFormFields(
+                categories: categories,
+                extraFieldLabel: extraFieldLabel,
+                defaultCurrency: defaultCurrency,
+                isForeignCurrency: isForeignCurrency,
+                selectedCategory: $selectedCategory,
+                date: $date,
+                amount: $amount,
+                currency: $currency,
+                baseCurrencyAmount: $baseCurrencyAmount,
+                descriptionText: $descriptionText,
+                extraField: $extraField,
+                isInternalTransfer: $isInternalTransfer
+            )
+            Divider()
+            TransactionFormFooter(isEditing: isEditing, isSaveDisabled: isSaveDisabled, onSave: save)
         }
-        .frame(minWidth: 350, minHeight: 250)
+        .frame(minWidth: 460, idealWidth: 460)
+        .defaultFocus($isAmountFocused, true)
+        .onSubmit(save)
+        .animation(Motion.standard, value: tint)
+    }
+
+    private func save() {
+        guard let amount, amount > .zero else { return }
+        let desc = descriptionText.trimmingCharacters(in: .whitespaces)
+        let extra = extraField.trimmingCharacters(in: .whitespaces)
+        onSave(TransactionFormPayload(
+            amount: amount,
+            currency: currency,
+            date: date,
+            category: selectedCategory,
+            descriptionText: desc.isEmpty ? nil : desc,
+            extraField: extra.isEmpty ? nil : extra,
+            baseCurrencyAmount: isForeignCurrency ? baseCurrencyAmount : nil,
+            baseCurrency: isForeignCurrency ? defaultCurrency : nil,
+            isInternalTransfer: isInternalTransfer
+        ))
+        dismiss()
     }
 }

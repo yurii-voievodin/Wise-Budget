@@ -1,13 +1,6 @@
 import SwiftUI
 import Charts
 
-struct ComparisonChartDataPoint: Identifiable {
-    let id = UUID()
-    let monthKey: MonthKey
-    let categoryName: String
-    let total: Double
-}
-
 struct ComparisonChartSection: View {
     let title: LocalizedStringKey
     let chartData: [ComparisonChartDataPoint]
@@ -121,8 +114,8 @@ struct ComparisonChartSection: View {
                 }
             }
             .frame(minHeight: 250)
-            .padding(.vertical, 8)
-            .animation(.easeOut(duration: 0.12), value: hoveredCategory)
+            .padding(.vertical, Layout.Spacing.small)
+            .animation(Motion.hover, value: hoveredCategory)
         }
     }
 
@@ -131,19 +124,19 @@ struct ComparisonChartSection: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(category)
                 .font(.caption)
-                .fontWeight(.semibold)
+                .bold()
             Text(Decimal(amount), format: .number.precision(.fractionLength(0)))
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+        .padding(.horizontal, Layout.Spacing.small)
+        .padding(.vertical, Layout.Spacing.snug)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Layout.Radius.small))
+        .overlay {
+            RoundedRectangle(cornerRadius: Layout.Radius.small)
                 .strokeBorder(.separator, lineWidth: 0.5)
-        )
+        }
         .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
         .allowsHitTesting(false)
         .fixedSize()

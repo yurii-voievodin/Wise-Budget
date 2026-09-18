@@ -9,10 +9,12 @@ struct BudgetCategoryRow: View {
     let onPlannedChange: (Decimal) -> Void
     var onCategoryTap: (() -> Void)?
 
-    @State private var draftPlanned: Decimal?
-
     private var isUnplannedSpending: Bool {
         BudgetProgressBar.isUnplannedSpending(planned: planned, spent: actual)
+    }
+
+    private var isOverspent: Bool {
+        isUnplannedSpending || (planned > 0 && actual > planned)
     }
 
     private var percentText: String {
@@ -20,70 +22,47 @@ struct BudgetCategoryRow: View {
         return (actual / planned).formatted(.percent.precision(.fractionLength(0)))
     }
 
-    private var categoryLabel: some View {
-        HStack(spacing: 8) {
-            CategoryIconBadge(
-                systemName: categoryIcon,
-                color: DefaultExpenseCategory.color(for: categoryName),
-                size: 24
-            )
-            Text(categoryName)
-                .fontWeight(.medium)
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        VStack(alignment: .leading, spacing: Layout.Spacing.small) {
+            HStack(spacing: Layout.Spacing.small) {
                 if let onCategoryTap {
                     Button(action: onCategoryTap) {
-                        categoryLabel
+                        BudgetCategoryLabel(categoryName: categoryName, categoryIcon: categoryIcon)
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Show expenses for \(categoryName)")
                 } else {
-                    categoryLabel
+                    BudgetCategoryLabel(categoryName: categoryName, categoryIcon: categoryIcon)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Text(actual, format: .number)
-                    .foregroundStyle(.secondary)
+                    .bold()
                     .monospacedDigit()
+                    .foregroundStyle(isOverspent ? Color.expense : .primary)
                 Text("/")
-                    .foregroundStyle(.secondary)
-                TextField("0", value: $draftPlanned, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                    .multilineTextAlignment(.trailing)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
-                    }
-                    .onChange(of: draftPlanned) { _, newValue in
-                        let normalized = max(.zero, newValue ?? .zero)
-                        if normalized != planned {
-                            onPlannedChange(normalized)
-                        }
-                    }
-                Text(currency)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
+                PlannedAmountField(
+                    value: planned,
+                    currency: currency,
+                    onChange: onPlannedChange
+                )
             }
-            HStack {
+            HStack(spacing: Layout.Spacing.small) {
                 BudgetProgressBar(spent: actual, planned: planned)
                 Text(percentText)
                     .font(.caption)
-                    .foregroundStyle(isUnplannedSpending ? .expense : .secondary)
+                    .foregroundStyle(isOverspent ? Color.expense : .secondary)
                     .monospacedDigit()
                     .frame(width: 44, alignment: .trailing)
             }
         }
-        .padding(12)
-        .cardBackground()
-        .task(id: planned) {
-            // Sync the draft from the source of truth when a different
-            // category's value changes propagate, or on first appearance.
-            if draftPlanned != planned {
-                draftPlanned = planned == .zero ? nil : planned
+        .padding(Layout.Spacing.medium)
+        .cardBackground(tint: isOverspent ? .expense : nil)
+        .overlay {
+            if isOverspent {
+                RoundedRectangle(cornerRadius: Layout.Radius.medium)
+                    .stroke(Color.expense.opacity(0.35), lineWidth: 1)
             }
         }
     }

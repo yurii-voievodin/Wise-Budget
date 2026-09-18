@@ -4,8 +4,8 @@ struct WiseTokenSetupView: View {
     @Binding var token: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.large) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.snug) {
                 Label("Step 1", systemImage: "1.circle.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.accentColor)
@@ -20,7 +20,7 @@ struct WiseTokenSetupView: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.snug) {
                 Label("Step 2", systemImage: "2.circle.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.accentColor)

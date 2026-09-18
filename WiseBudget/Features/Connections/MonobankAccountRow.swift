@@ -46,10 +46,10 @@ struct MonobankAccountRow: View {
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
+            .padding(.vertical, Layout.Spacing.snug)
+            .padding(.horizontal, Layout.Spacing.small)
             .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
-            .clipShape(.rect(cornerRadius: 6))
+            .clipShape(.rect(cornerRadius: Layout.Radius.small))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])

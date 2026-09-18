@@ -34,7 +34,7 @@ struct ExpenseCalendarDayCellView: View {
         .frame(maxWidth: .infinity)
         .frame(minHeight: 64)
         .background {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: Layout.Radius.small)
                 .fill(backgroundColor.opacity(backgroundOpacity))
         }
     }
@@ -42,7 +42,7 @@ struct ExpenseCalendarDayCellView: View {
 }
 
 #Preview {
-    HStack(spacing: 4) {
+    HStack(spacing: Layout.Spacing.tight) {
         ExpenseCalendarDayCellView(
             day: 1, isToday: false, defaultCurrency: "USD",
             currencyTotals: [:], backgroundColor: .income, backgroundOpacity: 0.06

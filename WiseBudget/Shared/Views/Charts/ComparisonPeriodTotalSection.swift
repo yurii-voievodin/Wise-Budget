@@ -9,7 +9,7 @@ struct ComparisonPeriodTotalSection: View {
             LabeledContent("Total") {
                 Text(amount: Decimal(total), currency: currency, precision: 0)
                     .monospacedDigit()
-                    .fontWeight(.semibold)
+                    .bold()
             }
         }
     }

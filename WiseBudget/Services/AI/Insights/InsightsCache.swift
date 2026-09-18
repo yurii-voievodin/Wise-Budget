@@ -2,22 +2,6 @@ import Foundation
 import CryptoKit
 import SwiftData
 
-/// Composite key identifying a single cache row. `localeIdentifier` defaults to
-/// `"en"` since prompts and hints are English-only today.
-struct CacheKey: Equatable, Sendable {
-    let kind: CachedInsightKind
-    let scopeKey: String
-    let currency: String
-    let localeIdentifier: String
-
-    init(kind: CachedInsightKind, scopeKey: String, currency: String, localeIdentifier: String = "en") {
-        self.kind = kind
-        self.scopeKey = scopeKey
-        self.currency = currency
-        self.localeIdentifier = localeIdentifier
-    }
-}
-
 /// Thin helper around `ModelContext` for reading/writing `CachedInsight` rows.
 /// All lookups match on the full composite key except `dataHash`, which is the
 /// invalidation signal: a row with the same scope but a stale hash is replaced.

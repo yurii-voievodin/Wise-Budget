@@ -144,7 +144,7 @@ final class CSVImporter {
         return transactions
     }
 
-    private struct TransactionKey: Hashable {
+    fileprivate struct TransactionKey: Hashable {
         let day: Date
         let currency: String
         let amount: Decimal
@@ -152,13 +152,19 @@ final class CSVImporter {
 
     // MARK: - Import into ModelContext
 
-    @discardableResult
-    static func importTransactions(_ transactions: [CSVTransaction], into context: ModelContext) throws -> ImportResult {
+    /// Dedup/category state fetched once and reusable across several `importTransactions` calls
+    /// against the same context, so a caller importing in batches (e.g. per sync window) doesn't
+    /// refetch the whole expense/income table on every batch.
+    struct Deduper {
+        fileprivate var expenseCategoryMap: [String: ExpenseCategory]
+        fileprivate var incomeCategoryMap: [String: IncomeCategory]
+        fileprivate var existingExternalIds: Set<String>
+        fileprivate var existingKeys: Set<TransactionKey>
+    }
+
+    static func makeDeduper(context: ModelContext) throws -> Deduper {
         let existingExpenseCategories = try context.fetch(FetchDescriptor<ExpenseCategory>())
         let existingIncomeCategories = try context.fetch(FetchDescriptor<IncomeCategory>())
-
-        var expenseCategoryMap = Dictionary(uniqueKeysWithValues: existingExpenseCategories.map { ($0.name, $0) })
-        var incomeCategoryMap = Dictionary(uniqueKeysWithValues: existingIncomeCategories.map { ($0.name, $0) })
 
         var expenseDescriptor = FetchDescriptor<Expense>()
         expenseDescriptor.propertiesToFetch = [\.externalId, \.date, \.currency, \.amount]
@@ -195,6 +201,19 @@ final class CSVImporter {
             ))
         }
 
+        return Deduper(
+            expenseCategoryMap: Dictionary(uniqueKeysWithValues: existingExpenseCategories.map { ($0.name, $0) }),
+            incomeCategoryMap: Dictionary(uniqueKeysWithValues: existingIncomeCategories.map { ($0.name, $0) }),
+            existingExternalIds: existingExternalIds,
+            existingKeys: existingKeys
+        )
+    }
+
+    /// Imports a batch against a `Deduper` fetched earlier, updating it in place so the caller
+    /// can import further batches into the same context without refetching existing records.
+    @discardableResult
+    static func importTransactions(_ transactions: [CSVTransaction], into context: ModelContext, deduper: inout Deduper) -> ImportResult {
+        let calendar = Calendar.current
         var result = ImportResult()
 
         for transaction in transactions {
@@ -204,7 +223,7 @@ final class CSVImporter {
             }
 
             // Check external ID first (most reliable)
-            if let externalId = transaction.externalId, existingExternalIds.contains(externalId) {
+            if let externalId = transaction.externalId, deduper.existingExternalIds.contains(externalId) {
                 result.duplicatesSkipped += 1
                 continue
             }
@@ -215,19 +234,19 @@ final class CSVImporter {
                 currency: transaction.currency,
                 amount: transaction.amount
             )
-            if transaction.externalId == nil, existingKeys.contains(key) {
+            if transaction.externalId == nil, deduper.existingKeys.contains(key) {
                 result.duplicatesSkipped += 1
                 continue
             }
 
             if transaction.direction == "OUT" {
                 let category: ExpenseCategory
-                if let existing = expenseCategoryMap[transaction.categoryName] {
+                if let existing = deduper.expenseCategoryMap[transaction.categoryName] {
                     category = existing
                 } else {
                     let newCategory = ExpenseCategory(name: transaction.categoryName)
                     context.insert(newCategory)
-                    expenseCategoryMap[transaction.categoryName] = newCategory
+                    deduper.expenseCategoryMap[transaction.categoryName] = newCategory
                     category = newCategory
                 }
 
@@ -245,20 +264,20 @@ final class CSVImporter {
                 )
                 context.insert(expense)
                 if let externalId = transaction.externalId {
-                    existingExternalIds.insert(externalId)
+                    deduper.existingExternalIds.insert(externalId)
                 } else {
-                    existingKeys.insert(key)
+                    deduper.existingKeys.insert(key)
                 }
                 result.expensesImported += 1
 
             } else if transaction.direction == "IN" {
                 let category: IncomeCategory
-                if let existing = incomeCategoryMap[transaction.categoryName] {
+                if let existing = deduper.incomeCategoryMap[transaction.categoryName] {
                     category = existing
                 } else {
                     let newCategory = IncomeCategory(name: transaction.categoryName)
                     context.insert(newCategory)
-                    incomeCategoryMap[transaction.categoryName] = newCategory
+                    deduper.incomeCategoryMap[transaction.categoryName] = newCategory
                     category = newCategory
                 }
 
@@ -275,9 +294,9 @@ final class CSVImporter {
                 )
                 context.insert(income)
                 if let externalId = transaction.externalId {
-                    existingExternalIds.insert(externalId)
+                    deduper.existingExternalIds.insert(externalId)
                 } else {
-                    existingKeys.insert(key)
+                    deduper.existingKeys.insert(key)
                 }
                 result.incomesImported += 1
 
@@ -287,6 +306,13 @@ final class CSVImporter {
         }
 
         return result
+    }
+
+    /// Single-shot import: fetches a fresh `Deduper` and imports one batch against it.
+    @discardableResult
+    static func importTransactions(_ transactions: [CSVTransaction], into context: ModelContext) throws -> ImportResult {
+        var deduper = try makeDeduper(context: context)
+        return importTransactions(transactions, into: context, deduper: &deduper)
     }
 
     // MARK: - CSV Line Parser (handles quoted fields)

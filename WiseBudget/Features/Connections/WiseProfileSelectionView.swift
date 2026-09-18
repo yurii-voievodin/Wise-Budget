@@ -35,27 +35,3 @@ struct WiseProfileSelectionView: View {
         }
     }
 }
-
-struct WiseProfileRow: View {
-    let profile: WiseProfile
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            HStack {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? .blue : .secondary)
-                Text("\(profile.fullName) (\(profile.type.capitalized))")
-                    .font(.callout)
-                Spacer()
-            }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
-            .clipShape(.rect(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
-}

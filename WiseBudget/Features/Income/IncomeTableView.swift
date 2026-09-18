@@ -69,7 +69,7 @@ struct IncomeTableView: View {
             .width(min: 70, ideal: 90)
 
             TableColumn("Description") { income in
-                HStack(spacing: 4) {
+                HStack(spacing: Layout.Spacing.tight) {
                     if income.isInternalTransfer {
                         Image(systemName: "arrow.left.arrow.right.circle.fill")
                             .foregroundStyle(.secondary)
@@ -87,7 +87,7 @@ struct IncomeTableView: View {
             TableColumn("Category") { income in
                 Group {
                     if let name = income.category?.name {
-                        HStack(spacing: 6) {
+                        HStack(spacing: Layout.Spacing.snug) {
                             Image(systemName: income.category?.displayIconName ?? "folder")
                                 .foregroundStyle(DefaultIncomeCategory.color(for: name))
                             Text(name)
@@ -110,7 +110,7 @@ struct IncomeTableView: View {
             }
 
             TableColumn("Amount", value: \.amount) { income in
-                HStack(spacing: 4) {
+                HStack(spacing: Layout.Spacing.tight) {
                     Spacer()
                     Text(income.amount, format: .number.precision(.fractionLength(2)))
                         .monospacedDigit()

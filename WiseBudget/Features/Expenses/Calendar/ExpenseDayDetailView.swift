@@ -22,10 +22,10 @@ struct ExpenseDayDetailView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Layout.Spacing.small) {
             Text(date, format: Date.FormatStyle(date: .long))
                 .font(.headline)
-                .padding(.bottom, 4)
+                .padding(.bottom, Layout.Spacing.tight)
 
             ForEach(expenses) { expense in
                 Button {
@@ -46,7 +46,7 @@ struct ExpenseDayDetailView: View {
                         Spacer()
                         CurrencyAmountView(item: expense)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, Layout.Spacing.tight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

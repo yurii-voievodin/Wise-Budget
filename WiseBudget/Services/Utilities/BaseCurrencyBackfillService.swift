@@ -7,7 +7,6 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "BaseCurrency
 /// Fills in `baseCurrencyAmount` / `baseCurrency` for foreign-currency Expenses
 /// and Incomes in a date range by fetching historical Wise rates. Groups by
 /// (currency, day) so each unique pair is fetched at most once per run.
-@MainActor
 enum BaseCurrencyBackfillService {
 
     struct Result {

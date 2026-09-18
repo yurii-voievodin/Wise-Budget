@@ -20,12 +20,12 @@ struct BudgetPlanListView: View {
     let onResetPlan: () -> Void
 
     private let categoryColumns = [
-        GridItem(.adaptive(minimum: 360), spacing: 16)
+        GridItem(.adaptive(minimum: 360), spacing: Layout.Spacing.large)
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Layout.Spacing.large) {
                 BudgetSummarySection(
                     title: summaryTitle,
                     monthlyBudget: monthlyBudget,
@@ -38,7 +38,7 @@ struct BudgetPlanListView: View {
                     onShowForeignExpenses: onShowForeignExpenses
                 )
 
-                LazyVGrid(columns: categoryColumns, spacing: 12) {
+                LazyVGrid(columns: categoryColumns, spacing: Layout.Spacing.medium) {
                     ForEach(categories) { category in
                         BudgetCategoryRow(
                             categoryName: category.name,
@@ -52,9 +52,9 @@ struct BudgetPlanListView: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 16)
+            .padding(.horizontal, Layout.Spacing.medium)
+            .padding(.vertical, Layout.Spacing.large)
         }
-        .focusedSceneValue(\.resetBudgetPlan, onResetPlan)
+        .focusedSceneValue(\.resetBudgetPlan, ResetBudgetPlanAction(onResetPlan))
     }
 }

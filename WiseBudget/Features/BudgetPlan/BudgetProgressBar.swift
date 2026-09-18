@@ -38,17 +38,36 @@ struct BudgetProgressBar: View {
         }
     }
 
+    private var isOverBudget: Bool { ratio > 1 }
+
+    private var overflowFraction: Double {
+        guard isOverBudget else { return 0 }
+        return min((ratio - 1) / ratio, 0.6)
+    }
+
+    private var fillAnchor: UnitPoint { isOverBudget ? .trailing : .leading }
+
+    private var fillFraction: Double { isOverBudget ? overflowFraction : progress }
+
     var body: some View {
-        ProgressView(value: progress)
-            .progressViewStyle(.linear)
-            .tint(barColor)
-            .accessibilityElement()
-            .accessibilityLabel("Budget progress")
-            .accessibilityValue(
-                isUnplannedSpending
-                    ? "No budget planned, \(spent.formatted()) spent"
-                    : "\(Int(ratio * 100)) percent spent"
-            )
+        ZStack {
+            Capsule()
+                .fill(Color.secondary.opacity(0.15))
+            Capsule()
+                .fill(barColor.opacity(isOverBudget ? 0.45 : 0))
+            Capsule()
+                .fill(barColor)
+                .scaleEffect(x: fillFraction, anchor: fillAnchor)
+        }
+        .frame(height: 6)
+        .animation(Motion.settle, value: progress)
+        .accessibilityElement()
+        .accessibilityLabel("Budget progress")
+        .accessibilityValue(
+            isUnplannedSpending
+                ? "No budget planned, \(spent.formatted()) spent"
+                : "\(Int(ratio * 100)) percent spent"
+        )
     }
 }
 
@@ -65,7 +84,7 @@ struct BudgetProgressBar: View {
 
 private struct BudgetProgressBarPreviewSamples: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Layout.Spacing.xLarge) {
             BudgetProgressBar(spent: 200, planned: 500)   // 40%
             BudgetProgressBar(spent: 400, planned: 500)   // 80%
             BudgetProgressBar(spent: 480, planned: 500)   // 96%

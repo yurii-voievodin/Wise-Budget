@@ -3,24 +3,6 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.wisebudget", category: "MonobankAPI")
 
-// MARK: - Response Models
-
-struct MonobankClientInfo: Codable {
-    let clientId: String?
-    let name: String?
-    let accounts: [MonobankAccount]
-}
-
-struct MonobankAccount: Codable, Identifiable {
-    let id: String
-    let currencyCode: Int
-    let cashbackType: String?
-    let balance: Int
-    let type: String?
-    let maskedPan: [String]?
-    let iban: String?
-}
-
 nonisolated struct MonobankStatement: Codable, Identifiable {
     let id: String
     let time: Int
@@ -35,34 +17,6 @@ nonisolated struct MonobankStatement: Codable, Identifiable {
     let cashbackAmount: Int?
     let comment: String?
     let counterIban: String?
-}
-
-// MARK: - Error Types
-
-enum MonobankAPIError: LocalizedError {
-    case noToken
-    case invalidToken
-    case rateLimited
-    case serverError(Int)
-    case networkError(Error)
-    case decodingError(Error)
-
-    var errorDescription: String? {
-        switch self {
-        case .noToken:
-            return "No Monobank token found. Please connect your account."
-        case .invalidToken:
-            return "Invalid or expired token. Please reconnect your Monobank account."
-        case .rateLimited:
-            return "Too many requests. Please wait a minute and try again."
-        case .serverError(let code):
-            return "Monobank server error (HTTP \(code))."
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
-        case .decodingError(let error):
-            return "Failed to parse Monobank response: \(error.localizedDescription)"
-        }
-    }
 }
 
 // MARK: - API Client

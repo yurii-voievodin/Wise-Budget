@@ -30,10 +30,8 @@ enum KeychainHelper {
             return nil
         }
 
-        do {
-            try save(token: legacyToken, service: service)
-            SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
-        } catch {}
+        SecItemDelete(baseQuery(service: service, dataProtection: false) as CFDictionary)
+        try? save(token: legacyToken, service: service)
 
         return legacyToken
     }

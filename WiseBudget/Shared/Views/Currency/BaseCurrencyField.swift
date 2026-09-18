@@ -18,7 +18,8 @@ struct BaseCurrencyField: View {
     var body: some View {
         HStack {
             TextField("Amount in \(defaultCurrency)", value: $baseCurrencyAmount, format: .number)
-                .frame(width: 200)
+                .textFieldStyle(.plain)
+                .monospacedDigit()
             if isFetchingRate {
                 ProgressView()
                     .controlSize(.small)

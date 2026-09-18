@@ -2,7 +2,6 @@ import AppKit
 import Foundation
 
 /// Hands off the prepared prompt to a chosen AI chat provider.
-@MainActor
 enum AIHandoffService {
 
     static let openerPrompt = "Could you analyze my spending and give me suggestions. I'll paste my transactions next."

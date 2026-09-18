@@ -2,7 +2,6 @@ import Testing
 import AppKit
 @testable import WiseBudget
 
-@MainActor
 struct LocalAIAppDetectorTests {
 
     /// The detector is essentially a thin wrapper around `NSWorkspace`. We

@@ -42,11 +42,13 @@ struct ExpenseListView: View {
                 )
         } else {
             tabContent
-                .onAppear {
-                    isSearchPresented = false
-                    searchText = ""
-                }
+                .onAppear(perform: resetSearch)
         }
+    }
+
+    private func resetSearch() {
+        isSearchPresented = false
+        searchText = ""
     }
 
     private var tabContent: some View {

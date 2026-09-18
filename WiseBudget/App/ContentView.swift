@@ -19,140 +19,124 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selectedSidebarItem) {
-                Section("Overview") {
-                    ForEach([SidebarItem.dashboard, .budgetPlan, .expenses, .income, .cashflow, .lifetime], id: \.self) { item in
-                        Label(item.rawValue, systemImage: item.systemImage)
-                            .tag(item)
-                    }
-                }
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                SidebarBottomSection(
-                    selectedSidebarItem: $selectedSidebarItem,
-                    syncService: syncService,
-                    monthFilter: monthFilter
-                )
-            }
+            SidebarList(
+                selectedSidebarItem: $selectedSidebarItem,
+                syncService: syncService,
+                monthFilter: monthFilter
+            )
         } detail: {
-            switch selectedSidebarItem {
-            case .dashboard:
-                DashboardView(
-                    monthFilter: $monthFilter,
-                    onSelectCategory: { categoryName in
-                        expenseCategoryFilter = categoryName
-                        expenseListTab = .expenses
-                        selectedSidebarItem = .expenses
-                    },
-                    onAddExpense: {
-                        expenseCategoryFilter = nil
-                        expenseListTab = .expenses
-                        selectedSidebarItem = .expenses
-                    },
-                    onConnectBank: {
-                        selectedSidebarItem = .bankConnections
-                    }
-                )
-                .id(monthFilter)
-                .navigationTitle("")
-                .toolbar {
-                    MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
-                }
-            case .budgetPlan:
-                BudgetPlanView(selectedSidebarItem: $selectedSidebarItem, monthFilter: $monthFilter, expenseCategoryFilter: $expenseCategoryFilter)
-            case .expenses:
-                ExpenseListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedCategoryName: $expenseCategoryFilter, selectedTab: $expenseListTab, syncService: syncService)
-            case .income:
-                IncomeListView(filter: $monthFilter, selectedSidebarItem: $selectedSidebarItem, selectedTab: $incomeListTab, syncService: syncService)
-            case .cashflow:
-                CashflowView(
-                    filter: monthFilter,
-                    onSelectExpenseMonth: { month in
-                        monthFilter = monthFilter.with(monthKey: month)
-                        expenseListTab = .expenses
-                        selectedSidebarItem = .expenses
-                    },
-                    onSelectIncomeMonth: { month in
-                        monthFilter = monthFilter.with(monthKey: month)
-                        selectedSidebarItem = .income
-                    }
-                )
-                    .toolbar {
-                        MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
-                    }
-            case .lifetime:
-                LifetimeView()
-            case .bankConnections:
-                BankConnectionsView(syncService: syncService)
-            }
+            detail
         }
         .focusedSceneValue(\.selectedMonthFilter, monthFilter)
-        .task {
-            syncService.autoSyncIfNeeded(context: modelContext)
-        }
+        .task { autoSync() }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
-                syncService.autoSyncIfNeeded(context: modelContext)
-            }
+            if newPhase == .active { autoSync() }
         }
         .onChange(of: monthFilter) { _, newValue in
             newValue.persist()
         }
         .onChange(of: hasCompletedOnboarding) { _, completed in
-            if completed {
-                syncService.refreshConnectionStatus()
-            }
+            if completed { syncService.refreshConnectionStatus() }
         }
-        .onChange(of: selectedSidebarItem) { oldValue, newValue in
-            if oldValue == .expenses || oldValue == .income {
-                monthFilter.foreignOnly = false
-            }
-            if oldValue == .expenses {
-                expenseCategoryFilter = nil
-                expenseListTab = .calendar
-            }
-            if oldValue == .income {
-                incomeListTab = .incomes
-            }
-        }
-    }
-}
-
-private struct SidebarBottomSection: View {
-    @Binding var selectedSidebarItem: SidebarItem
-    @Bindable var syncService: BankSyncService
-    let monthFilter: MonthFilter
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            VStack(alignment: .leading, spacing: 12) {
-                BankSyncSidebarRow(syncService: syncService, monthFilter: monthFilter)
-                    .padding(.horizontal, 8)
-
-                Button {
-                    selectedSidebarItem = .bankConnections
-                } label: {
-                    Label(SidebarItem.bankConnections.rawValue, systemImage: SidebarItem.bankConnections.systemImage)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(
-                            isBankConnectionsSelected ? Color.accentColor : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        )
-                        .foregroundStyle(isBankConnectionsSelected ? Color.white : Color.primary)
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(8)
+        .onChange(of: selectedSidebarItem) { oldValue, _ in
+            resetFilters(leaving: oldValue)
         }
     }
 
-    private var isBankConnectionsSelected: Bool {
-        selectedSidebarItem == .bankConnections
+    @ViewBuilder
+    private var detail: some View {
+        switch selectedSidebarItem {
+        case .dashboard:
+            DashboardView(
+                monthFilter: $monthFilter,
+                onSelectCategory: showExpenses(inCategory:),
+                onAddExpense: showExpenseList,
+                onConnectBank: showBankConnections
+            )
+            .id(monthFilter)
+            .navigationTitle("")
+            .toolbar {
+                MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
+            }
+        case .budgetPlan:
+            BudgetPlanView(
+                selectedSidebarItem: $selectedSidebarItem,
+                monthFilter: $monthFilter,
+                expenseCategoryFilter: $expenseCategoryFilter
+            )
+        case .expenses:
+            ExpenseListView(
+                filter: $monthFilter,
+                selectedSidebarItem: $selectedSidebarItem,
+                selectedCategoryName: $expenseCategoryFilter,
+                selectedTab: $expenseListTab,
+                syncService: syncService
+            )
+        case .income:
+            IncomeListView(
+                filter: $monthFilter,
+                selectedSidebarItem: $selectedSidebarItem,
+                selectedTab: $incomeListTab,
+                syncService: syncService
+            )
+        case .cashflow:
+            CashflowView(
+                filter: monthFilter,
+                onSelectExpenseMonth: showExpenses(forMonth:),
+                onSelectIncomeMonth: showIncome(forMonth:)
+            )
+            .toolbar {
+                MonthNavigationToolbar(year: $monthFilter.year, month: $monthFilter.month)
+            }
+        case .lifetime:
+            LifetimeView()
+        case .bankConnections:
+            BankConnectionsView(syncService: syncService)
+        }
+    }
+
+    private func showExpenses(inCategory categoryName: String) {
+        expenseCategoryFilter = categoryName
+        expenseListTab = .expenses
+        selectedSidebarItem = .expenses
+    }
+
+    private func showExpenseList() {
+        expenseCategoryFilter = nil
+        expenseListTab = .expenses
+        selectedSidebarItem = .expenses
+    }
+
+    private func showExpenses(forMonth month: MonthKey) {
+        monthFilter = monthFilter.with(monthKey: month)
+        expenseListTab = .expenses
+        selectedSidebarItem = .expenses
+    }
+
+    private func showIncome(forMonth month: MonthKey) {
+        monthFilter = monthFilter.with(monthKey: month)
+        selectedSidebarItem = .income
+    }
+
+    private func showBankConnections() {
+        selectedSidebarItem = .bankConnections
+    }
+
+    private func resetFilters(leaving previousItem: SidebarItem) {
+        if previousItem == .expenses || previousItem == .income {
+            monthFilter.foreignOnly = false
+        }
+        if previousItem == .expenses {
+            expenseCategoryFilter = nil
+            expenseListTab = .calendar
+        }
+        if previousItem == .income {
+            incomeListTab = .incomes
+        }
+    }
+
+    private func autoSync() {
+        syncService.autoSyncIfNeeded(context: modelContext)
     }
 }
 

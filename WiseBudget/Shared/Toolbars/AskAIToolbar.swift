@@ -10,7 +10,6 @@ private let logger = Logger(subsystem: "com.wisebudget", category: "AskAIToolbar
 /// (Claude / ChatGPT / Gemini). The last-used target floats to the top of
 /// the menu via `@AppStorage`. Disabled when the selected month has no
 /// expenses.
-@MainActor
 struct AskAIToolbar: ToolbarContent {
     @Environment(\.modelContext) private var modelContext
     @Environment(LocalAIAppDetector.self) private var localAppDetector

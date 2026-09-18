@@ -72,15 +72,14 @@ extension Array where Element: CurrencyConvertible {
         categoryName: (Element) -> String?,
         extraField: (Element) -> String?
     ) -> [Element] {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return self }
-        let needle = trimmed.lowercased()
+        let needle = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return self }
         return filter { item in
-            if descriptionText(item)?.lowercased().contains(needle) == true { return true }
-            if extraField(item)?.lowercased().contains(needle) == true { return true }
-            if categoryName(item)?.lowercased().contains(needle) == true { return true }
-            if "\(item.amount)".contains(needle) { return true }
-            if let base = item.baseCurrencyAmount, "\(base)".contains(needle) { return true }
+            if descriptionText(item)?.localizedStandardContains(needle) == true { return true }
+            if extraField(item)?.localizedStandardContains(needle) == true { return true }
+            if categoryName(item)?.localizedStandardContains(needle) == true { return true }
+            if "\(item.amount)".localizedStandardContains(needle) { return true }
+            if let base = item.baseCurrencyAmount, "\(base)".localizedStandardContains(needle) { return true }
             return false
         }
     }

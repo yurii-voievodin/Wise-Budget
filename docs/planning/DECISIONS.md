@@ -98,6 +98,24 @@ Log of ideas that were explicitly **Rejected** or **Deferred**, with rationale. 
 
 ---
 
+## 2026-09-17 — Bank Sync off the MainActor
+
+### Move Bank Sync to a Background `ModelActor` — Deferred
+**Rationale:** The only real main-thread work in the sync pipeline is `CSVImporter.importTransactions` + `context.save()` — at most a few hundred rows per monthly sync, i.e. milliseconds. Network calls and rate-limit sleeps are async suspension points that never block the UI. A background `ModelContext` (SwiftData `ModelActor`) would add change-propagation and dedup-snapshot complexity for no perceptible responsiveness win.
+**Revisit when:** A full-history import feature lands (thousands of rows per import) or profiling shows main-thread stalls during sync.
+
+---
+
+## 2026-09-17 — Parallel Wise/Monobank Sync (Investigation)
+
+### Run Wise + Monobank Sync Concurrently via `TaskGroup` — Deferred
+**Rationale:** Attempted to overlap the two banks' network waits in `BankSyncService.performSync` using `withTaskGroup` with `@MainActor`-pinned child tasks (safe in principle: both child tasks are pinned to the same actor, so the actual SwiftData writes never overlap even though the network awaits do). Hit two blockers in sequence on this toolchain (Xcode 27.0.0 RC, Swift 6, `-default-isolation=MainActor`):
+1. Capturing `ModelContext` (non-Sendable) as a `performSync` parameter into two `addTask` closures fails with `SendingClosureRisksDataRace`, even when both closures are explicitly `@MainActor`. Swapping the parameter for `ModelContainer` (which *is* `Sendable`) and deriving `container.mainContext` fresh inside each closure fixed this specific diagnostic.
+2. That fix uncovered a genuine compiler bug: **any** `async throws` function taking a `ModelContext` parameter, called from inside an `@MainActor`-annotated `group.addTask` closure, fails with `error: pattern that the region-based isolation checker does not understand how to check. Please file a bug` — reproduced even with a trivial locally-defined dummy function, unrelated to `WiseSyncService`/`MonobankSyncService` specifically. Not a code-architecture issue; nothing in our control fixes it.
+**Revisit when:** A newer Xcode/Swift toolchain ships and the region-based isolation checker handles this pattern. Minimal repro: a `@MainActor final class` with an `async` method that opens a `withTaskGroup`, and inside `group.addTask { @MainActor in ... }` calls *any* `async throws` function taking a `ModelContext` (or any non-Sendable type) argument.
+
+---
+
 ## 2026-04-21 — Ukrainian Insight Prompts
 
 ### Ukrainian Foundation Models Prompts — Deferred
