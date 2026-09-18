@@ -46,14 +46,6 @@ xcodebuild test -project WiseBudget.xcodeproj -scheme WiseBudget \
 
 Do NOT modify `WiseBudget.xcodeproj/project.pbxproj` — the project uses automatic file discovery, so adding or removing source files does not require changes to the Xcode project file.
 
-## Architecture
-
-- **Platform:** macOS (deployment target 26.2)
-- **UI:** SwiftUI with `NavigationSplitView` (3-column layout)
-- **Data:** SwiftData with `@Model`, `@Query`, `@Environment(\.modelContext)`
-- **Swift version:** 5.0
-- **No external dependencies**
-
 ### Targets
 
 | Target | Purpose |
