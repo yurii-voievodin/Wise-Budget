@@ -22,7 +22,7 @@ struct BankSyncSidebarRow: View {
     }
 
     private var syncButton: some View {
-        Button(action: triggerSync) {
+        Button(action: { triggerSync() }) {
             HStack(spacing: Layout.Spacing.small) {
                 if syncService.isSyncing {
                     ProgressView()
@@ -40,6 +40,12 @@ struct BankSyncSidebarRow: View {
         .buttonStyle(.plain)
         .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
         .help(helpText)
+        .contextMenu {
+            Button("Full Resync \(monthLabel)") {
+                triggerSync(fullResync: true)
+            }
+            .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
+        }
     }
 
     private var errorIndicator: some View {
@@ -82,11 +88,12 @@ struct BankSyncSidebarRow: View {
         return "Sync bank transactions for \(monthLabel)"
     }
 
-    private func triggerSync() {
+    private func triggerSync(fullResync: Bool = false) {
         syncService.sync(
             context: modelContext,
             from: monthFilter.startOfMonth,
-            to: monthFilter.startOfNextMonth
+            to: monthFilter.startOfNextMonth,
+            fullResync: fullResync
         )
     }
 }

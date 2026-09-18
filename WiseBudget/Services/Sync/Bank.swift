@@ -30,6 +30,13 @@ enum Bank: CaseIterable {
         }
     }
 
+    var syncedUpToKey: String {
+        switch self {
+        case .wise: return "wiseSyncedUpTo"
+        case .monobank: return "monobankSyncedUpTo"
+        }
+    }
+
     var syncService: BankSyncing.Type {
         switch self {
         case .wise: return WiseSyncService.self

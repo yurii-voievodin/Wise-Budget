@@ -23,19 +23,17 @@ final class BankSyncService {
 
     // MARK: - Public API
 
-    /// Whether the 1-minute cooldown after a sync is still active.
     var isSyncCooldown: Bool {
         guard let lastSync = lastSyncDate else { return false }
         return Date.now.timeIntervalSince(lastSync) < 60
     }
 
-    /// Syncs all connected banks for the given month (startOfMonth ..< endOfMonth).
-    func sync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) {
+    func sync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date, fullResync: Bool = false) {
         guard !isSyncing, hasBankToken else { return }
         isSyncing = true
 
         Task {
-            await performSync(context: context, from: startOfMonth, to: endOfMonth)
+            await performSync(context: context, from: startOfMonth, to: endOfMonth, fullResync: fullResync)
         }
     }
 
@@ -56,13 +54,14 @@ final class BankSyncService {
 
     // MARK: - Private
 
-    private func performSync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date) async {
+    private static let incrementalOverlap: TimeInterval = 3 * 24 * 60 * 60
+
+    private func performSync(context: ModelContext, from startOfMonth: Date, to endOfMonth: Date, fullResync: Bool) async {
         defer {
             isSyncing = false
             currentBank = nil
         }
 
-        let syncFrom = startOfMonth.timeIntervalSince1970
         let syncTo = endOfMonth.timeIntervalSince1970
 
         let banks = Bank.allCases.filter { KeychainHelper.loadToken(service: $0.keychainService) != nil }
@@ -71,12 +70,17 @@ final class BankSyncService {
         var errors: [BankSyncFailure] = []
         for bank in banks {
             currentBank = bank
+            let syncFrom = fullResync
+                ? startOfMonth.timeIntervalSince1970
+                : Self.incrementalStart(for: bank, requestedStart: startOfMonth).timeIntervalSince1970
             do {
                 let result = try await bank.syncService.sync(context: context, fromTimestamp: syncFrom, toTimestamp: syncTo)
                 totals.expensesImported += result.expensesImported
                 totals.incomesImported += result.incomesImported
                 totals.duplicatesSkipped += result.duplicatesSkipped
-                UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: bank.lastSyncKey)
+                let now = Date.now
+                UserDefaults.standard.set(now.timeIntervalSince1970, forKey: bank.lastSyncKey)
+                UserDefaults.standard.set(min(endOfMonth, now).timeIntervalSince1970, forKey: bank.syncedUpToKey)
             } catch {
                 errors.append(BankSyncFailure(bank: bank, message: error.localizedDescription))
             }
@@ -85,6 +89,14 @@ final class BankSyncService {
         lastSyncDate = Date.now
         lastSyncErrors = errors
         await SyncNotifier.notify(totals: totals)
+    }
+
+    static func incrementalStart(for bank: Bank, requestedStart: Date) -> Date {
+        let stored = UserDefaults.standard.double(forKey: bank.syncedUpToKey)
+        guard stored > 0 else { return requestedStart }
+
+        let syncedUpTo = Date(timeIntervalSince1970: stored)
+        return max(requestedStart, syncedUpTo.addingTimeInterval(-incrementalOverlap))
     }
 
     private static func checkBankToken() -> Bool {
