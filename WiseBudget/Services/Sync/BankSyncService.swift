@@ -63,6 +63,7 @@ final class BankSyncService {
         }
 
         let syncTo = endOfMonth.timeIntervalSince1970
+        let isPastMonth = endOfMonth <= Date.now
 
         let banks = Bank.allCases.filter { KeychainHelper.loadToken(service: $0.keychainService) != nil }
 
@@ -70,7 +71,7 @@ final class BankSyncService {
         var errors: [BankSyncFailure] = []
         for bank in banks {
             currentBank = bank
-            let syncFrom = fullResync
+            let syncFrom = fullResync || isPastMonth
                 ? startOfMonth.timeIntervalSince1970
                 : Self.incrementalStart(for: bank, requestedStart: startOfMonth).timeIntervalSince1970
             do {
@@ -80,7 +81,9 @@ final class BankSyncService {
                 totals.duplicatesSkipped += result.duplicatesSkipped
                 let now = Date.now
                 UserDefaults.standard.set(now.timeIntervalSince1970, forKey: bank.lastSyncKey)
-                UserDefaults.standard.set(min(endOfMonth, now).timeIntervalSince1970, forKey: bank.syncedUpToKey)
+                let newCursor = min(endOfMonth, now).timeIntervalSince1970
+                let existingCursor = UserDefaults.standard.double(forKey: bank.syncedUpToKey)
+                UserDefaults.standard.set(max(existingCursor, newCursor), forKey: bank.syncedUpToKey)
             } catch {
                 errors.append(BankSyncFailure(bank: bank, message: error.localizedDescription))
             }
