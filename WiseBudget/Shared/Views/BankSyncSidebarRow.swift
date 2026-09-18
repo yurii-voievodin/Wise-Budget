@@ -38,14 +38,18 @@ struct BankSyncSidebarRow: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
+        .disabled(isSyncDisabled)
         .help(helpText)
         .contextMenu {
             Button("Full Resync \(monthLabel)") {
                 triggerSync(fullResync: true)
             }
-            .disabled(syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth)
+            .disabled(isSyncDisabled)
         }
+    }
+
+    private var isSyncDisabled: Bool {
+        syncService.isSyncing || syncService.isSyncCooldown || monthFilter.isFutureMonth
     }
 
     private var errorIndicator: some View {

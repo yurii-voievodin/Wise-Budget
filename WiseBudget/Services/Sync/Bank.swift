@@ -43,4 +43,11 @@ enum Bank: CaseIterable {
         case .monobank: return MonobankSyncService.self
         }
     }
+
+    static func resetSyncState() {
+        for bank in allCases {
+            UserDefaults.standard.removeObject(forKey: bank.lastSyncKey)
+            UserDefaults.standard.removeObject(forKey: bank.syncedUpToKey)
+        }
+    }
 }
